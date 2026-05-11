@@ -38,7 +38,7 @@ $breadcrumbs = [['label' => 'Historial de préstamos']];
                 <a href='prestamos_pendientes.php'>Préstamos Pendientes</a>
                 <a href='prestamos_historial.php' class="active">Historial de Préstamos</a>
                 <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a>
+                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
             <a href="logout.php"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</a>
         </nav>
     </aside>

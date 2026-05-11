@@ -41,7 +41,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <a href='prestamos_pendientes.php' class="active">Préstamos Pendientes</a>
                 <a href='prestamos_historial.php'>Historial de Préstamos</a>
                 <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a>
+                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
 
             <a href="logout.php"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</a>
         </nav>

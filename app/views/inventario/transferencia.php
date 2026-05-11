@@ -42,7 +42,7 @@ $breadcrumbs = [
                 <a href="reportes_rotacion.php" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
                 <a href="revisar_solicitudes.php"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
                 <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a>
+                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
                 <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
             <?php elseif ($role === 'Almacen'): ?>
                 <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
@@ -52,7 +52,7 @@ $breadcrumbs = [
                 <a href="revisar_solicitudes.php"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
                 <a href="mis_solicitudes.php"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
                 <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a>
+                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
                 <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
             <?php elseif ($role === 'Compras'): ?>
               <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>

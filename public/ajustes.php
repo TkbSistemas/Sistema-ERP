@@ -84,16 +84,16 @@ $nombre = $_SESSION['nombre'] ?? '';
                     </div>
                     <a class="config-btn" href="categorias.php">Configurar</a>
                 </div>
-                <div class="config-card">
+                <!--div class="config-card">
                     <div class="config-card-header">
                         <span class="config-card-icon config-prov"><i class="fa-solid fa-truck"></i></span>
                         <div>
-                            <div class="config-card-title">Proveedores</div>
+                            < <div class="config-card-title">Proveedores</div> >
                             <div class="config-card-desc">Administra la información de proveedores</div>
                         </div>
                     </div>
                     <a class="config-btn" href="proveedores.php">Configurar</a>
-                </div>
+                </div-->
                 <div class="config-card">
                     <div class="config-card-header">
                         <span class="config-card-icon config-alm"><i class="fa-solid fa-warehouse"></i></span>
