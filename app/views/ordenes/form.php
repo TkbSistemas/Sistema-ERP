@@ -54,7 +54,7 @@ if (empty($ordenDatos['detalles'])) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title><?= htmlspecialchars($titulo) ?> | TAKAB</title>
+    <title><?= htmlspecialchars($titulo) ?> Nueva órden de compra | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="/assets/css/inventario_form.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -105,19 +105,19 @@ if (empty($ordenDatos['detalles'])) {
             <?php if ($role === 'Administrador'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php elseif ($role === 'Almacen'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php elseif ($role === 'Compras'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php endif; ?>

@@ -55,19 +55,19 @@ $detalles = $factura['detalles'] ?? [];
             <?php if ($role === 'Administrador'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php elseif ($role === 'Almacen'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php elseif ($role === 'Compras'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php endif; ?>
@@ -131,7 +131,7 @@ $detalles = $factura['detalles'] ?? [];
                         <span class="detalle-value"><?= htmlspecialchars($factura['almacen'] ?? '-') ?></span>
                     </div>
                     <div>
-                        <span class="detalle-label">Órden asociada</span>
+                        <span class="detalle-label">Orden asociada</span>
                         <span class="detalle-value">
                             <?php if (!empty($factura['orden_id'])): ?>
                                 #<?= (int) $factura['orden_id'] ?>

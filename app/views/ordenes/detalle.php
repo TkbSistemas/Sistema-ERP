@@ -66,19 +66,19 @@ $facturasRelacionadas = $facturasRelacionadas ?? [];
             <?php if ($role === 'Administrador'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php elseif ($role === 'Almacen'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php elseif ($role === 'Compras'): ?>
                 <a href="ordenes_compra.php"><i class="fa-solid fa-file-invoice-dollar"></i> Órdenes de compra</a>
                 <a href="facturas.php"><i class="fa-solid fa-file-circle-check"></i> Facturas de compra</a>
-                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Órden</a>
+                <a href="ordenes_compra_crear.php"><i class="fa-solid fa-plus"></i> Nueva Orden</a>
                 <a href="proveedores.php"><i class="fa-solid fa-address-book"></i> Proveedores</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-shopping-cart"></i> Compras por proveedor</a>
             <?php endif; ?>
@@ -90,7 +90,7 @@ $facturasRelacionadas = $facturasRelacionadas ?? [];
         <main class="detalle-main">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
                 <div>
-                    <h1 style="margin:0; font-size:2rem; color:#12305f;">Órden #<?= $ordenId ?></h1>
+                    <h1 style="margin:0; font-size:2rem; color:#12305f;">Orden #<?= $ordenId ?></h1>
                     <p style="margin:6px 0 0; color:#61729f;">Proveedor: <?= htmlspecialchars($orden['proveedor'] ?? 'Desconocido') ?></p>
                 </div>
                 <div class="actions">
@@ -105,19 +105,19 @@ $facturasRelacionadas = $facturasRelacionadas ?? [];
             </div>
 
             <?php if (!empty($_GET['created'])): ?>
-                <div class="alert-success"><i class="fa-solid fa-circle-check"></i> Órden registrada correctamente.</div>
+                <div class="alert-success"><i class="fa-solid fa-circle-check"></i> Orden registrada correctamente.</div>
             <?php endif; ?>
             <?php if (!empty($_GET['updated'])): ?>
-                <div class="alert-success"><i class="fa-solid fa-circle-check"></i> Órden actualizada correctamente.</div>
+                <div class="alert-success"><i class="fa-solid fa-circle-check"></i> Orden actualizada correctamente.</div>
             <?php endif; ?>
             <?php if (!empty($_GET['received'])): ?>
                 <div class="alert-success"><i class="fa-solid fa-box-open"></i> Estado actualizado. Recuerda registrar la factura para ingresar el inventario.</div>
             <?php endif; ?>
             <?php if (!empty($_GET['cancelled'])): ?>
-                <div class="alert-success"><i class="fa-solid fa-ban"></i> Órden cancelada correctamente.</div>
+                <div class="alert-success"><i class="fa-solid fa-ban"></i> Orden cancelada correctamente.</div>
             <?php endif; ?>
             <?php if (!empty($_GET['locked'])): ?>
-                <div class="alert-error"><i class="fa-solid fa-circle-info"></i> La órden no puede editarse porque esta cerrada.</div>
+                <div class="alert-error"><i class="fa-solid fa-circle-info"></i> La orden no puede editarse porque esta cerrada.</div>
             <?php endif; ?>
             <?php if (!empty($msg)): ?>
                 <div class="alert-success"><?= htmlspecialchars($msg) ?></div>
@@ -212,7 +212,7 @@ $facturasRelacionadas = $facturasRelacionadas ?? [];
                 <header>
                     <div>
                         <h2 style="margin:0; color:#1b2f58;">Facturas asociadas</h2>
-                        <p style="margin:6px 0 0; color:#5c6c97;">Cada factura sumo inventario en el almacén seleccionado.</p>
+                        <p style="margin:6px 0 0; color:#5c6c97;">Cada factura suma inventario en el almacén seleccionado.</p>
                     </div>
                     <?php if ($puedeFacturar): ?>
                         <a href="facturas_create.php?orden_id=<?= $ordenId ?>&proveedor_id=<?= (int) ($orden['proveedor_id'] ?? 0) ?>" class="btn-action" style="padding:10px 18px;"><i class="fa-solid fa-file-circle-plus"></i> Nueva factura</a>

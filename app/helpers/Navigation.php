@@ -10,19 +10,19 @@ class Navigation
             'roles' => ['Administrador', 'Almacen', 'Compras', 'Empleado'],
         ],
         'usuarios'            => [
-            'label' => 'Gesti?n de Usuarios',
+            'label' => 'Gestió n de Usuarios',
             'icon'  => 'fa-solid fa-users-cog',
             'href'  => 'usuarios.php',
             'roles' => ['Administrador', 'Almacen', 'Compras', 'Empleado'],
         ],
         'productos'           => [
-            'label' => 'Gesti?n de Productos',
+            'label' => 'Gestión de Productos',
             'icon'  => 'fa-solid fa-boxes-stacked',
             'href'  => 'productos.php',
             'roles' => ['Administrador', 'Almacen', 'Compras'],
         ],
         'ordenes'             => [
-            'label' => 'Ã“rdenes de compra',
+            'label' => 'Órdenes de compra',
             'icon'  => 'fa-solid fa-file-invoice-dollar',
             'href'  => 'ordenes_compra.php',
             'roles' => ['Administrador', 'Almacen', 'Compras'],
@@ -52,7 +52,7 @@ class Navigation
             'roles' => ['Administrador', 'Almacen', 'Compras'],
         ],
         'prestamos'           => [
-            'label' => 'Pr?stamos de herramientas',
+            'label' => 'Préstamos de herramientas',
             'icon'  => 'fa-solid fa-screwdriver-wrench',
             'href'  => 'prestamos_pendientes.php',
             'roles' => ['Administrador', 'Almacen'],
@@ -65,7 +65,7 @@ class Navigation
         ],
 
         'reportes_rotacion'   => [
-            'label' => 'Rotaci?n de inventario',
+            'label' => 'Rotación de inventario',
             'icon'  => 'fa-solid fa-arrows-rotate',
             'href'  => 'reportes_rotacion.php',
             'roles' => ['Administrador', 'Almacen', 'Compras'],
@@ -78,19 +78,19 @@ class Navigation
             'roles' => ['Administrador', 'Almacen', 'Compras'],
         ],
         'logs'                => [
-            'label' => 'Bit?cora',
+            'label' => 'Bitácora',
             'icon'  => 'fa-solid fa-clipboard-list',
             'href'  => 'logs.php',
             'roles' => ['Administrador', 'Almacen', 'Compras', 'Empleado'],
         ],
         'configuracion'       => [
-            'label' => 'Configuraci?n',
+            'label' => 'Configuración',
             'icon'  => 'fa-solid fa-gear',
             'href'  => 'ajustes.php',
             'roles' => ['Administrador', 'Almacen'],
         ],
         'documentacion'       => [
-            'label' => 'Documentaci?n',
+            'label' => 'Documentación',
             'icon'  => 'fa-solid fa-book',
             'href'  => 'documentacion.php',
             'roles' => ['Administrador', 'Almacen', 'Compras', 'Empleado'],
@@ -423,8 +423,8 @@ class Navigation
         }
 
         $roleMap = [
-            'Almac?n' => 'Almacen',
-            'almac?n' => 'Almacen',
+            'Almacén' => 'Almacen',
+            'almacén' => 'Almacen',
             'almacen' => 'Almacen',
         ];
         if (isset($roleMap[$role])) {

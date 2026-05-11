@@ -18,7 +18,7 @@ class AuthController
             exit();
         }
 
-        $allowedModules = ['nomina', 'rh', 'gestion_usuarios', 'contabilidad', 'bancos', 'compras', 'inventario', 'ventas', 'proyectos'];
+        $allowedModules = ['nomina', 'rh', 'gestion_usuarios', 'contabilidad', 'bancos', 'compras', 'inventario', 'ventas', 'proyectos', 'clientes'];
         $module = $_GET['module'] ?? $_POST['module'] ?? null;
         if ($module !== null && !in_array($module, $allowedModules, true)) {
             $module = null;
@@ -76,6 +76,9 @@ class AuthController
             case 'proyectos':
                 return 'proyectos.php';
             case 'inventario':
+                return 'inventario.php';
+            case 'clientes':
+                return 'clientes.php';
             default:
                 return 'dashboard.php';
         }
@@ -143,7 +146,7 @@ class AuthController
             $username = trim($_POST['username'] ?? '');
             $user = Usuario::findByUsername($username);
             if ($user) {
-                $mensaje = 'Por favor contacta al administrador para restablecer tu contrasena.';
+                $mensaje = 'Por favor contacta al administrador para restablecer tu contraseña.';
             } else {
                 $mensaje = 'Usuario no encontrado.';
             }

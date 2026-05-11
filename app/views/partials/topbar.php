@@ -20,6 +20,7 @@ if (is_array($breadcrumbsOverride)) {
     <div class="top-header-user">
         <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
         <i class="fa-solid fa-user-circle"></i>
-        <a href="logout.php" class="logout-btn" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        <a href="menu.php" class="logout-btn" title="Ir al menú"><i class="fa-solid fa-home"></i></a>
+        <a href="logout.php" class="logout-btn" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
     </div>
 </header>
