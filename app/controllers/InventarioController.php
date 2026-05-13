@@ -129,38 +129,81 @@
         {
             Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
-            $productos = Producto::all();
-            $almacenes = Almacen::all();
-            $msg       = '';
+            $productos    = Producto::all();
+            $almacenes    = Almacen::all();
+            $msg          = '';
+            $error        = '';
+            $salidaItems  = [];
 
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $salidaItems = $this->normalizarLineasSalida($_POST);
+
                 if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
-                    $msg = 'Token CSRF invalido.';
+                    $error = 'Token CSRF invalido.';
+                } elseif (empty($salidaItems)) {
+                    $error = 'Agrega al menos un producto a la captura de salida.';
                 } else {
-                    $productoId = $_POST['producto_id'] ?? null;
-                    $almacenId  = $_POST['almacen_id'] ?? null;
-                    $cantidad   = isset($_POST['cantidad']) ? (float) $_POST['cantidad'] : 0;
+                    $db = Database::getInstance()->getConnection();
+                    $consumoAcumulado = [];
 
-                    if ($productoId && $almacenId && $cantidad > 0) {
-                        $data = [
-                            'producto_id'       => $productoId,
-                            'tipo'              => 'Salida',
-                            'cantidad'          => $cantidad,
-                            'usuario_id'        => $_SESSION['user_id'],
-                            'almacen_origen_id' => $almacenId,
-                            'observaciones'     => trim($_POST['observaciones'] ?? ''),
-                        ];
+                    try {
+                        $db->beginTransaction();
 
-                        MovimientoInventario::registrar($data);
-                        Producto::restarStock($data['producto_id'], $data['cantidad'], (int) $almacenId);
-                        $msg = "Salida registrada correctamente.";
-                        ActivityLogger::log('inventario_salida', 'Salida de inventario registrada', [
-                            'producto_id' => $productoId,
-                            'almacen_id'  => $almacenId,
-                            'cantidad'    => $cantidad,
-                        ]);
-                    } else {
-                        $msg = "Por favor completa los campos obligatorios.";
+                        foreach ($salidaItems as $indice => $linea) {
+                            $productoId = (int) ($linea['producto_id'] ?? 0);
+                            $almacenId  = (int) ($linea['almacen_id'] ?? 0);
+                            $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+
+                            if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
+                                throw new RuntimeException('La linea ' . ($indice + 1) . ' es invalida.');
+                            }
+
+                            $clave = $productoId . ':' . $almacenId;
+                            $consumoPrevio = (float) ($consumoAcumulado[$clave] ?? 0);
+                            $disponible = Producto::stockEnAlmacen($productoId, $almacenId) - $consumoPrevio;
+
+                            if ($cantidad > $disponible) {
+                                throw new RuntimeException('La linea ' . ($indice + 1) . ' supera el stock disponible en el almacen seleccionado.');
+                            }
+
+                            $data = [
+                                'producto_id'       => $productoId,
+                                'tipo'              => 'Salida',
+                                'cantidad'          => $cantidad,
+                                'usuario_id'        => $_SESSION['user_id'],
+                                'almacen_origen_id' => $almacenId,
+                                'observaciones'     => trim((string) ($linea['observaciones'] ?? '')),
+                            ];
+
+                            if (! MovimientoInventario::registrar($data)) {
+                                throw new RuntimeException('No fue posible registrar la linea ' . ($indice + 1) . '.');
+                            }
+
+                            Producto::restarStock($productoId, $cantidad, $almacenId);
+                            $consumoAcumulado[$clave] = $consumoPrevio + $cantidad;
+
+                            ActivityLogger::log('inventario_salida', 'Salida de inventario registrada', [
+                                'producto_id' => $productoId,
+                                'almacen_id'  => $almacenId,
+                                'cantidad'    => $cantidad,
+                                'linea'       => $indice + 1,
+                            ]);
+                        }
+
+                        $db->commit();
+
+                        $totalLineas = count($salidaItems);
+                        $msg = $totalLineas === 1
+                            ? 'Salida registrada correctamente.'
+                            : 'Se registraron ' . $totalLineas . ' productos en la salida correctamente.';
+
+                        $salidaItems = [];
+                        $_POST = [];
+                    } catch (\Throwable $e) {
+                        if ($db->inTransaction()) {
+                            $db->rollBack();
+                        }
+                        $error = $e->getMessage() ?: 'No fue posible registrar la salida. Revisa los datos e intenta nuevamente.';
                     }
                 }
             }
@@ -168,6 +211,46 @@
             $movimientosRecientes = MovimientoInventario::ultimos('Salida', 6);
 
             include __DIR__ . '/../views/inventario/salida.php';
+        }
+
+        private function normalizarLineasSalida(array $post): array
+        {
+            $lineas = [];
+
+            if (! empty($post['lineas_producto_id']) && is_array($post['lineas_producto_id'])) {
+                $productos     = $post['lineas_producto_id'];
+                $almacenes     = $post['lineas_almacen_id'] ?? [];
+                $cantidades    = $post['lineas_cantidad'] ?? [];
+                $observaciones = $post['lineas_observaciones'] ?? [];
+
+                foreach ($productos as $indice => $productoId) {
+                    $linea = [
+                        'producto_id'   => trim((string) $productoId),
+                        'almacen_id'    => trim((string) ($almacenes[$indice] ?? '')),
+                        'cantidad'      => trim((string) ($cantidades[$indice] ?? '')),
+                        'observaciones' => trim((string) ($observaciones[$indice] ?? '')),
+                    ];
+
+                    if ($linea['producto_id'] === '' && $linea['almacen_id'] === '' && $linea['cantidad'] === '' && $linea['observaciones'] === '') {
+                        continue;
+                    }
+
+                    $lineas[] = $linea;
+                }
+            } else {
+                $linea = [
+                    'producto_id'   => trim((string) ($post['producto_id'] ?? '')),
+                    'almacen_id'    => trim((string) ($post['almacen_id'] ?? '')),
+                    'cantidad'      => trim((string) ($post['cantidad'] ?? '')),
+                    'observaciones' => trim((string) ($post['observaciones'] ?? '')),
+                ];
+
+                if ($linea['producto_id'] !== '' || $linea['almacen_id'] !== '' || $linea['cantidad'] !== '' || $linea['observaciones'] !== '') {
+                    $lineas[] = $linea;
+                }
+            }
+
+            return $lineas;
         }
 
         public function transferencia()

@@ -103,7 +103,7 @@ $breadcrumbs = [
                         <div class="form-field" style="margin-bottom:14px;">
                             <label>Buscador avanzado</label>
                             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
-                                <input type="text" id="filtro_texto" placeholder="Buscar por nombre, c?digo o barras">
+                                <input type="text" id="filtro_texto" placeholder="Buscar por nombre, código o barras">
                                 <select id="filtro_tipo">
                                     <option value="">Tipo (todos)</option>
                                     <option value="Consumible">Consumible</option>
@@ -111,13 +111,13 @@ $breadcrumbs = [
                                     <option value="Equipo">Equipo</option>
                                 </select>
                                 <select id="filtro_categoria">
-                                    <option value="">Categor?a (todas)</option>
+                                    <option value="">Categoría (todas)</option>
                                     <?php foreach (array_keys($categoriasFiltro) as $categoriaNombre): ?>
                                         <option value="<?= htmlspecialchars($categoriaNombre) ?>"><?= htmlspecialchars($categoriaNombre) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <select id="filtro_almacen">
-                                    <option value="">Almac?n asignado (todos)</option>
+                                    <option value="">Almacén asignado (todos)</option>
                                     <?php foreach ($almacenes as $almacen): ?>
                                         <option value="<?= (int) $almacen['id'] ?>"><?= htmlspecialchars($almacen['nombre']) ?></option>
                                     <?php endforeach; ?>
@@ -153,9 +153,9 @@ $breadcrumbs = [
                         </div>
 
                         <div class="form-field">
-                            <label for="almacen_id">Almac?n destino *</label>
+                            <label for="almacen_id">Almacén destino *</label>
                             <select id="almacen_id" name="almacen_id">
-                                <option value="">Selecciona un almac?n...</option>
+                                <option value="">Selecciona un almacén...</option>
                                 <?php foreach ($almacenes as $almacen): ?>
                                     <option value="<?= $almacen['id'] ?>" <?= $selectedAlmacen == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
                                 <?php endforeach; ?>
@@ -169,7 +169,7 @@ $breadcrumbs = [
 
                         <div class="form-field">
                             <label for="observaciones">Observaciones</label>
-                            <textarea id="observaciones" name="observaciones" placeholder="N?mero de factura, lote, notas adicionales..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
+                            <textarea id="observaciones" name="observaciones" placeholder="Número de factura, lote, notas adicionales..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
                         </div>
 
                         <div class="entry-batch-actions">
@@ -192,10 +192,10 @@ $breadcrumbs = [
                                     <thead>
                                         <tr>
                                             <th>Producto</th>
-                                            <th>Almac?n</th>
+                                            <th>Almacén</th>
                                             <th>Cantidad</th>
                                             <th>Observaciones</th>
-                                            <th>Acci?n</th>
+                                            <th>Acción</th>
                                         </tr>
                                     </thead>
                                     <tbody id="entrada-items-body"></tbody>
@@ -349,7 +349,7 @@ function construirBorradorEntrada() {
             empty: false,
             valid: false,
             item: null,
-            message: 'Selecciona producto, almacen y una cantidad mayor a cero antes de continuar.'
+            message: 'Selecciona producto, almacén y una cantidad mayor a cero antes de continuar.'
         };
     }
 
@@ -391,7 +391,7 @@ function renderEntradaItems() {
         const productoOption = obtenerOpcionProducto(item.producto_id);
         const productoNombre = productoOption ? productoOption.textContent.trim() : `Producto #${item.producto_id}`;
         const unidad = productoOption ? (productoOption.dataset.unidad || '') : '';
-        const almacenNombre = almacenesMap.get(Number(item.almacen_id)) || `Almac?n #${item.almacen_id}`;
+        const almacenNombre = almacenesMap.get(Number(item.almacen_id)) || `Almacén #${item.almacen_id}`;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
