@@ -317,7 +317,7 @@ $buildQuery = function(array $overrides = []) {
 
                     <div class="filter-row">
                         <div class="filter-field">
-                            <label for="per_page">Resultados por p&aacute;gina</label>
+                            <label for="per_page">Resultados por página</label>
                             <select id="per_page" name="per_page" onchange="this.form.submit()">
                                 <?php foreach ($perPageOptions as $option): ?>
                                     <option value="<?= $option ?>" <?= (int)$perPage === (int)$option ? 'selected' : '' ?>><?= $option ?></option>

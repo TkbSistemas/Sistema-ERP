@@ -338,7 +338,7 @@ function construirBorradorEntrada() {
     const almacenId = String(almacenSelect.value || '').trim();
     const cantidad = String(cantidadInput.value || '').trim();
     const observaciones = String(observacionesInput.value || '').trim();
-    const tieneDatos = productoId !== '' || almacenId !== '' || cantidad !== '' || observaciones !== '';
+    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== '';
 
     if (!tieneDatos) {
         return { empty: true, valid: false, item: null, message: '' };
@@ -349,7 +349,7 @@ function construirBorradorEntrada() {
             empty: false,
             valid: false,
             item: null,
-            message: 'Selecciona producto, almac?n y una cantidad mayor a cero antes de continuar.'
+            message: 'Selecciona producto, almacen y una cantidad mayor a cero antes de continuar.'
         };
     }
 
