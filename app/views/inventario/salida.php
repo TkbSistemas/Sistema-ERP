@@ -111,13 +111,13 @@ $breadcrumbs = [
                                     <option value="Equipo">Equipo</option>
                                 </select>
                                 <select id="filtro_categoria">
-                                    <option value="">Categoria (todas)</option>
+                                    <option value="">Categoría (todas)</option>
                                     <?php foreach (array_keys($categoriasFiltro) as $categoriaNombre): ?>
                                         <option value="<?= htmlspecialchars($categoriaNombre) ?>"><?= htmlspecialchars($categoriaNombre) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <select id="filtro_almacen">
-                                    <option value="">Almacen asignado (todos)</option>
+                                    <option value="">Almacén asignado (todos)</option>
                                     <?php foreach ($almacenes as $almacen): ?>
                                         <option value="<?= (int) $almacen['id'] ?>"><?= htmlspecialchars($almacen['nombre']) ?></option>
                                     <?php endforeach; ?>
@@ -365,7 +365,7 @@ function construirBorradorSalida() {
             empty: false,
             valid: false,
             item: null,
-            message: 'Selecciona producto, almacen y una cantidad mayor a cero antes de continuar.'
+            message: 'Selecciona producto, almacén y una cantidad mayor a cero antes de continuar.'
         };
     }
 
@@ -375,7 +375,7 @@ function construirBorradorSalida() {
             empty: false,
             valid: false,
             item: null,
-            message: 'La cantidad solicitada supera el stock disponible para ese producto en el almacen seleccionado.'
+            message: 'La cantidad solicitada supera el stock disponible para ese producto en el almacén seleccionado.'
         };
     }
 
@@ -417,7 +417,7 @@ function renderSalidaItems() {
         const productoOption = obtenerOpcionProducto(item.producto_id);
         const productoNombre = productoOption ? productoOption.textContent.trim() : `Producto #${item.producto_id}`;
         const unidad = productoOption ? (productoOption.dataset.unidad || '') : '';
-        const almacenNombre = almacenesMap.get(Number(item.almacen_id)) || `Almacen #${item.almacen_id}`;
+        const almacenNombre = almacenesMap.get(Number(item.almacen_id)) || `Almacén #${item.almacen_id}`;
         const disponible = stockDisponibleEnCaptura(item.producto_id, item.almacen_id, index) + parseFloat(item.cantidad || '0');
 
         const tr = document.createElement('tr');
@@ -551,7 +551,11 @@ filtroCategoria.addEventListener('change', aplicarFiltroProductos);
 filtroAlmacen.addEventListener('change', aplicarFiltroProductos);
 filtroStock.addEventListener('change', aplicarFiltroProductos);
 agregarProductoBtn.addEventListener('click', agregarProductoALaCaptura);
-limpiarCapturaBtn.addEventListener('click', limpiarBorradorSalida);
+limpiarCapturaBtn.addEventListener('click', () => {
+    salidaItems.length = 0;
+    limpiarBorradorSalida();
+    renderSalidaItems();
+});
 
 salidaItemsBody.addEventListener('click', (event) => {
     const button = event.target.closest('[data-index]');

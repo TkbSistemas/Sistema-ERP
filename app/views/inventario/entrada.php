@@ -527,7 +527,11 @@ filtroCategoria.addEventListener('change', aplicarFiltroProductos);
 filtroAlmacen.addEventListener('change', aplicarFiltroProductos);
 filtroStock.addEventListener('change', aplicarFiltroProductos);
 agregarProductoBtn.addEventListener('click', agregarProductoALaCaptura);
-limpiarCapturaBtn.addEventListener('click', limpiarBorradorEntrada);
+limpiarCapturaBtn.addEventListener('click', () => {
+    entradaItems.length = 0;
+    limpiarBorradorEntrada();
+    renderEntradaItems();
+});
 
 entradaItemsBody.addEventListener('click', (event) => {
     const button = event.target.closest('[data-index]');
