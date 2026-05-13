@@ -164,7 +164,6 @@ $breadcrumbs = [
                             <label for="observaciones">Observaciones</label>
                             <textarea id="observaciones" name="observaciones" placeholder="Motivo de la salida, proyecto, folio..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
                         </div>
-
                         <div class="form-actions">
                             <button type="submit" class="btn-main"><i class="fa fa-upload"></i> Registrar salida</button>
                         </div>
