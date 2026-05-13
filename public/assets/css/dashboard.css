@@ -21,6 +21,50 @@ body, html {
     flex-direction: column;
     border-right: 1px solid #e4e7ee;
 }
+.sidebar_capital {
+    background: #C09307;
+    color: #fff;
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100vh;
+    padding: 0 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e4e7ee;
+}
+.sidebar_finanzas {
+    background: #14295e;
+    color: #fff;
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100vh;
+    padding: 0 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e4e7ee;
+}
+.sidebar_operaciones {
+    background: #6730C4;
+    color: #fff;
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100vh;
+    padding: 0 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e4e7ee;
+}
+.sidebar_gestion {
+    background: #000000;
+    color: #fff;
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100vh;
+    padding: 0 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e4e7ee;
+}
 .sidebar-header {
     display: flex;
     align-items: center;

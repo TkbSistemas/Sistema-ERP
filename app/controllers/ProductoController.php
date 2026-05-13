@@ -30,42 +30,28 @@ class ProductoController
             'valor_max'        => $_GET['valor_max'] ?? '',
         ];
 
-        $productos = Producto::all($filtros);
+        $page           = max(1, (int) ($_GET['page'] ?? 1));
+        $perPageOptions = [10, 15, 25, 50, 100];
+        $perPage        = (int) ($_GET['per_page'] ?? 15);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+        $offset = ($page - 1) * $perPage;
 
-        $stats = [
-            'total'        => count($productos),
-            'consumibles'  => 0,
-            'herramientas' => 0,
-            'stock_bajo'   => 0,
-            'sin_stock'    => 0,
-            'activos'      => 0,
-            'inactivos'    => 0,
-            'valor_total'  => 0.0,
-        ];
+        $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
+        $productos      = $resultado['items'];
+        $stats          = $resultado['stats'];
+        $totalRegistros = $resultado['total'];
+        $stats['total'] = $totalRegistros;
+        $totalPaginas   = max(1, (int) ceil($totalRegistros / $perPage));
 
-        foreach ($productos as $producto) {
-            $cantidad      = (float) ($producto['stock_actual'] ?? 0);
-            $minimo        = (float) ($producto['stock_minimo'] ?? 0);
-            $valorProducto = (float) ($producto['costo_compra'] ?? 0) * $cantidad;
-            $stats['valor_total'] += $valorProducto;
-
-            if (($producto['tipo'] ?? '') === 'Consumible') {
-                $stats['consumibles']++;
-            } elseif (($producto['tipo'] ?? '') === 'Herramienta') {
-                $stats['herramientas']++;
-            }
-
-            if ($cantidad < $minimo) {
-                $stats['stock_bajo']++;
-            }
-            if ($cantidad <= 0) {
-                $stats['sin_stock']++;
-            }
-            if ((int) ($producto['activo_id'] ?? 1) === 1) {
-                $stats['activos']++;
-            } else {
-                $stats['inactivos']++;
-            }
+        if ($page > $totalPaginas) {
+            $page      = $totalPaginas;
+            $offset    = ($page - 1) * $perPage;
+            $resultado = Producto::inventarioListado($filtros, $perPage, $offset);
+            $productos = $resultado['items'];
+            $stats     = $resultado['stats'];
+            $stats['total'] = $resultado['total'];
         }
 
         $db              = Database::getInstance()->getConnection();

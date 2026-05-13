@@ -70,6 +70,7 @@ $nombre = $_SESSION['nombre'] ?? '';
             <div class="top-header-user">
                 <span><?= htmlspecialchars($nombre) ?> (<?= htmlspecialchars($role) ?>)</span>
                 <i class="fa-solid fa-user-circle"></i>
+                <a href="menu.php" class="logout-btn" title="Ir a menu"><i class="fa-solid fa-home"></i></a>
                 <a href="logout.php" class="logout-btn" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
             </div>
         </header>

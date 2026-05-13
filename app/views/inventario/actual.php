@@ -351,7 +351,7 @@ $buildQuery = function(array $overrides = []) {
                     <?php if ($page > 1): ?>
                         <a class="btn-ghost" href="<?= $buildQuery(['page' => $page - 1]) ?>"><i class="fa fa-chevron-left"></i> Anterior</a>
                     <?php endif; ?>
-                    <span class="inventario-pagination-page">P?gina <?= number_format($page) ?> de <?= number_format($totalPaginas) ?></span>
+                    <span class="inventario-pagination-page">Página <?= number_format($page) ?> de <?= number_format($totalPaginas) ?></span>
                     <?php if ($page < $totalPaginas): ?>
                         <a class="btn-ghost" href="<?= $buildQuery(['page' => $page + 1]) ?>">Siguiente <i class="fa fa-chevron-right"></i></a>
                     <?php endif; ?>

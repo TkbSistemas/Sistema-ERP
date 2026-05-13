@@ -8,13 +8,13 @@ $alertas = $datos['alertas'] ?? [];
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - TAKAB</title>
-    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link rel="stylesheet" href="/assets/css/dashboard2.css">
     <link rel="stylesheet" href="/assets/css/dashboard_custom.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 <div class="main-layout">
-    <aside class="sidebar">
+    <aside class="sidebar_operaciones">
         <div class="sidebar-header">
             <div class="login-logo"><img src="assets/images/icono_takab.png" alt="logo_TAKAB" width="90" height="55"></div>
             <div>

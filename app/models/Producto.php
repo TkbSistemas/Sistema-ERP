@@ -505,6 +505,16 @@ class Producto
             array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
         }
 
+        if (!empty($filtros['nombre'])) {
+            $condiciones[] = 'p.nombre LIKE ?';
+            $params[] = '%' . trim($filtros['nombre']) . '%';
+        }
+
+        if (!empty($filtros['codigo'])) {
+            $condiciones[] = 'p.codigo LIKE ?';
+            $params[] = '%' . trim($filtros['codigo']) . '%';
+        }
+
         if (!empty($filtros['codigo_barras'])) {
             $condiciones[] = 'p.codigo_barras = ?';
             $params[] = trim($filtros['codigo_barras']);
@@ -560,6 +570,11 @@ class Producto
                     $condiciones[] = 'p.stock_actual >= p.stock_minimo';
                     break;
             }
+        }
+
+        if (!empty($filtros['tags'])) {
+            $condiciones[] = 'IFNULL(p.tags, "") LIKE ?';
+            $params[] = '%' . trim($filtros['tags']) . '%';
         }
 
         if (!empty($filtros['valor_min']) && is_numeric($filtros['valor_min'])) {

@@ -27,14 +27,12 @@ $nombre = $_SESSION['nombre'] ?? '';
         <nav class="sidebar-nav">
             <a href="dashboard.php"><i class="fa-solid fa-house"></i> Dashboard</a>
             <?php if ($role === 'Administrador'): ?>
-                <a href="usuarios.php"><i class="fa-solid fa-users-cog"></i> Gestión de Usuarios</a>
                 <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
                 <a href="inventario_actual.php"><i class="fa-solid fa-list-check"></i> Inventario</a>
                 <a href="compras_proveedor.php"><i class="fa-solid fa-file-invoice"></i> Compras por proveedor</a>
                 <a href="reportes_rotacion.php"><i class="fa-solid fa-arrows-rotate"></i> Rotación de inventario</a>
                 <a href="revisar_solicitudes.php"><i class="fa-solid fa-comment-medical"></i> Solicitudes de Material</a>
                 <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="logs.php"><i class="fa-solid fa-clipboard-list"></i> Bitácora</a>
                 <a href="ajustes.php" class="active"><i class="fa-solid fa-gear"></i> Configuración</a>
             <?php elseif ($role === 'Almacen'): ?>
                 <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
@@ -55,11 +53,13 @@ $nombre = $_SESSION['nombre'] ?? '';
     </aside>
 
     <div class="content-area">
+        <?php include __DIR__ . '/../partials/topbar.php'; ?>
         <header class="top-header">
             <div></div>
             <div class="top-header-user">
                 <span><?= htmlspecialchars($nombre) ?></span>
                 <i class="fa-solid fa-user-circle"></i>
+                <a href="menu.php" class="logout-btn" title="Ir a menu"><i class="fa-solid fa-home"></i></a>
                 <a href="logout.php" class="logout-btn" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
             </div>
         </header>
@@ -114,9 +114,9 @@ $nombre = $_SESSION['nombre'] ?? '';
                     </div>
                     <a class="config-btn" href="unidades.php">Configurar</a>
                 </div>
-            </div>
+            <!--/div-->
 
-            <div class="config-bottom-row">
+            <!--div class="config-bottom-row">
                 <div class="config-card">
                     <div class="config-card-header">
                         <span class="config-card-icon config-client"><i class="fa-solid fa-building-user"></i></span>
@@ -126,7 +126,7 @@ $nombre = $_SESSION['nombre'] ?? '';
                         </div>
                     </div>
                     <a class="config-btn" href="clientes.php">Configurar</a>
-                </div>
+                </div-->
                 <?php if ($role === 'Administrador'): ?>
                 <div class="config-card">
                     <div class="config-card-header">

@@ -24,6 +24,25 @@ function format_stock($value) {
     }
     return number_format($num, 2, '.', ',');
 }
+
+$totalRegistros = $totalRegistros ?? count($productos);
+$page = $page ?? 1;
+$totalPaginas = $totalPaginas ?? 1;
+$perPage = $perPage ?? 15;
+$perPageOptions = $perPageOptions ?? [10, 15, 25, 50, 100];
+$offset = $offset ?? 0;
+$desde = $totalRegistros > 0 ? $offset + 1 : 0;
+$hasta = $totalRegistros > 0 ? min($offset + $perPage, $totalRegistros) : 0;
+
+$buildQuery = function(array $overrides = []) {
+    $params = array_merge($_GET, $overrides);
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === '') {
+            unset($params[$key]);
+        }
+    }
+    return $params ? ('?' . http_build_query($params)) : '?';
+};
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -186,7 +205,7 @@ function format_stock($value) {
                             </div>
                         </div>
                         <div class="filter-field">
-                            <label for="codigo">C?digo interno</label>
+                            <label for="codigo">Código interno</label>
                             <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. H001">
                         </div>
                         <div class="filter-field">
@@ -287,20 +306,30 @@ function format_stock($value) {
                             <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
                         </div>
                         <div class="filter-field">
-                            <label for="valor_min">Valor inventario m?nimo</label>
+                            <label for="valor_min">Valor inventario mínimo</label>
                             <input type="number" step="0.01" id="valor_min" name="valor_min" value="<?= htmlspecialchars($filtros['valor_min']) ?>" placeholder="Ej. 1000">
                         </div>
                         <div class="filter-field">
-                            <label for="valor_max">Valor inventario m?ximo</label>
+                            <label for="valor_max">Valor inventario máximo</label>
                             <input type="number" step="0.01" id="valor_max" name="valor_max" value="<?= htmlspecialchars($filtros['valor_max']) ?>" placeholder="Ej. 5000">
                         </div>
                     </div>
 
-                    <div class="filter-actions">
-                        <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar filtros</button>
-                        <?php if ($hayFiltros): ?>
-                            <a class="btn-ghost" href="productos.php"><i class="fa fa-eraser"></i> Limpiar</a>
-                        <?php endif; ?>
+                    <div class="filter-row">
+                        <div class="filter-field">
+                            <label for="per_page">Resultados por p&aacute;gina</label>
+                            <select id="per_page" name="per_page" onchange="this.form.submit()">
+                                <?php foreach ($perPageOptions as $option): ?>
+                                    <option value="<?= $option ?>" <?= (int)$perPage === (int)$option ? 'selected' : '' ?>><?= $option ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-actions">
+                            <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar filtros</button>
+                            <?php if ($hayFiltros): ?>
+                                <a class="btn-ghost" href="productos.php"><i class="fa fa-eraser"></i> Limpiar</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </form>
             </section>
@@ -362,7 +391,7 @@ function format_stock($value) {
                                         <span class="badge badge-stock <?= $badgeStock ?>">
                                             <?= format_stock($stockActual) ?> <?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?>
                                         </span>
-                                        <small>M?n: <?= format_stock($stockMinimo) ?></small>
+                                        <small>Mín: <?= format_stock($stockMinimo) ?></small>
                                     </td>
                                     <td><?= htmlspecialchars($producto['estado'] ?? '-') ?></td>
                                     <td>
@@ -403,6 +432,23 @@ function format_stock($value) {
                     <?php endif; ?>
                 </div>
             </section>
+
+            <div class="productos-pagination">
+                <div class="productos-pagination-info">
+                    <?= $totalRegistros > 0
+                        ? "Mostrando $desde - $hasta de " . number_format($totalRegistros) . " registros"
+                        : "Sin registros disponibles" ?>
+                </div>
+                <div class="productos-pagination-controls">
+                    <?php if ($page > 1): ?>
+                        <a class="btn-ghost" href="<?= $buildQuery(['page' => $page - 1]) ?>"><i class="fa fa-chevron-left"></i> Anterior</a>
+                    <?php endif; ?>
+                    <span class="productos-pagination-page">P&aacute;gina <?= number_format($page) ?> de <?= number_format($totalPaginas) ?></span>
+                    <?php if ($page < $totalPaginas): ?>
+                        <a class="btn-ghost" href="<?= $buildQuery(['page' => $page + 1]) ?>">Siguiente <i class="fa fa-chevron-right"></i></a>
+                    <?php endif; ?>
+                </div>
+            </div>
         </main>
     </div>
 </div>

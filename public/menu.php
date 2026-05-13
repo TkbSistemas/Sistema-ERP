@@ -18,16 +18,16 @@ $groups = [
 // poner modulos en gris si no están desarrollados, o si el usuario no tiene permisos para acceder a ellos
 $modules = [
     // Capital Humano
-    'nomina' => ['Nómina', 'Pagos', 'fa-money-check-dollar', 'nomina.php', 'capital_humano'],
-    'rh' => ['Recursos Humanos', 'Altas/bajas, incidencias, expedientes, vacaciones.', 'fa-users', 'rh.php', 'capital_humano'],
-    'gestion_usuarios' => ['Gestión de Usuarios', 'Crear/editar usuarios, asignar roles, historial de accesos.', 'fa-user-gear', 'gestion_usuarios.php', 'capital_humano'],
+    'nomina' => ['Nómina', '', 'fa-money-check-dollar', 'nomina.php', 'capital_humano'],
+    'rh' => ['Recursos Humanos', '', 'fa-users', 'rh.php', 'capital_humano'],
+    'gestion_usuarios' => ['Gestión de Usuarios', 'Crear/editar usuarios, asignar roles, historial de accesos.', 'fa-user-gear', 'usuarios.php', 'capital_humano'],
 
     // Finanzas
-    'bancos' => ['Bancos', 'Cuentas, movimientos, pagos.', 'fa-building-columns', 'bancos.php', 'finanzas'],
+    'bancos' => ['', 'fa-building-columns', 'bancos.php', 'finanzas'],
     'contabilidad' => ['Contabilidad', '', 'fa-file-invoice-dollar', 'contabilidad.php', 'finanzas'],
 
     // Operaciones y logística
-    'compras' => ['Compras', 'Órdenes de compra, facturas de compra, nueva compra, historial, proveedores.', 'fa-bag-shopping', 'ordenes_compra.php', 'operaciones'],
+    'compras' => ['Compras', 'Órdenes de compra, facturas de compra, historial, proveedores.', 'fa-bag-shopping', 'ordenes_compra.php', 'operaciones'],
     'inventario' => ['Almacén e Inventarios', 'Productos, entradas/salidas, préstamos, mantenimientos de herramientas.', 'fa-boxes-stacked', 'dashboard.php', 'operaciones'],
     'ventas' => ['Ventas', 'Cotizaciones/presupuestos, facturas de venta.', 'fa-cart-shopping', 'ventas.php', 'operaciones'],
 

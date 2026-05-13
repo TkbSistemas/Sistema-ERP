@@ -722,3 +722,30 @@
         grid-template-columns: 1fr;
     }
 }
+
+.productos-pagination {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.productos-pagination-info {
+    color: #5b6c96;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.productos-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.productos-pagination-page {
+    color: #12305f;
+    font-weight: 700;
+}
