@@ -38,7 +38,7 @@ $breadcrumbs = [
             <div class="login-logo"><img src="assets/images/icono_takab.png" alt="logo_TAKAB" width="90" height="55"></div>
             <div>
                 <div class="sidebar-title">TAKAB</div>
-                <div class="sidebar-desc">Inventario y almac?n</div>
+                <div class="sidebar-desc">Inventario y almacén</div>
             </div>
         </div>
         <nav class="sidebar-nav">
@@ -153,9 +153,9 @@ $breadcrumbs = [
                         </div>
 
                         <div class="form-field">
-                            <label for="almacen_id">Almacen origen *</label>
+                            <label for="almacen_id">Almacén origen *</label>
                             <select id="almacen_id" name="almacen_id">
-                                <option value="">Selecciona un almacen...</option>
+                                <option value="">Selecciona un almacén...</option>
                                 <?php foreach ($almacenes as $almacen): ?>
                                     <option value="<?= $almacen['id'] ?>" <?= $selectedAlmacen == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
                                 <?php endforeach; ?>
@@ -192,11 +192,11 @@ $breadcrumbs = [
                                     <thead>
                                         <tr>
                                             <th>Producto</th>
-                                            <th>Almacen</th>
+                                            <th>Almacén</th>
                                             <th>Cantidad</th>
                                             <th>Stock disponible</th>
                                             <th>Observaciones</th>
-                                            <th>Accion</th>
+                                            <th>Acción</th>
                                         </tr>
                                     </thead>
                                     <tbody id="salida-items-body"></tbody>

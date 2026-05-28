@@ -23,7 +23,7 @@ $modules = [
     'gestion_usuarios' => ['Gestión de Usuarios', 'Crear/editar usuarios, asignar roles, historial de accesos.', 'fa-user-gear', 'usuarios.php', 'capital_humano'],
 
     // Finanzas
-    'bancos' => ['', 'fa-building-columns', 'bancos.php', 'finanzas'],
+    'bancos' => ['Bancos', '', 'fa-building-columns', 'bancos.php', 'finanzas'],
     'contabilidad' => ['Contabilidad', '', 'fa-file-invoice-dollar', 'contabilidad.php', 'finanzas'],
 
     // Operaciones y logística
