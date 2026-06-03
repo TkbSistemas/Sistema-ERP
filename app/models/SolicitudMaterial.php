@@ -58,7 +58,8 @@ class SolicitudMaterial {
             $params[] = $fecha_fin;
         }
         if ($search) {
-            $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ?)";
+            $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ? OR s.tipo_solicitud LIKE ?)";
+            $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
         }
@@ -112,7 +113,8 @@ class SolicitudMaterial {
             $params[] = $fecha_fin;
         }
         if ($search) {
-            $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ? OR u.nombre_completo LIKE ?)";
+            $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ? OR s.tipo_solicitud LIKE ? OR u.nombre_completo LIKE ?)";
+            $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';

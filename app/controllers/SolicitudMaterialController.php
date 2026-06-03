@@ -159,7 +159,7 @@
 
             if ($tab === 'historial') {
                 $solicitudes = SolicitudMaterial::listarPendientes(
-                    ['entregada', 'entregado', 'rechazada', 'rechazado', 'cancelada', 'cancelado'],
+                    ['aprobada', 'aprobado', 'entregada', 'entregado', 'rechazada', 'rechazado', 'cancelada', 'cancelado'],
                     $fecha_inicio,
                     $fecha_fin,
                     $search
