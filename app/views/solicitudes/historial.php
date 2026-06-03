@@ -106,9 +106,101 @@ $tabs = [
             text-decoration: none; font-size: 1.01rem; transition: background 0.13s;
         }
         .sol-detalle-btn:hover { background: #1741a6; color: #fff;}
+
+        /* Estilos del buscador/filtro por fechas */
+        .sol-date-filter-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 25px;
+            border: 1px solid #eef2f8;
+            box-shadow: 0 2px 10px 0 rgba(23,44,87,0.04);
+            margin-top: 15px;
+        }
+        .sol-date-filter-form {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            color: #37498e;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-input {
+            padding: 8px 12px;
+            border: 1.5px solid #dcdfe6;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            background-color: #fcfdfe;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .filter-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+        .submit-btn {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+        }
+        .submit-btn:hover {
+            background: #1741a6;
+        }
+        .clear-btn {
+            background: #f1f3f7;
+            color: #4e5e8c;
+            border: 1.5px solid #dcdfe6;
+        }
+        .clear-btn:hover {
+            background: #e4e7ed;
+            color: #2c3e50;
+        }
+
         @media (max-width:900px){
             .sol-card { padding: 15px 4vw; }
             .sol-main { padding: 19px 5vw 24px 5vw;}
+            .sol-date-filter-form {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 5px;
+            }
+            .filter-actions {
+                justify-content: flex-end;
+            }
         }
     </style>
 </head>
@@ -128,10 +220,44 @@ $tabs = [
                     <i class="fa fa-plus"></i> Nueva Solicitud
                 </a>
             </div>
+
+            <!-- Buscador por fechas -->
+            <div class="sol-date-filter-container">
+                <form method="GET" action="mis_solicitudes.php" class="sol-date-filter-form">
+                    <?php if ($estadoFiltro): ?>
+                        <input type="hidden" name="estado" value="<?= htmlspecialchars($estadoFiltro) ?>">
+                    <?php endif; ?>
+                    <div class="filter-group">
+                        <label for="fecha_inicio"><i class="fa-regular fa-calendar"></i> Fecha Inicio:</label>
+                        <input type="date" id="fecha_inicio" name="fecha_inicio" value="<?= htmlspecialchars($_GET['fecha_inicio'] ?? '') ?>" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="fecha_fin"><i class="fa-regular fa-calendar"></i> Fecha Fin:</label>
+                        <input type="date" id="fecha_fin" name="fecha_fin" value="<?= htmlspecialchars($_GET['fecha_fin'] ?? '') ?>" class="filter-input">
+                    </div>
+                    <div class="filter-actions">
+                        <button type="submit" class="filter-btn submit-btn"><i class="fa fa-filter"></i> Filtrar</button>
+                        <?php if (!empty($_GET['fecha_inicio']) || !empty($_GET['fecha_fin'])): ?>
+                            <a href="mis_solicitudes.php<?= $estadoFiltro ? '?estado=' . urlencode($estadoFiltro) : '' ?>" class="filter-btn clear-btn"><i class="fa fa-times"></i> Limpiar</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+
             <div class="sol-tabs">
                 <?php foreach ($tabs as $tabNombre => $tabEstado): 
                     $active = ($estadoFiltro === $tabEstado) ? 'active' : '';
-                    $url = $tabEstado ? "?estado=$tabEstado" : "mis_solicitudes.php";
+                    $queryParams = [];
+                    if ($tabEstado !== '') {
+                        $queryParams['estado'] = $tabEstado;
+                    }
+                    if (!empty($_GET['fecha_inicio'])) {
+                        $queryParams['fecha_inicio'] = $_GET['fecha_inicio'];
+                    }
+                    if (!empty($_GET['fecha_fin'])) {
+                        $queryParams['fecha_fin'] = $_GET['fecha_fin'];
+                    }
+                    $url = "mis_solicitudes.php" . (!empty($queryParams) ? "?" . http_build_query($queryParams) : "");
                 ?>
                     <a href="<?= $url ?>" class="sol-tab <?= $active ?>"><?= $tabNombre ?></a>
                 <?php endforeach; ?>

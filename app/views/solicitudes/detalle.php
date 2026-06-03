@@ -2,6 +2,11 @@
 require_once __DIR__ . '/../../helpers/Session.php';
 Session::requireLogin(['Empleado', 'Almacen']);
 $breadcrumbs = [['label' => 'Detalle de la solicitud']];
+
+$backUrl = 'mis_solicitudes.php';
+if (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], 'revisar_solicitudes.php') !== false) {
+    $backUrl = $_SERVER['HTTP_REFERER'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,7 +135,7 @@ $breadcrumbs = [['label' => 'Detalle de la solicitud']];
         <?php else: ?>
             <p>Solicitud no encontrada.</p>
         <?php endif; ?>
-        <a href="mis_solicitudes.php#" class="detalle-btn-back"><i class="fa fa-arrow-left"></i> Regresar</a>
+        <a href="<?= htmlspecialchars($backUrl) ?>" class="detalle-btn-back"><i class="fa fa-arrow-left"></i> Regresar</a>
     </div>
 <?php include __DIR__ . '/../partials/scripts.php'; ?>
 </body>

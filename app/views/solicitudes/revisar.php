@@ -68,6 +68,13 @@ $nombre = $_SESSION['nombre'] ?? '';
         <i class="fa-solid fa-clipboard-check"></i>
         Solicitudes por Revisar / Entregar
     </div>
+    
+    <!-- Pestañas de navegación -->
+    <div class="sol-tabs">
+        <a href="revisar_solicitudes.php?tab=activas" class="sol-tab <?= $tab === 'activas' ? 'active' : '' ?>">Pendientes / Por Entregar</a>
+        <a href="revisar_solicitudes.php?tab=historial" class="sol-tab <?= $tab === 'historial' ? 'active' : '' ?>">Historial de Entregas</a>
+    </div>
+
     <table class="takab-table">
         <thead>
             <tr>
@@ -110,7 +117,9 @@ $nombre = $_SESSION['nombre'] ?? '';
                                 <i class="fa fa-truck"></i> Entregar
                             </a>
                         <?php else: ?>
-                            <span class="badge badge-gray">-</span>
+                            <a href="solicitud_detalle.php?id=<?= $s['id'] ?>" class="btn-accion ver">
+                                <i class="fa fa-eye"></i> Ver Detalle
+                            </a>
                         <?php endif; ?>
                     </td>
                 </tr>

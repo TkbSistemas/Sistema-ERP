@@ -81,3 +81,32 @@
     .takab-table th, .takab-table td {padding: 7px 6px; font-size: .95rem;}
     .btn-accion {font-size: .95rem; padding: 6px 10px;}
 }
+
+.btn-accion.ver { background: #2563eb; }
+.btn-accion.ver:hover { background: #1741a6; }
+
+/* Estilos de las pestañas */
+.sol-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    margin-top: 15px;
+    border-bottom: 1.5px solid #eef2f8;
+    padding-bottom: 10px;
+}
+.sol-tab {
+    background: #f3f6fb;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #37498e;
+    padding: 9px 28px;
+    border: none;
+    font-size: 1.07rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-decoration: none;
+}
+.sol-tab.active, .sol-tab:hover {
+    background: #e8edfa;
+    color: #1741a6;
+}
