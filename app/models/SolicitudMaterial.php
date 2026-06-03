@@ -41,7 +41,7 @@ class SolicitudMaterial {
         return $solicitud_id;
     }
 
-    public static function historialPorUsuario($usuario_id, $fecha_inicio = null, $fecha_fin = null) {
+    public static function historialPorUsuario($usuario_id, $fecha_inicio = null, $fecha_fin = null, $search = null) {
         $db = Database::getInstance()->getConnection();
         $sql = "SELECT s.*, 
             (SELECT COUNT(*) FROM detalle_solicitud d WHERE d.solicitud_id = s.id) as total_productos
@@ -56,6 +56,11 @@ class SolicitudMaterial {
         if ($fecha_fin) {
             $sql .= " AND DATE(s.fecha_solicitud) <= ?";
             $params[] = $fecha_fin;
+        }
+        if ($search) {
+            $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ?)";
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
         }
 
         $sql .= " ORDER BY s.fecha_solicitud DESC";
@@ -88,17 +93,34 @@ class SolicitudMaterial {
         return $stmt->fetch();
     }
 
-    // Solicitudes pendientes por aprobar para admin/almacén (todas o filtradas por estado)
-    public static function listarPendientes($estados = ['pendiente']) {
+    // Solicitudes pendientes por aprobar para admin/almacén (todas o filtradas por estado, fecha y buscador)
+    public static function listarPendientes($estados = ['pendiente'], $fecha_inicio = null, $fecha_fin = null, $search = null) {
         $db = Database::getInstance()->getConnection();
         $placeholders = implode(',', array_fill(0, count($estados), '?'));
         $sql = "SELECT s.*, u.nombre_completo AS usuario 
                 FROM solicitudes_material s 
                 LEFT JOIN usuarios u ON s.usuario_id = u.id
-                WHERE s.estado IN ($placeholders)
-                ORDER BY s.fecha_solicitud DESC";
+                WHERE s.estado IN ($placeholders)";
+        $params = $estados;
+
+        if ($fecha_inicio) {
+            $sql .= " AND DATE(s.fecha_solicitud) >= ?";
+            $params[] = $fecha_inicio;
+        }
+        if ($fecha_fin) {
+            $sql .= " AND DATE(s.fecha_solicitud) <= ?";
+            $params[] = $fecha_fin;
+        }
+        if ($search) {
+            $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ? OR u.nombre_completo LIKE ?)";
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+        }
+
+        $sql .= " ORDER BY s.fecha_solicitud DESC";
         $stmt = $db->prepare($sql);
-        $stmt->execute($estados);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 

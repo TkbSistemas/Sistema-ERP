@@ -120,6 +120,7 @@
             Session::requireLogin(['Empleado', 'Almacen']);
             $fecha_inicio = !empty($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : null;
             $fecha_fin = !empty($_GET['fecha_fin']) ? $_GET['fecha_fin'] : null;
+            $search = !empty($_GET['search']) ? trim($_GET['search']) : null;
 
             if ($fecha_inicio && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio)) {
                 $fecha_inicio = null;
@@ -128,7 +129,7 @@
                 $fecha_fin = null;
             }
 
-            $solicitudes = SolicitudMaterial::historialPorUsuario($_SESSION['user_id'], $fecha_inicio, $fecha_fin);
+            $solicitudes = SolicitudMaterial::historialPorUsuario($_SESSION['user_id'], $fecha_inicio, $fecha_fin, $search);
             include __DIR__ . '/../views/solicitudes/historial.php';
         }
 
@@ -145,11 +146,32 @@
         {
             Session::requireLogin(['Administrador', 'Almacen']);
             $tab = $_GET['tab'] ?? 'activas';
+            $fecha_inicio = !empty($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : null;
+            $fecha_fin = !empty($_GET['fecha_fin']) ? $_GET['fecha_fin'] : null;
+            $search = !empty($_GET['search']) ? trim($_GET['search']) : null;
+
+            if ($fecha_inicio && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio)) {
+                $fecha_inicio = null;
+            }
+            if ($fecha_fin && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)) {
+                $fecha_fin = null;
+            }
+
             if ($tab === 'historial') {
-                $solicitudes = SolicitudMaterial::listarPendientes(['entregada', 'rechazada', 'cancelada']);
+                $solicitudes = SolicitudMaterial::listarPendientes(
+                    ['entregada', 'entregado', 'rechazada', 'rechazado', 'cancelada', 'cancelado'],
+                    $fecha_inicio,
+                    $fecha_fin,
+                    $search
+                );
             } else {
                 $tab = 'activas';
-                $solicitudes = SolicitudMaterial::listarPendientes(['pendiente', 'aprobada']);
+                $solicitudes = SolicitudMaterial::listarPendientes(
+                    ['pendiente', 'aprobada', 'aprobado'],
+                    $fecha_inicio,
+                    $fecha_fin,
+                    $search
+                );
             }
             include __DIR__ . '/../views/solicitudes/revisar.php';
         }

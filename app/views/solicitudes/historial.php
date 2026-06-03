@@ -221,23 +221,27 @@ $tabs = [
                 </a>
             </div>
 
-            <!-- Buscador por fechas -->
+            <!-- Buscador Avanzado -->
             <div class="sol-date-filter-container">
                 <form method="GET" action="mis_solicitudes.php" class="sol-date-filter-form">
                     <?php if ($estadoFiltro): ?>
                         <input type="hidden" name="estado" value="<?= htmlspecialchars($estadoFiltro) ?>">
                     <?php endif; ?>
                     <div class="filter-group">
-                        <label for="fecha_inicio"><i class="fa-regular fa-calendar"></i> Fecha Inicio:</label>
+                        <label for="search"><i class="fa fa-search"></i> Buscar:</label>
+                        <input type="text" id="search" name="search" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="Nombre de solicitud/motivo..." class="filter-input" style="min-width: 220px;">
+                    </div>
+                    <div class="filter-group">
+                        <label for="fecha_inicio"><i class="fa-regular fa-calendar"></i> Desde:</label>
                         <input type="date" id="fecha_inicio" name="fecha_inicio" value="<?= htmlspecialchars($_GET['fecha_inicio'] ?? '') ?>" class="filter-input">
                     </div>
                     <div class="filter-group">
-                        <label for="fecha_fin"><i class="fa-regular fa-calendar"></i> Fecha Fin:</label>
+                        <label for="fecha_fin"><i class="fa-regular fa-calendar"></i> Hasta:</label>
                         <input type="date" id="fecha_fin" name="fecha_fin" value="<?= htmlspecialchars($_GET['fecha_fin'] ?? '') ?>" class="filter-input">
                     </div>
                     <div class="filter-actions">
-                        <button type="submit" class="filter-btn submit-btn"><i class="fa fa-filter"></i> Filtrar</button>
-                        <?php if (!empty($_GET['fecha_inicio']) || !empty($_GET['fecha_fin'])): ?>
+                        <button type="submit" class="filter-btn submit-btn"><i class="fa fa-filter"></i> Buscar</button>
+                        <?php if (!empty($_GET['fecha_inicio']) || !empty($_GET['fecha_fin']) || !empty($_GET['search'])): ?>
                             <a href="mis_solicitudes.php<?= $estadoFiltro ? '?estado=' . urlencode($estadoFiltro) : '' ?>" class="filter-btn clear-btn"><i class="fa fa-times"></i> Limpiar</a>
                         <?php endif; ?>
                     </div>
@@ -256,6 +260,9 @@ $tabs = [
                     }
                     if (!empty($_GET['fecha_fin'])) {
                         $queryParams['fecha_fin'] = $_GET['fecha_fin'];
+                    }
+                    if (!empty($_GET['search'])) {
+                        $queryParams['search'] = $_GET['search'];
                     }
                     $url = "mis_solicitudes.php" . (!empty($queryParams) ? "?" . http_build_query($queryParams) : "");
                 ?>
