@@ -41,27 +41,34 @@ class SolicitudMaterial {
         return $solicitud_id;
     }
 
-    public static function historialPorUsuario($usuario_id, $fecha_inicio = null, $fecha_fin = null, $search = null) {
+    public static function historialPorUsuario($usuario_id, $filtros = []) {
         $db = Database::getInstance()->getConnection();
+        
         $sql = "SELECT s.*, 
             (SELECT COUNT(*) FROM detalle_solicitud d WHERE d.solicitud_id = s.id) as total_productos
             FROM solicitudes_material s
             WHERE s.usuario_id = ?";
+            
         $params = [$usuario_id];
-
-        if ($fecha_inicio) {
-            $sql .= " AND DATE(s.fecha_solicitud) >= ?";
-            $params[] = $fecha_inicio;
-        }
-        if ($fecha_fin) {
-            $sql .= " AND DATE(s.fecha_solicitud) <= ?";
-            $params[] = $fecha_fin;
-        }
-        if ($search) {
+        
+        if (!empty($filtros['search'])) {
             $sql .= " AND (s.comentario LIKE ? OR s.observacion LIKE ? OR s.tipo_solicitud LIKE ?)";
-            $params[] = '%' . $search . '%';
-            $params[] = '%' . $search . '%';
-            $params[] = '%' . $search . '%';
+            $search = '%' . $filtros['search'] . '%';
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+        if (!empty($filtros['fecha_inicio'])) {
+            $sql .= " AND DATE(s.fecha_solicitud) >= ?";
+            $params[] = $filtros['fecha_inicio'];
+        }
+        if (!empty($filtros['fecha_fin'])) {
+            $sql .= " AND DATE(s.fecha_solicitud) <= ?";
+            $params[] = $filtros['fecha_fin'];
+        }
+        if (!empty($filtros['estado'])) {
+            $sql .= " AND s.estado = ?";
+            $params[] = $filtros['estado'];
         }
 
         $sql .= " ORDER BY s.fecha_solicitud DESC";

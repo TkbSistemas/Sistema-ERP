@@ -1,34 +1,12 @@
 <?php
 require_once __DIR__ . '/../../helpers/Session.php';
-Session::requireLogin(['Empleado', 'Almacen']);
-$breadcrumbs = [['label' => 'Historial de solicitudes']];
-$role = $_SESSION['role'];
-$nombre = $_SESSION['nombre'];
 require_once __DIR__ . '/../../models/SolicitudMaterial.php';
-
-$estadoFiltro = $_GET['estado'] ?? '';
-
-// Agrega productos a cada solicitud (siempre tendrás 'items')
-foreach ($solicitudes as &$s) {
-    $s['items'] = SolicitudMaterial::detalles($s['id']);
-}
-unset($s);
-
-// Filtrar por estado si aplica
-if ($estadoFiltro) {
-    $solicitudes = array_filter($solicitudes, function($s) use ($estadoFiltro) {
-        return strtolower($s['estado']) === strtolower($estadoFiltro);
-    });
-}
-
-
-
-
-require_once __DIR__ . '/../../helpers/Session.php';
 Session::requireLogin(['Empleado', 'Almacen']);
+
 $breadcrumbs = [['label' => 'Historial de solicitudes']];
 $role = $_SESSION['role'];
 $nombre = $_SESSION['nombre'];
+
 $estadoFiltro = $_GET['estado'] ?? '';
 $tabs = [
     'Todas' => '',
@@ -38,7 +16,11 @@ $tabs = [
     'Rechazadas' => 'rechazada',
 ];
 
-
+// Agrega productos a cada solicitud (siempre tendrás 'items')
+foreach ($solicitudes as &$s) {
+    $s['items'] = SolicitudMaterial::detalles($s['id']);
+}
+unset($s);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -329,20 +311,3 @@ $tabs = [
 <?php include __DIR__ . '/../partials/scripts.php'; ?>
 </body>
 </html>
-<?php
-
-// Controlador antes de cargar la vista (historial.php)
-$estadoFiltro = $_GET['estado'] ?? ''; // '' para todas
-$solicitudes = SolicitudMaterial::historialPorUsuario($usuario_id);
-if ($estadoFiltro) {
-    $solicitudes = array_filter($solicitudes, function($s) use ($estadoFiltro) {
-        return strtolower($s['estado']) === strtolower($estadoFiltro);
-    });
-}
-// A cada solicitud, agrega los items/herramientas:
-foreach ($solicitudes as &$sol) {
-    $sol['items'] = SolicitudMaterial::detalles($sol['id']);
-}
-unset($sol);
-
-?>

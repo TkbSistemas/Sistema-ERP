@@ -68,54 +68,6 @@ $nombre = $_SESSION['nombre'] ?? '';
         <i class="fa-solid fa-clipboard-check"></i>
         Solicitudes por Revisar / Entregar
     </div>
-    
-    <!-- Pestañas de navegación -->
-    <div class="sol-tabs">
-        <?php
-        $paramsActivas = ['tab' => 'activas'];
-        $paramsHistorial = ['tab' => 'historial'];
-        if (!empty($_GET['search'])) {
-            $paramsActivas['search'] = $_GET['search'];
-            $paramsHistorial['search'] = $_GET['search'];
-        }
-        if (!empty($_GET['fecha_inicio'])) {
-            $paramsActivas['fecha_inicio'] = $_GET['fecha_inicio'];
-            $paramsHistorial['fecha_inicio'] = $_GET['fecha_inicio'];
-        }
-        if (!empty($_GET['fecha_fin'])) {
-            $paramsActivas['fecha_fin'] = $_GET['fecha_fin'];
-            $paramsHistorial['fecha_fin'] = $_GET['fecha_fin'];
-        }
-        ?>
-        <a href="revisar_solicitudes.php?<?= http_build_query($paramsActivas) ?>" class="sol-tab <?= $tab === 'activas' ? 'active' : '' ?>">Pendientes / Por Entregar</a>
-        <a href="revisar_solicitudes.php?<?= http_build_query($paramsHistorial) ?>" class="sol-tab <?= $tab === 'historial' ? 'active' : '' ?>">Historial de Entregas</a>
-    </div>
-
-    <!-- Buscador Avanzado para Almacén -->
-    <div class="sol-date-filter-container">
-        <form method="GET" action="revisar_solicitudes.php" class="sol-date-filter-form">
-            <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
-            <div class="filter-group">
-                <label for="search"><i class="fa fa-search"></i> Buscar:</label>
-                <input type="text" id="search" name="search" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="Solicitante, motivo, destino..." class="filter-input" style="min-width: 250px;">
-            </div>
-            <div class="filter-group">
-                <label for="fecha_inicio"><i class="fa-regular fa-calendar"></i> Desde:</label>
-                <input type="date" id="fecha_inicio" name="fecha_inicio" value="<?= htmlspecialchars($_GET['fecha_inicio'] ?? '') ?>" class="filter-input">
-            </div>
-            <div class="filter-group">
-                <label for="fecha_fin"><i class="fa-regular fa-calendar"></i> Hasta:</label>
-                <input type="date" id="fecha_fin" name="fecha_fin" value="<?= htmlspecialchars($_GET['fecha_fin'] ?? '') ?>" class="filter-input">
-            </div>
-            <div class="filter-actions">
-                <button type="submit" class="filter-btn submit-btn"><i class="fa fa-filter"></i> Buscar</button>
-                <?php if (!empty($_GET['fecha_inicio']) || !empty($_GET['fecha_fin']) || !empty($_GET['search'])): ?>
-                    <a href="revisar_solicitudes.php?tab=<?= urlencode($tab) ?>" class="filter-btn clear-btn"><i class="fa fa-times"></i> Limpiar</a>
-                <?php endif; ?>
-            </div>
-        </form>
-    </div>
-
     <table class="takab-table">
         <thead>
             <tr>
@@ -158,9 +110,7 @@ $nombre = $_SESSION['nombre'] ?? '';
                                 <i class="fa fa-truck"></i> Entregar
                             </a>
                         <?php else: ?>
-                            <a href="solicitud_detalle.php?id=<?= $s['id'] ?>" class="btn-accion ver">
-                                <i class="fa fa-eye"></i> Ver Detalle
-                            </a>
+                            <span class="badge badge-gray">-</span>
                         <?php endif; ?>
                     </td>
                 </tr>
