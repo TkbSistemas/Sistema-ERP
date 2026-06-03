@@ -204,7 +204,7 @@ unset($s);
             </div>
 
             <!-- Buscador Avanzado -->
-            <div class="sol-date-filter-container">
+            <div class="sol-date-filter-container" style="display: block !important;">
                 <form method="GET" action="mis_solicitudes.php" class="sol-date-filter-form">
                     <?php if ($estadoFiltro): ?>
                         <input type="hidden" name="estado" value="<?= htmlspecialchars($estadoFiltro) ?>">
