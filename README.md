@@ -88,4 +88,5 @@ asigando roles con sus respectivas funcionalidades.
 ## 2. MÓDULO DE INVENTARIO
 ## 3. MÓDULO DE COMPRAS
 ## 4. MÓDULO DE ALMACEN
-## 5. MÓDULO DE BANCOS
+## 5. MÓDULO DE CAPITAL HUMANO
+## 6. MÓDULO DE PROYECTOS
