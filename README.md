@@ -16,10 +16,10 @@ asigando roles con sus respectivas funcionalidades.
 
 ## Arquitectura del Sistema
 
-###Base de Datos Local para Desarrollo
+### Base de Datos Local para Desarrollo
 - **erp_takab**: `Copia de la base de datos diseñada para pruebas en fase de desarrollo`
 
-###Base de Datos Externa
+### Base de Datos Externa
 - **vwEmpleadosTAKAB**: `Vista no editable de los empleados de TAKAB (No implementada aún)`
 - **BDERPTAKAB**: `Base de datos maestra para el sistema alojada en el servidor`
 
@@ -54,7 +54,7 @@ asigando roles con sus respectivas funcionalidades.
 **Endpoint**: ``
 
 **Body Request**:
-- `username`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno´)
+- `username`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
 - `password`: Contraseña de la cuenta.
   
 **Response**:
