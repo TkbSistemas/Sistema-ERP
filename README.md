@@ -27,13 +27,9 @@ asigando roles con sus respectivas funcionalidades.
 
 ## Convenciones de Endpoints
 
-### Nomenclatura de Acciones
-- **obtener**: Consultas SELECT (singular o plural)
-- **insertar**: Crear nuevos registros
-- **actualizar**: Modificar registros existentes
-- **eliminar**: Borrado lógico/físico
-- **validar**: Validaciones de negocio
-- **generar**: Generación de documentos/reportes
+### Validación
+- **Sesión Activa**: Toda página valida si existe una sesión valida activa, de no ser así redirige al Login del sistema.
+- **Vista de Errores**: Toda página evita redireccionar a vistas de errores, se sustituye por una alerta de advertencia.
 
 ---
 
@@ -51,26 +47,26 @@ asigando roles con sus respectivas funcionalidades.
 ## 1. MÓDULO DE INICIO DE SESION
 
 ### 1.1 Obtener inicio de sesión
-**Endpoint**: ``
 
-**Body Request**:
+**Controller**: `AuthController`
+
+**Request**:
 - `username`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
 - `password`: Contraseña de la cuenta.
   
+**Lógica Esperada**:
+- Valida las credenciales para el incio de sesión.
+- Implementa Token de Seguridad.
+- Registra movimiento en la Bitacora del Sistema.
+- Extrae los Datos de la cuenta del usuario desde la DB.
+- Asigna y redirecciona al Dashboard según el rol del usuario.
+
 **Response**:
 ```json
 {
-  "success": true,
-  "data": {
-    "num_expediente": 1001,
-    "nombre": "Juan Pérez González",
-    "genero": "M",
-    "unidad_administrativa": "Dirección General",
-    "puesto": "Gerente de Proyectos",
-    "vigencia_contrato": "Confianza",
-    "fecha_alta": "2020-01-15",
-    "correo_interno": "juan.perez@takab.com"
-  }
+  "id": 101,
+  "nombre": Juan Perez Dominguez,
+  "rol": Administrador
 }
 ```
 
