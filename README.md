@@ -65,10 +65,25 @@ asigando roles con sus respectivas funcionalidades.
 ```json
 {
   "id": 101,
-  "nombre": Juan Perez Dominguez,
-  "rol": Administrador
+  "nombre": "Juan Perez Dominguez",
+  "rol": "Administrador"
 }
 ```
+
+### 1.2 Obtener cierre de sesión
+
+**Controller**: `AuthController`
+  
+**Lógica Esperada**:
+- Destruye la sesión actual.
+- Redirecciona al Login del sistema.
+- Registra movimiento en la Bitacora del Sistema.
+
+### 1.3 Recuperación de contraseñas - No implementado
+
+**Controller**: `AuthController`
+
+---
 
 ## 2. MÓDULO DE INVENTARIO
 ## 3. MÓDULO DE COMPRAS
