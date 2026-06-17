@@ -8,9 +8,9 @@ asigando roles con sus respectivas funcionalidades.
 1. [Arquitectura del Sistema](#arquitectura-del-sistema)
 2. [Convenciones de Endpoints](#convenciones-de-endpoints)
 3. [Módulos del Sistema](#módulos-del-sistema)
-4
-5
-6
+4.
+5.
+6.
 
 ---
 
@@ -36,11 +36,13 @@ asigando roles con sus respectivas funcionalidades.
 ## Módulos del Sistema
 
 ### 1. Inicio de Sesión
-### 2. Administrador
-### 3. Ventas
-### 3. Proyectos
-### 4. Almacen
-### 5. Inventario
+### 2. Inventario
+### 3. Administración RH
+### 4. Comercial
+### 5. Costos y Presupuestos
+### 6. Licitaciones
+### 7. Ejecución de Proyectos
+### 8. Almacén
 
 ---
 
@@ -86,7 +88,34 @@ asigando roles con sus respectivas funcionalidades.
 ---
 
 ## 2. MÓDULO DE INVENTARIO
-## 3. MÓDULO DE COMPRAS
-## 4. MÓDULO DE ALMACEN
-## 5. MÓDULO DE CAPITAL HUMANO
-## 6. MÓDULO DE PROYECTOS
+## 3. MÓDULO DE ADMINISTTRACIÓN RH
+
+### 3.1 Crear Proyecto Nuevo
+
+**Controller**: `AdminController`
+
+**Request**:
+- `nom_proyecto`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
+- `prioridad`: Contraseña de la cuenta.
+  
+**Lógica Esperada**:
+- Valida las credenciales para el incio de sesión.
+- Implementa Token de Seguridad.
+- Registra movimiento en la Bitacora del Sistema.
+- Extrae los Datos de la cuenta del usuario desde la DB.
+- Asigna y redirecciona al Dashboard según el rol del usuario.
+
+**Response**:
+```json
+{
+  "id": 101,
+  "nombre": "Juan Perez Dominguez",
+  "rol": "Administrador"
+}
+```
+
+## 4. MÓDULO DE COMERCIAL
+## 5. MÓDULO DE COSTOS Y PRESUPUESTOS
+## 6. MÓDULO DE LICITACIONES
+## 7. MÓDULO DE EJECUCIÓN DE PROYECTOS
+## 8. MÓDULO DE ALMACÉN
