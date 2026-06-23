@@ -121,7 +121,7 @@ class ReporteController
             'proveedor_id'     => $proveedorFiltro ? (string) $proveedorFiltro : '',
         ];
 
-        include __DIR__ . '/../views/reportes/index.php';
+        include __DIR__ . '/../views/inventario/reportes/index.php';
     }
 
     private function parseDate(string $value): string
@@ -815,7 +815,7 @@ class ReporteController
 
         $almacenes        = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $tiposDisponibles = Producto::tiposDisponibles();
-        include __DIR__ . '/../views/reportes/rotacion.php';
+        include __DIR__ . '/../views/inventario/reportes/rotacion.php';
     }
 
     /**

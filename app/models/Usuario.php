@@ -60,16 +60,20 @@ class Usuario {
         return $stmt->execute($params);
     }
 
-    public static function delete(int $id): bool
-{
-    $db = Database::getInstance()->getConnection();
-    $stmt = $db->prepare("DELETE FROM usuarios WHERE id = ?");
-    return $stmt->execute([$id]);
-}
+    public static function delete(int $id): bool{
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("DELETE FROM usuarios WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
 
     public static function setActive($id, $active) {
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("UPDATE usuarios SET activo=? WHERE id=?");
         return $stmt->execute([$active ? 1 : 0, $id]);
+    }
+
+    public static function upgradePasswordHash($hash) { 
+        // Verifica si el hash necesita ser actualizado al algoritmo actual
+        return password_needs_rehash($hash, PASSWORD_DEFAULT);
     }
 }

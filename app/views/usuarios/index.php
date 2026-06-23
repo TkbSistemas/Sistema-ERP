@@ -22,7 +22,7 @@ $csrfToken = Session::csrfToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Usuarios - TAKAB</title>
-    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .alert-banner {display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:10px;margin-bottom:22px;font-weight:600;box-shadow:0 4px 18px rgba(19,39,89,0.08);} 

@@ -234,37 +234,51 @@ body {
 }
 
 .input-wrap {
-    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .input-wrap i {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
     color: #64748b;
-    font-size: 0.95rem;
+    padding: 10px;
+}
+
+.input-wrap button{
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    justify-content: center;
 }
 
 .input-wrap input {
     width: 100%;
-    border: 1px solid #cbd5e1;
-    background: #fff;
-    border-radius: 10px;
-    padding: 12px 12px 12px 36px;
-    font-size: 0.95rem;
-    color: #0f172a;
+    border: none;
+    padding: 12px;
     outline: none;
-    transition: border-color .2s ease, box-shadow .2s ease;
+    background: transparent;
+    flex-grow: 1; /* Hace que el input use todo el espacio del centro */
+    font-size: 16px;
+    color: #333
 }
 
 .input-wrap input::placeholder {
     color: #94a3b8;
 }
 
-.input-wrap input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+.input-wrap:focus-within {
+  border-color: #007bff; /* Color azul de enfoque */
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15); /* Efecto de brillo */
 }
 
 .login-links {
@@ -290,7 +304,8 @@ body {
     width: 100%;
     border: none;
     border-radius: 999px;
-    padding: 12px 16px;
+    margin-top: 8px;
+    padding: 16px 12px 16px;
     background: linear-gradient(90deg, #223f99, #2d4fb7);
     color: #fff;
     font-size: 1rem;
@@ -307,6 +322,20 @@ body {
 
 .btn-login:active {
     transform: translateY(0);
+}
+
+.btn-toggle-password {
+    width: 10%;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 16px;
+    background: linear-gradient(90deg, #223f99, #2d4fb7);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    box-shadow: 0 10px 24px rgba(34, 63, 153, 0.22);
 }
 
 .login-test-users {

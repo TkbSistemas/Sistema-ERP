@@ -4,7 +4,7 @@ require_once __DIR__ . '/../helpers/Database.php';
 
 class DashboardController
 {
-    public function index(): void
+    public function obtenerDashboardAdmin(): void
     {
         Session::requireLogin();
 
@@ -36,7 +36,7 @@ class DashboardController
                 break;
         }
 
-        include __DIR__ . '/../views/dashboard/index.php';
+        include __DIR__ . '/../views/administrador/dashboard_admin.php';
     }
 
     private function datosGenerales($db): array
@@ -71,8 +71,7 @@ class DashboardController
         return $datos;
     }
 
-    private function datosAlmacen($db): array
-    {
+    private function datosAlmacen($db): array{
         $datos = $this->datosGenerales($db);
 
         $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
@@ -85,8 +84,7 @@ class DashboardController
         return $datos;
     }
 
-    private function datosEmpleado($db, int $userId): array
-    {
+    private function datosEmpleado($db, int $userId): array{
         $solicitudesEnviadas  = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE usuario_id = {$userId}")->fetchColumn();
         $pendientesAprobacion = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE usuario_id = {$userId} AND estado = 'pendiente'")->fetchColumn();
         $entregadas           = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE usuario_id = {$userId} AND estado = 'entregada'")->fetchColumn();

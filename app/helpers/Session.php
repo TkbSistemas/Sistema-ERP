@@ -1,5 +1,9 @@
 <?php
 class Session {
+    public const R_ADMIN = 'Administrador';
+    public const R_ALMACEN = 'Almacen';
+    public const R_EMPLEADO = 'Empleado';
+
     public static function start(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_name(self::cookieName());
@@ -29,7 +33,7 @@ class Session {
 
     public static function user(): ?array {
         self::start();
-        if (!isset($_SESSION['user_id'])) {
+        if (!isset($_SESSION['user_id'])) { //Comprobar si el usuario ha iniciado sesión
             return null;
         }
 
@@ -90,8 +94,8 @@ class Session {
     }
 
     public static function url(string $path = ''): string {
-        $base = self::cookiePath();
-        if ($path === '') {
+        $base = self::cookiePath(); 
+        if ($path === '') { 
             return $base;
         }
 
@@ -101,10 +105,6 @@ class Session {
 
         return $base . ltrim($path, '/');
     }
-
-    public const R_ADMIN = 'Administrador';
-    public const R_ALMACEN = 'Almacen';
-    public const R_EMPLEADO = 'Empleado';
 
     private static function cookiePath(): string {
         $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/';

@@ -10,7 +10,7 @@ class PrestamoController
     {
         Session::requireLogin(['Administrador', 'Almacen']);
         $prestamos = Prestamo::pendientes();
-        include __DIR__ . '/../views/prestamos/pendientes.php';
+        include __DIR__ . '/../views/inventario/prestamos/pendientes.php';
     }
 
     // Registrar devolucion (formulario)
@@ -21,7 +21,7 @@ class PrestamoController
         $msg      = '';
         if (! $prestamo || $prestamo['estado'] !== 'Prestado') {
             $msg = 'Este prestamo no esta pendiente de devolucion o no existe.';
-            include __DIR__ . '/../views/prestamos/devolver.php';
+            include __DIR__ . '/../views/inventario/prestamos/devolver.php';
             return;
         }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -36,7 +36,7 @@ class PrestamoController
                 $prestamo = Prestamo::find($id);
             }
         }
-        include __DIR__ . '/../views/prestamos/devolver.php';
+        include __DIR__ . '/../views/inventario/prestamos/devolver.php';
     }
 
     // Historial completo
@@ -61,6 +61,6 @@ class PrestamoController
         $total      = Prestamo::totalHistorial($busqueda, $filtros);
         $totalPages = (int) ceil(($total ?: 0) / $porPagina);
 
-        include __DIR__ . '/../views/prestamos/historial.php';
+        include __DIR__ . '/../views/inventario/prestamos/historial.php';
     }
 }

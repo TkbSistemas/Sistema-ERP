@@ -10,8 +10,8 @@ $nombre = $_SESSION['nombre'] ?? '';
 <head>
     <meta charset="UTF-8">
     <title>Solicitudes por Revisar / Entregar | TAKAB</title>
-    <link rel="stylesheet" href="/assets/css/solicitudes-revisar.css">
-    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/solicitudes-revisar.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>

@@ -48,7 +48,7 @@ class Navigation
         'inventario'          => [
             'label' => 'Inventario',
             'icon'  => 'fa-solid fa-list-check',
-            'href'  => 'inventario_actual.php',
+            'href'  => 'inventario_actual',
             'roles' => ['Administrador', 'Almacen', 'Compras'],
         ],
         'prestamos'           => [

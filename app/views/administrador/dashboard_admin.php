@@ -7,7 +7,7 @@ $alertas = $datos['alertas'] ?? [];
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard - TAKAB</title>
+    <title>TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css"> 
     <link rel="stylesheet" href="assets/css/dashboard_custom.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -22,41 +22,43 @@ $alertas = $datos['alertas'] ?? [];
             <div class="login-logo"><img src="assets/images/icono_takab.png" alt="logo_TAKAB" width="90" height="55"></div>
             <div>
                 <div class="sidebar-title">TAKAB</div>
-                <div class="sidebar-desc">Inventario y almacén</div>
+                <div class="sidebar-desc">ERP Takab</div>
             </div>
         </div>
         <nav class="sidebar-nav">
             <?php if ($role === 'Administrador'): ?>
                 <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual.php" ><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="prestamos_pendientes.php" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
-                <a href="reportes_rotacion.php" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
-                <a href="revisar_solicitudes.php"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
-                <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
+                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
+                <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
+                <a href="prestamos" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
+                <a href="rotacion_inventario" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
+                <a href="revisar_solicitudes"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
+                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
                 <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
+                <a href="gestion_usuarios"><i class="fa-solid fa-book"></i> Gestión de Usuarios</a>
             <?php elseif ($role === 'Almacen'): ?>
                 <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual.php" ><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="prestamos_pendientes.php" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
-                <a href="reportes_rotacion.php" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
-                <a href="revisar_solicitudes.php"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
-                <a href="mis_solicitudes.php"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
-                <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
+                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
+                <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
+                <a href="prestamos" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
+                <a href="rotacion_inventario" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
+                <a href="revisar_solicitudes"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
+                <a href="mis_solicitudes"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
+                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
                 <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
             <?php elseif ($role === 'Compras'): ?>
                 <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="productos.php"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual.php" ><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
+                <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
+                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
                 <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>  
             <?php elseif ($role === 'Empleado'): ?>
                 <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="solicitudes_crear.php"><i class="fa-solid fa-plus-square"></i> Solicitar Material</a>
-                <a href="mis_solicitudes.php"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
+                <a href="solicitudes_crear"><i class="fa-solid fa-plus-square"></i> Solicitar Material</a>
+                <a href="mis_solicitudes"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
             <?php endif; ?>
             <a href="logout.php"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</a>
         </nav>
@@ -235,9 +237,14 @@ $alertas = $datos['alertas'] ?? [];
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
+            // Añade o quita la clase '.collapsed' al menú
             console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
+            
+            // Añade o quita la clase '.collapsed' al contenido para que se estire
             mainContent.classList.toggle('collapsed');
+            
+            // Opcional: Cambia el icono de barras (三) a una equis (X) cuando abra/cierre
             const icon = toggleBtn.querySelector('i');
             if (icon) {
                 if (sidebar.classList.contains('collapsed')) {

@@ -81,7 +81,7 @@ class ProductoController
             unset($_SESSION['productos_import']);
         }
 
-        include __DIR__ . '/../views/productos/index.php';
+        include __DIR__ . '/../views/inventario/productos/gestion_productos.php';
     }
 
     public function create()
@@ -140,7 +140,7 @@ class ProductoController
             $error = implode(PHP_EOL, $errors);
         }
 
-        include __DIR__ . '/../views/productos/create.php';
+        include __DIR__ . '/../views/inventario/productos/create.php';
     }
 
     public function edit($id)
@@ -203,7 +203,7 @@ class ProductoController
 
         $error = empty($errors) ? '' : implode(PHP_EOL, $errors);
 
-        include __DIR__ . '/../views/productos/edit.php';
+        include __DIR__ . '/../views/inventario/productos/edit.php';
     }
     public function view($id)
     {
@@ -212,7 +212,7 @@ class ProductoController
         if (! $producto) {
             die('Producto no encontrado.');
         }
-        include __DIR__ . '/../views/productos/view.php';
+        include __DIR__ . '/../views/inventario/productos/view.php';
     }
 
     public function etiqueta($id)
@@ -276,7 +276,7 @@ class ProductoController
             }
         }
 
-        include __DIR__ . '/../views/productos/etiqueta.php';
+        include __DIR__ . '/../views/inventario/productos/etiqueta.php';
     }
 
     public function buscarCodigoBarras()
@@ -312,7 +312,7 @@ class ProductoController
             $error = 'No se encontro producto con ese codigo de barras.';
         }
 
-        include __DIR__ . '/../views/productos/buscar_codigo.php';
+        include __DIR__ . '/../views/inventario/productos/buscar_codigo.php';
     }
 
     public function delete($id)

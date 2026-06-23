@@ -8,8 +8,12 @@
 
     class InventarioController
     {
-        public function entrada()
+        public function obtenerVistaInventario()
         {
+            include __DIR__ . '/../views/inventario/main/actual.php';
+        }
+
+        public function crearEntrada(){
             Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
             $productos     = Producto::all();
@@ -30,7 +34,7 @@
 
                     try {
                         $db->beginTransaction();
-
+    
                         foreach ($entradaItems as $indice => $linea) {
                             $productoId = (int) ($linea['producto_id'] ?? 0);
                             $almacenId  = (int) ($linea['almacen_id'] ?? 0);
@@ -82,7 +86,7 @@
 
             $movimientosRecientes = MovimientoInventario::ultimos('Entrada', 6);
 
-            include __DIR__ . '/../views/inventario/entrada.php';
+            include __DIR__ . '/../views/inventario/main/entrada.php';
         }
 
         private function normalizarLineasEntrada(array $post): array
@@ -125,7 +129,7 @@
             return $lineas;
         }
 
-        public function salida()
+        public function crearSalida()
         {
             Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
@@ -210,7 +214,7 @@
 
             $movimientosRecientes = MovimientoInventario::ultimos('Salida', 6);
 
-            include __DIR__ . '/../views/inventario/salida.php';
+            include __DIR__ . '/../views/inventario/main/salida.php';
         }
 
         private function normalizarLineasSalida(array $post): array
@@ -387,6 +391,6 @@
                 }
             }
 
-            include __DIR__ . '/../views/inventario/actual.php';
+            include __DIR__ . '/../views/inventario/main/dashboard_inventario.php';
         }
 }

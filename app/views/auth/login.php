@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - TAKAB</title>
-    <link rel="stylesheet" href="assets/css/login2.css">
+    <title>INICIO DE SESIÓN - TAKAB</title>
+    <link rel="stylesheet" href="assets/css/login2.css"> 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://kit.fontawesome.com/8b82fe7e0b.js" crossorigin="anonymous"></script>
     <style>
         body {
             color: var(--white);
-            background: url('assets/images/edificios20.jpg') center center / cover no-repeat fixed;
+            background: url('assets/images/edificios20.jpg') center center / cover no-repeat fixed; 
+            /* background: url('/../../public/assets/images/edificios20.jpg') center center / cover no-repeat fixed;*/
         }
     </style>
 </head>
 <body>
 <?php
+
     $moduleLabels = [
         'nomina' => 'Nómina',
         'contabilidad' => 'Contabilidad',
@@ -39,6 +42,7 @@
                 <div class="portal-brand-row">
                     <div class="brand-logo-block" aria-hidden="true">
                         <img src="assets/images/icono_takab.png" alt="TAKAB" class="brand-logo-img">
+                        <!-- <img src="/../../public/assets/images/icono_takab.png" alt="TAKAB" class="brand-logo-img">  -->
                     </div>
 
                     <div class="brand-separator"></div>
@@ -60,18 +64,25 @@
         <aside class="login-panel">
             <div class="login-panel-inner">
                <div class="login-header">
-                        <h2>Iniciar sesión</h2>
+                        <h2>INICIO DE SESIÓN</h2>
                         <p>Ingresa tus credenciales para acceder al sistema.</p>
                 </div>
 
-                <?php if (isset($error)): ?>
-                    <div class="login-alert">
-                        <i class="fa-solid fa-circle-exclamation"></i>
-                        <span><?= htmlspecialchars($error); ?></span>
-                    </div>
+                <?php if (isset($_SESSION['alerta'])): ?>
+                    <script>
+                        Swal.fire({
+                            icon: '<?php echo $_SESSION['alerta']['tipo']; ?>',
+                            title: '<?php echo $_SESSION['alerta']['titulo']; ?>',
+                            text: '<?php echo $_SESSION['alerta']['mensaje']; ?>',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    </script>
+                    <?php 
+                        unset($_SESSION['alerta']); 
+                    ?>
                 <?php endif; ?>
 
-                <form method="POST" action="<?= htmlspecialchars(Session::url('login.php')); ?>" class="login-form">
+                <form method="POST" action="<?= htmlspecialchars(Session::url('login')); ?>" class="login-form">
                         <?php if ($moduleKey): ?>
                             <input type="hidden" name="module" value="<?= htmlspecialchars($moduleKey); ?>">
                         <?php endif; ?>
@@ -92,26 +103,26 @@
                             <div class="input-wrap">
                                 <i class="fa-solid fa-lock"></i>
                                 <input type="password" id="password" name="password" required placeholder="Ingresa tu contraseña">
+                                <button type="button" id="togglePassword" aria-label="Mostrar contraseña">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
                             </div>
                         </div>
 
                        <div class="login-links">
-                          <a class="text-link" href="<?= htmlspecialchars(Session::url('index.php')); ?>">Volver al inicio</a> 
+                          <a class="text-link" href="<?= htmlspecialchars(Session::url('index')); ?>">Volver al inicio</a> 
                             <a class="text-link" href="<?= htmlspecialchars(Session::url('forgot.php')); ?>">Olvidé mi contraseña</a>
                         </div>
 
                     <button type="submit" class="btn-login">Iniciar sesión</button>
                 </form>
-
-                <details class="login-test-users">
+                
+                <!--details class="login-test-users">
                     <summary>Usuarios de prueba</summary>
                     <ul>
                         <li><b>Admin:</b> admin / 123456</li>
-                        <li><b>Almacén:</b> almacen / 123456</li>
-                        <li><b>Empleado:</b> luis / 123456</li>
-                        <li><b>Empleado prueba:</b> mau / 123456</li>
                     </ul>
-                </details>
+                </details-->
             </div>
         </aside>
     </section>

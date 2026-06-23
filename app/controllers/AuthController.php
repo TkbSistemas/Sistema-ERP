@@ -2,20 +2,29 @@
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../helpers/Session.php';
 
-Session::start();
+Session::start(); //Se ejecuta al inicio para asegurar que la sesión esté disponible en toda la aplicación
 
 class AuthController
 {
-    public function login()
-    {
-        if (Session::user() !== null && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $next = $this->sanitizeNext($_GET['next'] ?? null);
-            if ($next) {
+    public function login(){
+        $rol = null;
+        if (Session::user() !== null && $_SERVER['REQUEST_METHOD'] !== 'POST') { // Si ya hay sesión y no es un intento de login, redirigir al menú principal
+            $next = $this->sanitizeNext($_GET['next'] ?? null); // Soportar redireccion post-login cuando una pagina protegida manda ?next=...
+            if ($next) { //
                 header('Location: ' . Session::url($next));
                 exit();
             }
-            header('Location: ' . Session::url('menu.php'));
-            exit();
+            $user = Session::user();
+            $rol = $user['role'] ?? '';
+            if ($rol === 'Administrador') {
+                header('Location: ' . Session::url('dashboard_admin'));
+                exit();
+            }
+            console.log('ROL: ' + $rol);
+            if ($rol === null) {
+                header('Location: ' . Session::url('menu'));
+                exit();
+            }
         }
 
         $allowedModules = ['nomina', 'rh', 'gestion_usuarios', 'contabilidad', 'bancos', 'compras', 'inventario', 'ventas', 'proyectos', 'clientes'];
@@ -25,6 +34,7 @@ class AuthController
         }
 
         // Soportar redireccion post-login cuando una pagina protegida manda ?next=...
+        //next significa a donde se redirige despues de iniciar sesion, se valida que sea un path relativo y no una URL externa para evitar redireccionamientos maliciosos
         $next = $_GET['next'] ?? $_POST['next'] ?? null;
         $next = $this->sanitizeNext($next);
 
@@ -32,6 +42,7 @@ class AuthController
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
             $user = Usuario::findByUsername($username);
+            $rol = $user['role'] ?? '';
 
             if ($user && $this->credentialsMatch($user, $password)) {
                 Session::regen();
@@ -46,18 +57,21 @@ class AuthController
                     header('Location: ' . Session::url($redirect));
                     exit();
                 }
-                header('Location: ' . Session::url('menu.php'));
+                if ($rol === 'Administrador') {
+                    header('Location: ' . Session::url('dashboard_admin'));
+                    exit();
+                }
+                header('Location: ' . Session::url('menu'));
                 exit();
             }
 
             $error = 'Usuario o contrasena incorrectos.';
         }
 
-        include __DIR__ . '/../views/auth/login.php';
+        include __DIR__ . '/../views/auth/login.php'; // Mostrar el formulario de login, con posible mensaje de error
     }
 
-    private function routeByModule(string $module): string
-    {
+    private function routeByModule(string $module): string{
         switch ($module) {
             case 'nomina':
                 return 'nomina.php';
@@ -84,8 +98,7 @@ class AuthController
         }
     }
 
-    private function sanitizeNext($next): ?string
-    {
+    private function sanitizeNext($next): ?string{
         if (!$next || !is_string($next)) {
             return null;
         }
@@ -110,8 +123,7 @@ class AuthController
         return $file . (isset($parts[1]) ? ('?' . $parts[1]) : '');
     }
 
-    private function credentialsMatch(array $user, string $password): bool
-    {
+    private function credentialsMatch(array $user, string $password): bool{
         $storedPassword = (string) ($user['password'] ?? '');
         if ($storedPassword === '' || $password === '') {
             return false;
@@ -132,15 +144,21 @@ class AuthController
         return false;
     }
 
-    public function logout()
-    {
+    public function logout(){
         Session::logout();
-        header('Location: ' . Session::url('index.php'));
+        include __DIR__ . '/../views/inicio_sesion/inicio.php';
         exit();
     }
 
-    public function forgotPassword()
-    {
+    public function index(){
+        include __DIR__ . '/../views/inicio_sesion/inicio.php';
+    }
+
+    public function obtenerDashboardAdmin(){
+        include __DIR__ . '/../views/administrador/dashboard_admin.php';
+    }
+
+    public function forgotPassword(){
         $mensaje = '';
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
