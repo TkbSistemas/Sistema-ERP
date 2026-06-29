@@ -240,21 +240,35 @@ asigando roles con sus respectivas funcionalidades.
 - Incluye la acción de extender el plazo en el caso de los prestamos activos.
 
 
-### 8.5 Obtener Préstamos de Herramientas
+### 8.5 Obtener Cajas de Herramientas
 
 **Controller**: `AlmacenController`
 
-**View**: `prestamos_herramientas`
-
-**Request**:
-- `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
-- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Día Actual).
+**View**: `cajas_herramientas`
 
 **Lógica Esperada**:
-- Muestra tarjetas de resumen (Prestamos Activos, Pendientes y Vencidos).
-- Despliega caja de búsqueda con filtros para las solicitudes.
-- Lista los prestamos activos, con fecha vigente.
-- Lista los prestamos pendientes de autorizar y entregar.
-- Lista los prestamos vencidos, con fecha vencida y sin regresar.
-- Lista historial de todas las solicitudes con su estado (Entrgada/Rechazadas).
-- Incluye la acción de extender el plazo en el caso de los prestamos activos.
+- Muestra tarjetas de resumen (Cajas Incompletas, Cajas Disponibles, Ultimo Inventario).
+- Lista todas las cajas de herramientas, muestra estatus, piezas faltantes, categoria.
+- Genera un inventario de los elementos que contiene cada caja, dando opción de imprimir formato.
+  
+
+### 8.6 Crear Baja de Productos
+
+**Controller**: `AlmacenController`
+
+**View**: `baja_productos`
+
+**Lógica Esperada**:
+- Muestra formulario para buscar/seleccionar los materiales a dar de baja (Nombre, Cantidad, Razón, Fecha, etc).
+- Genera formato de impresión con la lista de seleccionados (Campo de firma de autorización).
+
+
+### 8.7 Crear Etiquetas
+
+**Controller**: `AlmacenController`
+
+**View**: `etiquetas`
+
+**Lógica Esperada**:
+- Muestra formulario para buscar/seleccionar los materiales a imprimir su etiqueta.
+- Genera formato de impresión con la lista de etiquetas seleccionadas, con el formato según se necesite.
