@@ -48,7 +48,7 @@ asigando roles con sus respectivas funcionalidades.
 
 ## 1. MÓDULO DE INICIO DE SESION
 
-### 1.1 Obtener inicio de sesión
+### 1.1 Obtener Inicio de Sesión
 
 **Controller**: `AuthController`
 
@@ -72,7 +72,7 @@ asigando roles con sus respectivas funcionalidades.
 }
 ```
 
-### 1.2 Obtener cierre de sesión
+### 1.2 Obtener Cierre de Sesión
 
 **Controller**: `AuthController`
   
@@ -88,6 +88,52 @@ asigando roles con sus respectivas funcionalidades.
 ---
 
 ## 2. MÓDULO DE INVENTARIO
+
+### 2.1 Obtener Dashboard del Inventario
+
+**Controller**: `InventarioController`
+
+**View**: `dashboard_inventario`
+
+**Request**:
+- `role`: Rol de usuario que está ingresando.
+  
+**Lógica Esperada**:
+- Muestra tarjetas de resumen (Productos Registrados,Stock Bajo).
+- Muestra tarjeta que suma el valor total del inventario solo cuando el rol es Administrador.
+- Despliega caja de búsqueda con filtros para el inventario.
+- Lista de el inventario de acuerdo a los filtros elegidos, incluye paginación.
+- Al momento de listar la tabla cuenta con el campo "valor" solo cuando el rol es Administrador.
+
+
+### 2.2 Agregar al Catálogo de Productos
+
+**Controller**: `InventarioController`
+
+**View**: `catalogo_productos`
+  
+**Lógica Esperada**:
+- Despliega caja de búsqueda con filtros para el catalogo.
+- Lista de el catalogo de acuerdo a los filtros elegidos, incluye paginación.
+- Implementa acciones en la lista (Editar, Desactivar y Eliminar).
+- Incluye sistema de importación y exportación a formato csv.
+- Despliega formulario completo para registrar un nuevo tipo de producto (Información General, Dimensiones y Peso, Inventario y Costos, Imagenes y Archivos).
+
+
+### 2.3 Obtener Rotación de Inventario
+
+**Controller**: `InventarioController`
+
+**View**: `reportes_rotacion`
+
+**Request**:
+- `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
+- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Fin de mes).
+  
+**Lógica Esperada**:
+- Despliega caja de búsqueda con filtros para los movimientos.
+- Lista solo de los productos con movimiento de acuerdo a los filtros elegidos, incluye paginación.
+
 ## 3. MÓDULO DE ADMINISTTRACIÓN RH
 
 ### 3.1 Crear Proyecto Nuevo
@@ -119,3 +165,8 @@ asigando roles con sus respectivas funcionalidades.
 ## 6. MÓDULO DE LICITACIONES
 ## 7. MÓDULO DE EJECUCIÓN DE PROYECTOS
 ## 8. MÓDULO DE ALMACÉN
+
+**Lógica Esperada**:
+- Muestra tarjetas de resumen (Solicitudes de Material Pendientes, Ordenes de Compra, Stock Bajo).
+- Lista los ultimos n movimientos del inventario ya sea entradas o salidas.
+- Despliega alertas del sistema, de momento solo las correspondientes al stock bajo y prestamos vencido.
