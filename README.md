@@ -146,7 +146,7 @@ asigando roles con sus respectivas funcionalidades.
 **Request**:
 - `role`: Rol de usuario (Esta función es exclusiva para Administrador).
 - `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
-- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Fin de mes).
+- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Día Actual).
   
 **Lógica Esperada**:
 - Despliega caja de filtros para las estadisticas.
@@ -186,7 +186,75 @@ asigando roles con sus respectivas funcionalidades.
 ## 7. MÓDULO DE EJECUCIÓN DE PROYECTOS
 ## 8. MÓDULO DE ALMACÉN
 
+### 8.1 Obtener Dashboard del Almacen
+
+**Controller**: `AlmacenController`
+
+**View**: `dashboard_almacen`
+
+**Request**:
+- `role`: Rol de usuario que está ingresando.
+
 **Lógica Esperada**:
 - Muestra tarjetas de resumen (Solicitudes de Material Pendientes, Ordenes de Compra, Stock Bajo).
 - Lista los ultimos n movimientos del inventario ya sea entradas o salidas.
 - Despliega alertas del sistema, de momento solo las correspondientes al stock bajo y prestamos vencido.
+
+
+### 8.2 Obtener Solicitudes de Material
+
+**Controller**: `AlmacenController`
+
+**View**: `solicitudes_material`
+
+**Request**:
+- `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
+- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Día Actual).
+
+**Lógica Esperada**:
+- Muestra tarjetas de resumen (Solicitudes de Material Pendientes).
+- Despliega caja de búsqueda con filtros para las solicitudes.
+- Lista las ultimas n solicitudes de material pendientes.
+- Lista historial de todas las solicitudes con su estado (Entregadas/Rechazadas).
+
+
+### 8.3 Crear Entrada de Material
+
+### 8.4 Obtener Préstamos de Herramientas
+
+**Controller**: `AlmacenController`
+
+**View**: `prestamos_herramientas`
+
+**Request**:
+- `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
+- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Día Actual).
+
+**Lógica Esperada**:
+- Muestra tarjetas de resumen (Prestamos Activos, Pendientes y Vencidos).
+- Despliega caja de búsqueda con filtros para las solicitudes.
+- Lista los prestamos activos, con fecha vigente.
+- Lista los prestamos pendientes de autorizar y entregar.
+- Lista los prestamos vencidos, con fecha vencida y sin regresar.
+- Lista historial de todas las solicitudes con su estado (Entrgada/Rechazadas).
+- Incluye la acción de extender el plazo en el caso de los prestamos activos.
+
+
+### 8.5 Obtener Préstamos de Herramientas
+
+**Controller**: `AlmacenController`
+
+**View**: `prestamos_herramientas`
+
+**Request**:
+- `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
+- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Día Actual).
+
+**Lógica Esperada**:
+- Muestra tarjetas de resumen (Prestamos Activos, Pendientes y Vencidos).
+- Despliega caja de búsqueda con filtros para las solicitudes.
+- Lista los prestamos activos, con fecha vigente.
+- Lista los prestamos pendientes de autorizar y entregar.
+- Lista los prestamos vencidos, con fecha vencida y sin regresar.
+- Lista historial de todas las solicitudes con su estado (Entrgada/Rechazadas).
+- Incluye la acción de extender el plazo en el caso de los prestamos activos.
