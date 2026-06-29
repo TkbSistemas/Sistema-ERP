@@ -52,6 +52,8 @@ asigando roles con sus respectivas funcionalidades.
 
 **Controller**: `AuthController`
 
+**View**: `login`
+
 **Request**:
 - `username`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
 - `password`: Contraseña de la cuenta.
@@ -134,7 +136,25 @@ asigando roles con sus respectivas funcionalidades.
 - Despliega caja de búsqueda con filtros para los movimientos.
 - Lista solo de los productos con movimiento de acuerdo a los filtros elegidos, incluye paginación.
 
-## 3. MÓDULO DE ADMINISTTRACIÓN RH
+
+### 2.4 Obtener Reportes de Inventario
+
+**Controller**: `InventarioController`
+
+**View**: `reportes_inventario`
+
+**Request**:
+- `role`: Rol de usuario (Esta función es exclusiva para Administrador).
+- `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
+- `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Fin de mes).
+  
+**Lógica Esperada**:
+- Despliega caja de filtros para las estadisticas.
+- Muestra con graficas de barras un historico del valor del inventario.
+- Muestra con grafica de pastel como se reparte el valor del inventario entre las distintas categorías.
+
+
+## 3. MÓDULO DE ADMINISTRACIÓN RH
 
 ### 3.1 Crear Proyecto Nuevo
 
