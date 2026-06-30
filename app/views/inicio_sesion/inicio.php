@@ -31,7 +31,7 @@ if (isset($_SESSION['user_id'])) {
                 <div class="inicio-title">Bienvenido al 
                     <br> ERP TAKAB
                 </div>
-                <div class="inicio-desc">Inicia sesión para acceder al sistema.</div> 
+                <div class="inicio-desc">Inicia Sesión para Acceder al Sistema.</div> 
                 <a href="login" class="inicio-btn"><i class="fa-solid fa-right-to-bracket"></i> Iniciar sesión</a> 
                 <footer>
                     <div>

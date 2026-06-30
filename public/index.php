@@ -21,17 +21,33 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         (new AuthController())->index();
         break;
+    case 'logout':
+        require_once __DIR__ . '/../app/controllers/AuthController.php';
+        (new AuthController())->logout();
+        break;
     //Rutas para el Administrador
     case 'dashboard_admin':
         require_once __DIR__ . '/../app/controllers/DashboardController.php';
         (new DashboardController())->obtenerDashboardAdmin();
         break;
     //Rutas para el Inventario
-    case 'inventario_actual':
+    case 'inventario':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->actual();
         break;
+    case 'catalogo_productos':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->obtenerCatalogo();
+        break;
+    case 'producto_nuevo':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->crearProducto();
+        break;
     case 'inventario_entrada':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->crearEntrada();
+        break;
+    case 'ajustes':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearEntrada();
         break;
@@ -39,13 +55,22 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearSalida();
         break;
-    case 'gestion_productos':
-        require_once __DIR__ . '/../app/controllers/ProductoController.php';
-        (new ProductoController())->index();
+    //Rutas para el Almacén
+    case 'dashboard_almacen':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->obtenerDashboardAlmacen();
         break;
-    case 'prestamos':
-        require_once __DIR__ . '/../app/controllers/PrestamoController.php';
-        (new PrestamoController())->pendientes();
+    case 'solicitudes_material':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->obtenerSolicitudes();
+        break;
+    case 'etiquetas':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->crearEtiquetas();
+        break;
+    case 'prestamos_herramientas':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->pendientes();
         break;
     case 'rotacion_inventario':
         require_once __DIR__ . '/../app/controllers/ReporteController.php';

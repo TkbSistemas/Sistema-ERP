@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INICIO DE SESIÓN - TAKAB</title>
     <link rel="stylesheet" href="assets/css/login2.css"> 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://kit.fontawesome.com/8b82fe7e0b.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">  
+    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
     <style>
         body {
             color: var(--white);
             background: url('assets/images/edificios20.jpg') center center / cover no-repeat fixed; 
-            /* background: url('/../../public/assets/images/edificios20.jpg') center center / cover no-repeat fixed;*/
         }
     </style>
 </head>
@@ -42,7 +40,6 @@
                 <div class="portal-brand-row">
                     <div class="brand-logo-block" aria-hidden="true">
                         <img src="assets/images/icono_takab.png" alt="TAKAB" class="brand-logo-img">
-                        <!-- <img src="/../../public/assets/images/icono_takab.png" alt="TAKAB" class="brand-logo-img">  -->
                     </div>
 
                     <div class="brand-separator"></div>
@@ -56,7 +53,7 @@
                 </div>
 
                 <p class="portal-copy">
-                    Accede al ERP TAKAB para consultar los módulos disponibles.
+                    Accede al ERP TAKAB para Consultar los Módulos Disponibles.
                 </p>
             </div>
         </div>
@@ -129,6 +126,7 @@
 </main>
 
 <script>
+
 (function () {
     const toggleBtn = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');

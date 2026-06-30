@@ -26,40 +26,16 @@ $alertas = $datos['alertas'] ?? [];
             </div>
         </div>
         <nav class="sidebar-nav">
-            <?php if ($role === 'Administrador'): ?>
-                <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="prestamos" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
-                <a href="rotacion_inventario" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
-                <a href="revisar_solicitudes"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
-                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
-                <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
-                <a href="gestion_usuarios"><i class="fa-solid fa-book"></i> Gestión de Usuarios</a>
-            <?php elseif ($role === 'Almacen'): ?>
-                <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="prestamos" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
-                <a href="rotacion_inventario" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
-                <a href="revisar_solicitudes"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
-                <a href="mis_solicitudes"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
-                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
-                <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
-            <?php elseif ($role === 'Compras'): ?>
-                <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
-                <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>  
-            <?php elseif ($role === 'Empleado'): ?>
-                <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
-                <a href="solicitudes_crear"><i class="fa-solid fa-plus-square"></i> Solicitar Material</a>
-                <a href="mis_solicitudes"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
-            <?php endif; ?>
+            <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
+            <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Inventario</a>
+            <a href="prestamos" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de herramientas</a>
+            <a href="rotacion_inventario" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
+            <a href="revisar_solicitudes"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
+            <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+            <a href="ajustes"><i class="fa-solid fa-gear"></i> Configuración</a>
+            <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
+            <a href="gestion_usuarios"><i class="fa-solid fa-book"></i> Gestión de Usuarios</a>
             <a href="logout.php"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</a>
         </nav>
     </aside>

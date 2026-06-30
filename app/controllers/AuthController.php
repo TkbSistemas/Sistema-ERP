@@ -6,25 +6,11 @@ Session::start(); //Se ejecuta al inicio para asegurar que la sesión esté disp
 
 class AuthController
 {
-    public function login(){
-        $rol = null;
-        if (Session::user() !== null && $_SERVER['REQUEST_METHOD'] !== 'POST') { // Si ya hay sesión y no es un intento de login, redirigir al menú principal
-            $next = $this->sanitizeNext($_GET['next'] ?? null); // Soportar redireccion post-login cuando una pagina protegida manda ?next=...
-            if ($next) { //
-                header('Location: ' . Session::url($next));
-                exit();
-            }
-            $user = Session::user();
-            $rol = $user['role'] ?? '';
-            if ($rol === 'Administrador') {
-                header('Location: ' . Session::url('dashboard_admin'));
-                exit();
-            }
-            console.log('ROL: ' + $rol);
-            if ($rol === null) {
-                header('Location: ' . Session::url('menu'));
-                exit();
-            }
+    public function login() {
+        //Si ya hay sesión activa y no es un intento de login, redirigir de inmediato
+        if (Session::user() !== null && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $next = $this->sanitizeNext($_GET['next'] ?? null);
+            $this->redirectUser(Session::user(), $next);
         }
 
         $allowedModules = ['nomina', 'rh', 'gestion_usuarios', 'contabilidad', 'bancos', 'compras', 'inventario', 'ventas', 'proyectos', 'clientes'];
@@ -33,42 +19,61 @@ class AuthController
             $module = null;
         }
 
-        // Soportar redireccion post-login cuando una pagina protegida manda ?next=...
-        //next significa a donde se redirige despues de iniciar sesion, se valida que sea un path relativo y no una URL externa para evitar redireccionamientos maliciosos
-        $next = $_GET['next'] ?? $_POST['next'] ?? null;
-        $next = $this->sanitizeNext($next);
+        $next = $this->sanitizeNext($_GET['next'] ?? $_POST['next'] ?? null);
 
+        //Manejo del intento de login (POST)
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
             $user = Usuario::findByUsername($username);
-            $rol = $user['role'] ?? '';
 
             if ($user && $this->credentialsMatch($user, $password)) {
                 Session::regen();
                 Session::setUser($user);
 
-                if ($next) {
-                    header('Location: ' . Session::url($next));
-                    exit();
-                }
-                if ($module) {
-                    $redirect = $this->routeByModule($module);
-                    header('Location: ' . Session::url($redirect));
-                    exit();
-                }
-                if ($rol === 'Administrador') {
-                    header('Location: ' . Session::url('dashboard_admin'));
-                    exit();
-                }
-                header('Location: ' . Session::url('menu'));
-                exit();
+                //Usamos el nuevo método centralizado
+                $this->redirectUser($user, $next, $module);
             }
 
-            $error = 'Usuario o contrasena incorrectos.';
+            //Configuración de alerta en caso de error
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'Error de Inicio de Sesión',
+                'mensaje' => 'Usuario o contraseña Incorrectos. Por favor, inténtalo de nuevo.',
+            ];
         }
 
-        include __DIR__ . '/../views/auth/login.php'; // Mostrar el formulario de login, con posible mensaje de error
+        include __DIR__ . '/../views/auth/login.php';
+    }
+
+    private function redirectUser($user, $next = null, $module = null) {
+        // Redirección explícita (?next=...)
+        if ($next) {
+            header('Location: ' . Session::url($next));
+            exit();
+        }
+
+        // Prioridad 3: Mapeo de Roles a Dashboards
+        $rol = $user['role'] ?? null;
+        
+        $roleDashboards = [
+            'Administrador' => 'dashboard_admin',
+            'Almacen'       => 'dashboard_almacen',
+            'RH'            => 'dashboard_rh',
+            'Compras'       => 'dashboard_compras',
+            'Licitaciones'  => 'dashboard_licitaciones',
+            'Campo'         => 'dashboard_campo',
+            'Inventario'    => 'dashboard_inventario'
+        ];
+
+        if ($rol && isset($roleDashboards[$rol])) {
+            header('Location: ' . Session::url($roleDashboards[$rol]));
+            exit();
+        }
+
+        // Redirección por defecto si no cumple ninguna de las anteriores
+        header('Location: ' . Session::url('index'));
+        exit();
     }
 
     private function routeByModule(string $module): string{

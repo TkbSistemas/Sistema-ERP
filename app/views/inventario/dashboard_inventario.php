@@ -1,11 +1,11 @@
 <?php
-require_once __DIR__ . '/../../../helpers/Session.php';
-Session::requireLogin();
+require_once __DIR__ . '/../../helpers/Session.php';
+Session::requireLogin(['Administrador', 'Almacen']);
 
 $role = $_SESSION['role'] ?? 'Empleado';
 $nombre = $_SESSION['nombre'] ?? '';
 
-$mostrarCostos = $role !== 'Empleado';
+$mostrarCostos = $role !== 'Almacen';
 $stats = $stats ?? ['valor_total' => 0, 'stock_bajo' => 0, 'sin_stock' => 0, 'consumibles' => 0, 'herramientas' => 0, 'activos' => 0, 'inactivos' => 0];
 $totalRegistros = $totalRegistros ?? count($productos);
 $page = $page ?? 1;
@@ -48,99 +48,82 @@ $buildQuery = function(array $overrides = []) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Inventario | TAKAB</title>
+    <title>INVENTARIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 </head>
 <body>
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
     </button>
-    <aside class="sidebar_operaciones">
-        <div class="sidebar-header">
-            <div class="login-logo"><img src="assets/images/icono_takab.png" alt="logo_TAKAB" width="90" height="55"></div>
-            <div>
-                <div class="sidebar-title">TAKAB</div>
-                <div class="sidebar-desc">Inventario y almacén</div>
-            </div>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="dashboard.php"><i class="fa-solid fa-house"></i> Dashboard</a>
-            <?php if ($role === 'Administrador'): ?>
-                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual.php" class="active"><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="prestamos_pendientes.php" ><i class="fa-solid fa-screwdriver-wrench"></i> Préstamos de herramientas</a>
-                <a href="reportes_rotacion.php" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
-                <a href="revisar_solicitudes.php"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
-                <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
-                <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
-            <?php elseif ($role === 'Almacen'): ?>
-                <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual.php" class="active"><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="prestamos_pendientes.php" ><i class="fa-solid fa-screwdriver-wrench"></i> Préstamos de herramientas</a>
-                <a href="reportes_rotacion.php" ><i class="fa-solid fa-refresh"></i> Rotación de Inventario</a>
-                <a href="revisar_solicitudes.php"><i class="fa-solid fa-plus-square"></i> Solicitudes de Material</a>
-                <a href="mis_solicitudes.php"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
-                <a href="reportes.php"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="ajustes.php"><i class="fa-solid fa-gear"></i> Configuración</a>
-                <a href="documentacion.php"><i class="fa-solid fa-book"></i>Documentación</a>
-            <?php elseif ($role === 'Compras'): ?>
-              <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Gestión de Productos</a>
-                <a href="inventario_actual" class="active"><i class="fa-solid fa-list-check"></i> Inventario</a>
-                <a href="reportes"><i class="fa-solid fa-chart-line"></i> Reportes</a>
-                <a href="documentacion"><i class="fa-solid fa-book"></i>Documentación</a>  
-            <?php elseif ($role === 'Empleado'): ?>
-                <a href="solicitudes_crear.php"><i class="fa-solid fa-plus-square"></i> Solicitar Material</a>
-                <a href="mis_solicitudes.php"><i class="fa-solid fa-clipboard-list"></i> Mis Solicitudes</a>
-            <?php endif; ?>
-            <a href="logout.php"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</a>
-        </nav>
-    </aside>
+    <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 
     <div class="content-area">
-        <?php include __DIR__ . '/../../partials/topbar.php'; ?>
+        <?php
+            require_once __DIR__ . '/../../helpers/Navigation.php';
 
-        <main class="dashboard-main inventario-main">
-            <div class="inventario-header">
-                <div>
-                    <h1>Inventario general</h1>
-                    <p class="inventario-desc">Supervisa el estado del stock, ubicaciones y movimientos de productos.</p>
+            $role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
+        ?>
+            <header class="top-header">
+                <div class="top-header-left">
                 </div>
-                <?php if ($role !== 'Empleado'): ?>
-                    <div class="inventario-actions">
-                        <a class="btn-main" href="inventario_entrada"><i class="fa fa-plus"></i> Registrar entrada</a>
-                        <a class="btn-secondary" href="inventario_salida"><i class="fa fa-minus"></i> Registrar salida</a>
-                        <a class="btn-secondary" href="inventario_transferencias.php"><i class="fa fa-right-left"></i> Transferir</a>
-                    </div>
-                <?php endif; ?>
+                <div class="top-header-user">
+                    <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
+                    <i class="fa-solid fa-user-circle"></i>
+                    <a href="dashboard_almacen" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
+                    <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
+                </div>
+            </header>
+
+        <main class="dashboard-main">
+            <div class="dashboard-header-row">
+                <div>
+                    <h1>INVENTARIO GENERAL</h1>
+                    <span class="dashboard-desc">Supervisa el Estado del Stock, Ubicaciones y Movimientos de Productos.</p>
+                </div>
+                <!--  
+                <div class="dashboard-updated">
+                    <div>Último Actualizado</div>
+                    <//?= htmlspecialchars($datos['last_update']) ?>
+                </div> -->
             </div>
 
-            <section class="inventario-stats-grid">
-                <div class="inventario-stat-card primary">
-                    <span class="stat-label">Productos registrados</span>
-                    <span class="stat-value"><?= number_format($totalRegistros) ?></span>
-                    <span class="stat-foot">Activos: <?= number_format((int) ($stats['activos'] ?? 0)) ?> ? Inactivos: <?= number_format((int) ($stats['inactivos'] ?? 0)) ?></span>
+            <section class="dashboard-cards-row">
+                <div class="dashboard-card blue">
+                    <div class="card-info">
+                        <div class="card-label">Productos Registrados</div>
+                        <div class="card-value"><?= number_format($totalRegistros) ?></div>
+                        <div class="card-sub">En este Almacén</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-shape-outline"></span>
+                    </div>
                 </div>
-                <div class="inventario-stat-card warning">
-                    <span class="stat-label">Stock bajo</span>
-                    <span class="stat-value"><?= number_format((int) ($stats['stock_bajo'] ?? 0)) ?></span>
-                    <span class="stat-foot">Sin stock: <?= number_format((int) ($stats['sin_stock'] ?? 0)) ?></span>
-                </div>
-                <div class="inventario-stat-card sky">
-                    <span class="stat-label">Composición</span>
-                    <span class="stat-value"><?= number_format((int) ($stats['consumibles'] ?? 0)) ?> consumibles</span>
-                    <span class="stat-foot">Herramientas: <?= number_format((int) ($stats['herramientas'] ?? 0)) ?></span>
+                <div class="dashboard-card red">
+                    <div class="card-info">
+                        <div class="card-label">Stock Bajo</div>
+                        <div class="card-value"><?= number_format((int) ($stats['stock_bajo'] ?? 0)) ?></div>
+                        <div class="card-sub">Pendientes de Atención</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-alert-circle-outline"></span>
+                    </div>
                 </div>
                 <?php if ($mostrarCostos): ?>
-                    <div class="inventario-stat-card success">
-                        <span class="stat-label">Valor estimado</span>
-                        <span class="stat-value">$<?= number_format((float) ($stats['valor_total'] ?? 0), 2) ?></span>
-                        <span class="stat-foot">Costo acumulado de inventario con I.V.A.</span>
+                <div class="dashboard-card">
+                    <div class="card-info">
+                        <div class="card-label">Valor Estimado</div>
+                        <div class="card-value"><?= number_format((float) ($stats['valor_total'] ?? 0), 2) ?></div>
+                        <div class="card-sub">Costo acumulado de inventario con I.V.A.</div>
                     </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-alert-circle-outline"></span>
+                    </div>
+                </div>
                 <?php endif; ?>
             </section>
 
@@ -292,12 +275,12 @@ $buildQuery = function(array $overrides = []) {
                                     <th>Producto</th>
                                     <th>Tipo</th>
                                     <th>Categoría</th>
-                                    <th>Almacén</th>
-                                    <th>Stock actual</th>
-                                    <th>Stock mínimo</th>
+                                    <!--th>Almacén</th-->
+                                    <th>Stock Actual</th>
+                                    <th>Stock Mínimo</th>
                                     <?php if ($mostrarCostos): ?><th>Valor</th><?php endif; ?>
-                                    <th>Estado</th>
-                                    <th>Último movimiento</th>
+                                    <!--th>Estado</th-->
+                                    <!--th>Último movimiento</th-->
                                 </tr>
                             </thead>
                             <tbody>
@@ -324,7 +307,7 @@ $buildQuery = function(array $overrides = []) {
                                         </td>
                                         <td><span class="badge badge-tipo <?= strtolower($producto['tipo'] ?? '') ?>"><?= htmlspecialchars($producto['tipo'] ?? '-') ?></span></td>
                                         <td><?= htmlspecialchars($producto['categoria'] ?? '-') ?></td>
-                                        <td><?= htmlspecialchars($producto['almacen'] ?? '-') ?></td>
+                                        <!--td><//?= htmlspecialchars($producto['almacen'] ?? '-') ?></td-->
                                         <td>
                                             <span class="badge badge-stock <?= $badgeStock ?>">
                                                 <?= rtrim(rtrim(number_format($stockActual, 2), '0'), '.') ?> <?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?>
@@ -334,8 +317,8 @@ $buildQuery = function(array $overrides = []) {
                                         <?php if ($mostrarCostos): ?>
                                             <td>$<?= number_format($valor, 2) ?></td>
                                         <?php endif; ?>
-                                        <td><span class="badge badge-activo <?= (int)($producto['activo_id'] ?? 1) === 1 ? 'activo' : 'inactivo' ?>"><?= htmlspecialchars($producto['estado_activo'] ?? '-') ?></span></td>
-                                        <td><?= $fechaMovimiento ? date('d/m/Y H:i', strtotime($fechaMovimiento)) : 'Sin movimientos' ?></td>
+                                        <!--td><span class="badge badge-activo <//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'activo' : 'inactivo' ?>"><//?= htmlspecialchars($producto['estado_activo'] ?? '-') ?></span></td-->
+                                        <!--td><//?= $fechaMovimiento ? date('d/m/Y H:i', strtotime($fechaMovimiento)) : 'Sin movimientos' ?></td-->
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -363,11 +346,10 @@ $buildQuery = function(array $overrides = []) {
         </main>
     </div>
 </div>
-<?php include __DIR__ . '/../partials/scripts.php'; ?>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
     const toggleBtn = document.getElementById('toggleSidebar');
-   const sidebar = document.querySelector('.sidebar_operaciones'); 
+   const sidebar = document.querySelector('.main_sidebar'); 
     const mainContent = document.querySelector('.content-area');
 
     if (toggleBtn && sidebar && mainContent) {

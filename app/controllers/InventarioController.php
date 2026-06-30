@@ -328,6 +328,15 @@
         {
             Session::requireLogin();
 
+            $_SESSION['menu_items'] = [
+                ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
+                ['slug' => '', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
+                ['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
+                ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
+                ['slug' => '', 'label' => 'Ir a Dashboard', 'icon' => 'fa-solid fa-grip', 'role' => 'Administrador'],
+                ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
+            ];
+
             $role = $_SESSION['role'] ?? 'Empleado';
 
             $filtros = [
@@ -391,6 +400,178 @@
                 }
             }
 
-            include __DIR__ . '/../views/inventario/main/dashboard_inventario.php';
+            include __DIR__ . '/../views/inventario/dashboard_inventario.php';
         }
+
+    public function obtenerCatalogo()
+    {
+        Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+
+        $filtros = [
+            'buscar'           => trim($_GET['buscar'] ?? ''),
+            'nombre'           => trim($_GET['nombre'] ?? ''),
+            'codigo'           => trim($_GET['codigo'] ?? ''),
+            'tipo'             => $_GET['tipo'] ?? '',
+            'categoria_id'     => $_GET['categoria_id'] ?? '',
+            'almacen_id'       => $_GET['almacen_id'] ?? '',
+            'proveedor_id'     => $_GET['proveedor_id'] ?? '',
+            'estado'           => $_GET['estado'] ?? '',
+            'activo_id'        => $_GET['activo_id'] ?? '',
+            'stock_flag'       => $_GET['stock_flag'] ?? '',
+            'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
+            'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
+            'tags'             => trim($_GET['tags'] ?? ''),
+            'fecha_desde'      => $_GET['fecha_desde'] ?? '',
+            'fecha_hasta'      => $_GET['fecha_hasta'] ?? '',
+            'valor_min'        => $_GET['valor_min'] ?? '',
+            'valor_max'        => $_GET['valor_max'] ?? '',
+        ];
+
+        $page           = max(1, (int) ($_GET['page'] ?? 1));
+        $perPageOptions = [10, 15, 25, 50, 100];
+        $perPage        = (int) ($_GET['per_page'] ?? 15);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+        $offset = ($page - 1) * $perPage;
+
+        $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
+        $productos      = $resultado['items'];
+        $stats          = $resultado['stats'];
+        $totalRegistros = $resultado['total'];
+        $stats['total'] = $totalRegistros;
+        $totalPaginas   = max(1, (int) ceil($totalRegistros / $perPage));
+
+        if ($page > $totalPaginas) {
+            $page      = $totalPaginas;
+            $offset    = ($page - 1) * $perPage;
+            $resultado = Producto::inventarioListado($filtros, $perPage, $offset);
+            $productos = $resultado['items'];
+            $stats     = $resultado['stats'];
+            $stats['total'] = $resultado['total'];
+        }
+
+        $db              = Database::getInstance()->getConnection();
+        $categorias      = $db->query('SELECT id, nombre FROM categorias ORDER BY nombre ASC')->fetchAll();
+        $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
+        $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
+        $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
+        $estadosActivos  = Producto::estadosActivos();
+        $estadosProducto = Producto::estadosDisponibles();
+        $tiposProducto   = Producto::tiposDisponibles();
+
+        $hayFiltros = false;
+        foreach ($filtros as $valor) {
+            if ($valor !== '' && $valor !== null) {
+                $hayFiltros = true;
+                break;
+            }
+        }
+
+        $alerta = [
+            'success' => $_GET['success'] ?? null,
+            'deleted' => $_GET['deleted'] ?? null,
+        ];
+
+        $importAlert = $_SESSION['productos_import'] ?? null;
+        if (isset($_SESSION['productos_import'])) {
+            unset($_SESSION['productos_import']);
+        }
+
+        include __DIR__ . '/../views/inventario/catalogo_productos.php';
+    }
+
+    public function crearProducto()
+    {
+        Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+
+        $db              = Database::getInstance()->getConnection();
+        $categorias      = $db->query('SELECT id, nombre FROM categorias ORDER BY nombre ASC')->fetchAll();
+        $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
+        $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
+        $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
+        $estadosProducto = Producto::estadosDisponibles();
+        $tiposProducto   = Producto::tiposDisponibles();
+
+        $errors = [];
+        $data   = $this->defaultProductoData();
+        $error  = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
+                $errors[] = 'Token CSRF invalido.';
+            } else {
+                $data = $this->collectProductoData($_POST, $errors);
+
+                if (Producto::findByCodigo($data['codigo'])) {
+                    $errors[] = 'Ya existe un producto con ese codigo.';
+                }
+
+                if ($data['codigo_barras'] === '') {
+                    $data['codigo_barras'] = $this->generarCodigoBarras($data['codigo']);
+                }
+
+                $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors);
+                if ($nuevaImagen === false) {
+                    $errors[] = 'No fue posible procesar la imagen adjunta.';
+                } elseif (is_string($nuevaImagen)) {
+                    $data['imagen_url'] = $nuevaImagen;
+                }
+
+                if (empty($errors)) {
+                    $payload                              = $data;
+                    $payload['last_requested_by_user_id'] = null;
+                    $payload['last_request_date']         = null;
+
+                    Producto::create($payload);
+                    ActivityLogger::log('producto_creado', 'Se registro el producto ' . $payload['nombre'], [
+                        'codigo' => $payload['codigo'],
+                    ]);
+                    header('Location: productos.php?success=1');
+                    exit();
+                }
+            }
+        }
+
+        if (! empty($errors)) {
+            $error = implode(PHP_EOL, $errors);
+        }
+
+        include __DIR__ . '/../views/inventario/crear_producto.php';
+    }
+
+    private function defaultProductoData(): array
+    {
+        return [
+            'codigo'                    => '',
+            'codigo_barras'             => '',
+            'nombre'                    => '',
+            'descripcion'               => '',
+            'proveedor_id'              => null,
+            'categoria_id'              => null,
+            'peso'                      => null,
+            'ancho'                     => null,
+            'alto'                      => null,
+            'profundidad'               => null,
+            'unidad_medida_id'          => null,
+            'clase_categoria'           => '',
+            'marca'                     => '',
+            'color'                     => '',
+            'forma'                     => '',
+            'especificaciones_tecnicas' => '',
+            'origen'                    => '',
+            'costo_compra'              => 0.0,
+            'precio_venta'              => 0.0,
+            'stock_minimo'              => 0.0,
+            'stock_actual'              => 0.0,
+            'almacen_id'                => null,
+            'ubicacion_fisica'          => '',
+            'estado'                    => 'Nuevo',
+            'tipo'                      => 'Consumible',
+            'imagen_url'                => null,
+            'tags'                      => '',
+            'activo_id'                 => 1,
+        ];
+    }
+    
 }

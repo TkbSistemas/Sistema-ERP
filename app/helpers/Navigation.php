@@ -51,7 +51,7 @@ class Navigation
             'href'  => 'inventario_actual',
             'roles' => ['Administrador', 'Almacen', 'Compras'],
         ],
-        'prestamos'           => [
+        'prestamos2'           => [
             'label' => 'Préstamos de herramientas',
             'icon'  => 'fa-solid fa-screwdriver-wrench',
             'href'  => 'prestamos_pendientes.php',
@@ -134,7 +134,7 @@ class Navigation
             'logs',
             'documentacion',
         ],
-        'Almacen'       => [
+        'Almacen2'       => [
             'dashboard',
             'productos',
             'ordenes',
