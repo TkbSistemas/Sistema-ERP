@@ -89,17 +89,30 @@ $buildQuery = function(array $overrides = []) {
                 </div>
             </div>
 
-            <section class="rotacion-filters">
-                <form method="get">
-                    <div>
+            <section class="rotacion-filters " >
+                <form method="get" class="inv-filter-row">
+                    <div class="filter-row">
+                    <div class="filter-field">
                         <label for="from">Desde</label>
                         <input type="date" id="from" name="from" value="<?= htmlspecialchars($desde) ?>">
                     </div>
-                    <div>
+                    <div class="filter-field">
                         <label for="to">Hasta</label>
                         <input type="date" id="to" name="to" value="<?= htmlspecialchars($hasta) ?>">
                     </div>
-                    <div>
+                    </div>
+                    <!--div>
+                        <label for="almacen_id">Almacén</label>
+                        <select id="almacen_id" name="almacen_id">
+                            <option value="">Todos</option>
+                            <//?php foreach ($almacenes as $almacen): ?>
+                                <option value="<//?= $almacen['id'] ?>" <//?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><//?= htmlspecialchars($almacen['nombre']) ?></option>
+                            <//?php endforeach; ?>
+                        </select>
+                    </div-->
+                    
+                    <div class="filter-row">
+                    <div class="filter-field">
                         <label for="tipo">Tipo de Producto</label>
                         <select id="tipo" name="tipo">
                             <option value="">Todos</option>
@@ -108,16 +121,7 @@ $buildQuery = function(array $overrides = []) {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="almacen_id">Almacén</label>
-                        <select id="almacen_id" name="almacen_id">
-                            <option value="">Todos</option>
-                            <?php foreach ($almacenes as $almacen): ?>
-                                <option value="<?= $almacen['id'] ?>" <?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div>
+                    <div class="filter-field">
                         <label for="clasificacion">Clasificación</label>
                         <select id="clasificacion" name="clasificacion">
                             <option value="">Todos</option>
@@ -127,9 +131,10 @@ $buildQuery = function(array $overrides = []) {
                             <option value="Sin movimiento" <?= ($_GET['clasificacion'] ?? '') === 'Sin Movimiento' ? 'selected' : '' ?>>Sin Movimiento</option>
                         </select>
                     </div>
+                    </div>
                     <div class="logs-filter-actions">
                         <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar</button>
-                        <a class="btn-ghost" href="reportes_rotacion.php"><i class="fa fa-eraser"></i> Restablecer</a>
+                        <a class="btn-ghost" href="rotacion_inventario"><i class="fa fa-eraser"></i> Limpiar</a>
                     </div>
                 </form>
             </section>
@@ -144,11 +149,11 @@ $buildQuery = function(array $overrides = []) {
                         <th>Código</th>
                         <th>Producto</th>
                         <th>Tipo</th>
-                        <th>Almacén</th>
+                        <!--th>Almacén</th-->
                         <th>Stock actual</th>
                         <th>Salidas</th>
                         <th>Entradas</th>
-                        <th>Índice</th>
+                        <!--th>Índice</th-->
                         <th>Clasificación</th>
                         <th>Último movimiento</th>
                         <th>Días sin movimiento</th>
@@ -156,7 +161,7 @@ $buildQuery = function(array $overrides = []) {
                 </thead>
                 <tbody>
                     <?php if (empty($rotacion)): ?>
-                        <tr><td colspan="11" style="text-align:center; padding:24px; color:#7d8bb0;">Sin movimientos en el periodo seleccionado.</td></tr>
+                        <tr><td colspan="11" style="text-align:center; padding:24px; color:#7d8bb0;">Sin Movimientos en el Periodo Seleccionado.</td></tr>
                     <?php else: ?>
                         <?php foreach ($rotacion as $row): ?>
                             <?php
@@ -171,11 +176,11 @@ $buildQuery = function(array $overrides = []) {
                                 <td><span class="mono"><?= htmlspecialchars($row['codigo']) ?></span></td>
                                 <td><?= htmlspecialchars($row['nombre']) ?></td>
                                 <td><span class="badge badge-tipo <?= strtolower($row['tipo']) ?>"><?= htmlspecialchars($row['tipo']) ?></span></td>
-                                <td><?= htmlspecialchars($row['almacen'] ?? '-') ?></td>
+                                <!--td><//?= htmlspecialchars($row['almacen'] ?? '-') ?></td-->
                                 <td><?= number_format((float) $row['stock_actual'], 2) ?></td>
                                 <td><?= number_format((float) $row['salidas'], 2) ?></td>
                                 <td><?= number_format((float) $row['entradas'], 2) ?></td>
-                                <td><?= number_format((float) $row['indice'], 2) ?></td>
+                                <!--td><//?= number_format((float) $row['indice'], 2) ?></td-->
                                 <td><span class="badge-rotacion <?= $badgeClass ?>"><?= htmlspecialchars($row['clasificacion']) ?></span></td>
                                 <td><?= $row['ultimo_movimiento'] ? date('d/m/Y H:i', strtotime($row['ultimo_movimiento'])) : '-' ?></td>
                                 <td><?= $row['dias_sin_movimiento'] !== null ? $row['dias_sin_movimiento'] . ' días' : '-' ?></td>
@@ -185,37 +190,25 @@ $buildQuery = function(array $overrides = []) {
                 </tbody>
             </table>
         </div>
-
-        <div class="productos-pagination">
-            <div class="productos-pagination-info">
-                <?= $totalRegistros > 0
-                    ? "Mostrando <strong>$desde</strong> - <strong>$hasta</strong> de <strong>" . number_format($totalRegistros) . "</strong> registros"
-                    : "Sin registros disponibles" ?>
-            </div>
-            <div class="productos-pagination-controls">
-                <?php if ($page > 1): ?>
-                    <a class="btn-pagination" href="<?= $buildQuery(['page' => $page - 1]) ?>">
-                        <i class="fa fa-chevron-left"></i> Anterior
-                    </a>
-                <?php else: ?>
-                    <span class="btn-pagination disabled"><i class="fa fa-chevron-left"></i> Anterior</span>
-                <?php endif; ?>
-
-                <span class="productos-pagination-page">Página <?= number_format($page) ?> de <?= number_format($totalPaginas) ?></span>
-
-                <?php if ($page < $totalPaginas): ?>
-                    <a class="btn-pagination" href="<?= $buildQuery(['page' => $page + 1]) ?>">
-                        Siguiente <i class="fa fa-chevron-right"></i>
-                    </a>
-                <?php else: ?>
-                    <span class="btn-pagination disabled">Siguiente <i class="fa fa-chevron-right"></i></span>
-                <?php endif; ?>
-            </div>
-        </div>
-
     </div>
 </section>
 
+    <div class="productos-pagination">
+        <div class="productos-pagination-info">
+            <?= $totalRegistros > 0
+                ? "Mostrando <strong>$desde</strong> - <strong>$hasta</strong> de <strong>" . number_format($totalRegistros) . "</strong> registros"
+                : "Sin registros disponibles" ?>
+            </div>
+            <div class="productos-pagination-controls">
+                        <?php if ($page > 1): ?>
+                            <a class="btn-ghost" href="<?= $buildQuery(['page' => $page - 1]) ?>"><i class="fa fa-chevron-left"></i> Anterior</a>
+                        <?php endif; ?>
+                        <span class="productos-pagination-page">Página <?= number_format($page) ?> de <?= number_format($totalPaginas) ?></span>
+                        <?php if ($page < $totalPaginas): ?>
+                            <a class="btn-ghost" href="<?= $buildQuery(['page' => $page + 1]) ?>">Siguiente <i class="fa fa-chevron-right"></i></a>
+                        <?php endif; ?>
+                    </div>
+    </div>
         </main>
     </div>
 </div>

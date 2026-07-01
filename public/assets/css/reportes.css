@@ -261,10 +261,23 @@
 
 .productos-pagination {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
-    background-color: #fbfbfc;
+    gap: 14px;
+    margin-top: 24px;
+    color: #55648f;
+}
+
+.productos-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.productos-pagination-page {
+    font-weight: 600;
+    color: #1a2c51;
 }
 
 .reportes-table {
@@ -382,4 +395,16 @@
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+.logs-filter-actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.inv-filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
 }

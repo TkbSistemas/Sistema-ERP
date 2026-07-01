@@ -1330,148 +1330,273 @@ endobj
 
     //======================================================================================================================================================
 
-    public function obtenerRotacion(): void{
-        Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+    public function obtenerRotacion(): void {
+    Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
-        $db    = Database::getInstance()->getConnection();
-        $desde = $this->parseDate($_GET['from'] ?? date('Y-m-01'));
-        $hasta = $this->parseDate($_GET['to'] ?? date('Y-m-d'));
-        if ($desde > $hasta) {
-            [$desde, $hasta] = [$hasta, $desde];
+    $db    = Database::getInstance()->getConnection();
+    $desde = $this->parseDate($_GET['from'] ?? date('Y-m-01'));
+    $hasta = $this->parseDate($_GET['to'] ?? date('Y-m-d'));
+    if ($desde > $hasta) {
+        [$desde, $hasta] = [$hasta, $desde];
+    }
+    $tipoFiltro    = $_GET['tipo'] ?? '';
+    $almacenId     = $_GET['almacen_id'] ?? '';
+    $clasifFiltro  = $_GET['clasificacion'] ?? ''; // 🔍 Nuevo parámetro de filtro
+
+    // 1. Construcción y ejecución de la consulta base
+    $sql = "SELECT p.id,
+                   p.codigo,
+                   p.nombre,
+                   p.tipo,
+                   p.stock_actual,
+                   p.stock_minimo,
+                   a.nombre AS almacen,
+                   SUM(CASE WHEN m.tipo = 'Salida' THEN m.cantidad ELSE 0 END) AS total_salidas,
+                   SUM(CASE WHEN m.tipo = 'Entrada' THEN m.cantidad ELSE 0 END) AS total_entradas,
+                   MAX(m.fecha) AS ultimo_movimiento
+            FROM productos p
+            LEFT JOIN almacenes a ON p.almacen_id = a.id
+            LEFT JOIN movimientos_inventario m
+                   ON m.producto_id = p.id
+                  AND DATE(m.fecha) BETWEEN ? AND ?";
+    $params = [$desde, $hasta];
+
+    $where = [];
+    if ($tipoFiltro !== '' && in_array($tipoFiltro, Producto::tiposDisponibles(), true)) {
+        $where[]  = 'p.tipo = ?';
+        $params[] = $tipoFiltro;
+    }
+    if ($almacenId !== '') {
+        $where[]  = 'p.almacen_id = ?';
+        $params[] = (int) $almacenId;
+    }
+    if ($where) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
+    }
+    $sql .= ' GROUP BY p.id ORDER BY total_salidas DESC, p.nombre ASC';
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $filas = $stmt->fetchAll() ?: [];
+
+    // 2. Procesamiento completo de la matemática de rotación
+    $todasLasRotaciones = [];
+    foreach ($filas as $fila) {
+        $salidas       = (float) ($fila['total_salidas'] ?? 0);
+        $entradas      = (float) ($fila['total_entradas'] ?? 0);
+        $stockActual   = (float) ($fila['stock_actual'] ?? 0);
+        $stockPromedio = max(1.0, ($stockActual + max($entradas, 0)) / 2);
+        $indice        = $salidas > 0 ? $salidas / $stockPromedio : 0.0;
+        
+        $clasificacion = match (true) {
+            $salidas <= 0 => 'Sin movimiento',
+            $indice >= 2  => 'Alta',
+            $indice >= 1  => 'Media',
+            default       => 'Baja',
+        };
+
+        $diasSinMovimiento = null;
+        if (! empty($fila['ultimo_movimiento'])) {
+            $ultimo            = new DateTime($fila['ultimo_movimiento']);
+            $fin               = new DateTime($hasta);
+            $diasSinMovimiento = $ultimo->diff($fin)->days;
         }
-        $tipoFiltro = $_GET['tipo'] ?? '';
-        $almacenId  = $_GET['almacen_id'] ?? '';
 
-        $sql = "SELECT p.id,
-                       p.codigo,
-                       p.nombre,
-                       p.tipo,
-                       p.stock_actual,
-                       p.stock_minimo,
-                       a.nombre AS almacen,
-                       SUM(CASE WHEN m.tipo = 'Salida' THEN m.cantidad ELSE 0 END) AS total_salidas,
-                       SUM(CASE WHEN m.tipo = 'Entrada' THEN m.cantidad ELSE 0 END) AS total_entradas,
-                       MAX(m.fecha) AS ultimo_movimiento
-                FROM productos p
-                LEFT JOIN almacenes a ON p.almacen_id = a.id
-                LEFT JOIN movimientos_inventario m
-                       ON m.producto_id = p.id
-                      AND DATE(m.fecha) BETWEEN ? AND ?";
-        $params = [$desde, $hasta];
+        $item = array_merge($fila, [
+            'indice'              => $indice,
+            'clasificacion'       => $clasificacion,
+            'dias_sin_movimiento' => $diasSinMovimiento,
+            'salidas'             => $salidas,
+            'entradas'            => $entradas,
+        ]);
 
-        $where = [];
-        if ($tipoFiltro !== '' && in_array($tipoFiltro, Producto::tiposDisponibles(), true)) {
-            $where[]  = 'p.tipo = ?';
-            $params[] = $tipoFiltro;
-        }
-        if ($almacenId !== '') {
-            $where[]  = 'p.almacen_id = ?';
-            $params[] = (int) $almacenId;
-        }
-        if ($where) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
-        }
-        $sql .= ' GROUP BY p.id ORDER BY total_salidas DESC, p.nombre ASC';
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        $filas = $stmt->fetchAll() ?: [];
-
-        $rotacion = [];
-        foreach ($filas as $fila) {
-            $salidas       = (float) ($fila['total_salidas'] ?? 0);
-            $entradas      = (float) ($fila['total_entradas'] ?? 0);
-            $stockActual   = (float) ($fila['stock_actual'] ?? 0);
-            $stockPromedio = max(1.0, ($stockActual + max($entradas, 0)) / 2);
-            $indice        = $salidas > 0 ? $salidas / $stockPromedio : 0.0;
-            $clasificacion = match (true) {
-                $salidas <= 0 => 'Sin movimiento',
-                $indice >= 2  => 'Alta',
-                $indice >= 1  => 'Media',
-                default       => 'Baja',
-            };
-            $diasSinMovimiento = null;
-            if (! empty($fila['ultimo_movimiento'])) {
-                $ultimo            = new DateTime($fila['ultimo_movimiento']);
-                $fin               = new DateTime($hasta);
-                $diasSinMovimiento = $ultimo->diff($fin)->days;
+        // 🔍 Aplicamos el filtro dinámico de clasificación si fue enviado
+        if ($clasifFiltro !== '') {
+            if (strtolower($item['clasificacion']) === strtolower($clasifFiltro)) {
+                $todasLasRotaciones[] = $item;
             }
+        } else {
+            $todasLasRotaciones[] = $item;
+        }
+    }
 
-            $rotacion[] = array_merge($fila, [
-                'indice'              => $indice,
-                'clasificacion'       => $clasificacion,
-                'dias_sin_movimiento' => $diasSinMovimiento,
-                'salidas'             => $salidas,
-                'entradas'            => $entradas,
+    // --- LOGICA DE PAGINACIÓN COMPLETA (Fijado en 15 por página) ---
+    $productosPorPagina = 15;
+    $totalRegistros     = count($todasLasRotaciones);
+    $totalPaginas       = max(1, ceil($totalRegistros / $productosPorPagina));
+    
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    if ($page < 1) { $page = 1; }
+    if ($page > $totalPaginas) { $page = $totalPaginas; }
+    
+    $offset = ($page - 1) * $productosPorPagina;
+
+    // Números de control informativos para el footer de la tabla
+    $desdeRegistro = $totalRegistros > 0 ? $offset + 1 : 0;
+    $hastaRegistro = min($offset + $productosPorPagina, $totalRegistros);
+
+    // Ajustamos la variable $rotacion final extrayendo solo el fragmento de 15 registros
+    if (isset($_GET['export'])) {
+        $rotacion = $todasLasRotaciones; // Las exportaciones conservan el reporte completo filtrado
+    } else {
+        $rotacion = array_slice($todasLasRotaciones, $offset, $productosPorPagina);
+    }
+    // ---------------------------------------------------------------
+
+    if (isset($_GET['export'])) {
+        $filename = 'rotacion_inventario_' . date('Ymd_His');
+        if ($_GET['export'] === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=' . $filename . '.csv');
+            $out = fopen('php://output', 'w');
+            fputs($out, chr(239) . chr(187) . chr(191));
+            fputcsv($out, ['Codigo', 'Producto', 'Tipo', 'almacen', 'Stock actual', 'Salidas', 'Entradas', 'Indice', 'Clasificacion', 'Ultimo movimiento']);
+            foreach ($rotacion as $row) {
+                fputcsv($out, [
+                    $row['codigo'],
+                    $row['nombre'],
+                    $row['tipo'],
+                    $row['almacen'],
+                    number_format((float) $row['stock_actual'], 2, '.', ''),
+                    number_format((float) $row['salidas'], 2, '.', ''),
+                    number_format((float) $row['entradas'], 2, '.', ''),
+                    number_format($row['indice'], 2, '.', ''),
+                    $row['clasificacion'],
+                    $row['ultimo_movimiento'] ? date('d/m/Y H:i', strtotime($row['ultimo_movimiento'])) : '-',
+                ]);
+            }
+            fclose($out);
+            ActivityLogger::log('rotacion_export', 'Exportacion CSV de rotacion de inventario', [
+                'tipo'       => $tipoFiltro ?: null,
+                'almacen_id' => $almacenId ?: null,
+                'desde'      => $desde,
+                'hasta'      => $hasta,
+            ]);
+        } elseif ($_GET['export'] === 'pdf') {
+            $lines   = ['Rotacion de inventario', "Periodo: {$desde} al {$hasta}", ''];
+            $lines[] = 'Codigo | Producto | Salidas | Indice | Clasificacion';
+            $lines[] = str_repeat('-', 80);
+            foreach ($rotacion as $row) {
+                $lines[] = sprintf(
+                    '%s | %s | %0.2f | %0.2f | %s',
+                    $row['codigo'],
+                    mb_strimwidth($row['nombre'], 0, 30, '...'),
+                    $row['salidas'],
+                    $row['indice'],
+                    $row['clasificacion']
+                );
+            }
+            $pdf = $this->buildPdfDocument($lines);
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename=' . $filename . '.pdf');
+            echo $pdf;
+            ActivityLogger::log('rotacion_export', 'Exportacion PDF de rotacion de inventario', [
+                'tipo'       => $tipoFiltro ?: null,
+                'almacen_id' => $almacenId ?: null,
+                'desde'      => $desde,
+                'hasta'      => $hasta,
             ]);
         }
-
-        if (isset($_GET['export'])) {
-            $filename = 'rotacion_inventario_' . date('Ymd_His');
-            if ($_GET['export'] === 'csv') {
-                header('Content-Type: text/csv; charset=utf-8');
-                header('Content-Disposition: attachment; filename=' . $filename . '.csv');
-                $out = fopen('php://output', 'w');
-                fputs($out, chr(239) . chr(187) . chr(191));
-                fputcsv($out, ['Codigo', 'Producto', 'Tipo', 'almacen', 'Stock actual', 'Salidas', 'Entradas', 'Indice', 'Clasificacion', 'Ultimo movimiento']);
-                foreach ($rotacion as $row) {
-                    fputcsv($out, [
-                        $row['codigo'],
-                        $row['nombre'],
-                        $row['tipo'],
-                        $row['almacen'],
-                        number_format((float) $row['stock_actual'], 2, '.', ''),
-                        number_format((float) $row['salidas'], 2, '.', ''),
-                        number_format((float) $row['entradas'], 2, '.', ''),
-                        number_format($row['indice'], 2, '.', ''),
-                        $row['clasificacion'],
-                        $row['ultimo_movimiento'] ? date('d/m/Y H:i', strtotime($row['ultimo_movimiento'])) : '-',
-                    ]);
-                }
-                fclose($out);
-                ActivityLogger::log('rotacion_export', 'Exportacion CSV de rotacion de inventario', [
-                    'tipo'       => $tipoFiltro ?: null,
-                    'almacen_id' => $almacenId ?: null,
-                    'desde'      => $desde,
-                    'hasta'      => $hasta,
-                ]);
-            } elseif ($_GET['export'] === 'pdf') {
-                $lines   = ['Rotacion de inventario', "Periodo: {$desde} al {$hasta}", ''];
-                $lines[] = 'Codigo | Producto | Salidas | Indice | Clasificacion';
-                $lines[] = str_repeat('-', 80);
-                foreach ($rotacion as $row) {
-                    $lines[] = sprintf(
-                        '%s | %s | %0.2f | %0.2f | %s',
-                        $row['codigo'],
-                        mb_strimwidth($row['nombre'], 0, 30, '...'),
-                        $row['salidas'],
-                        $row['indice'],
-                        $row['clasificacion']
-                    );
-                }
-                $pdf = $this->buildPdfDocument($lines);
-                header('Content-Type: application/pdf');
-                header('Content-Disposition: attachment; filename=' . $filename . '.pdf');
-                echo $pdf;
-                ActivityLogger::log('rotacion_export', 'Exportacion PDF de rotacion de inventario', [
-                    'tipo'       => $tipoFiltro ?: null,
-                    'almacen_id' => $almacenId ?: null,
-                    'desde'      => $desde,
-                    'hasta'      => $hasta,
-                ]);
-            }
-            return;
-        }
-
-        $almacenes        = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
-        $tiposDisponibles = Producto::tiposDisponibles();
-        include __DIR__ . '/../views/inventario/rotacion_inventario.php';
+        return;
     }
+
+    // Helper útil para conservar filtros al cambiar de página en el HTML
+    $buildQuery = function($newParams) {
+        return '?' . http_build_query(array_merge($_GET, $newParams));
+    };
+
+    // Renombramos las variables informativas para que cuadren con tu HTML original
+    $desde = $desdeRegistro;
+    $hasta = $hastaRegistro;
+
+    $almacenes        = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
+    $tiposDisponibles = Producto::tiposDisponibles();
+    include __DIR__ . '/../views/inventario/rotacion_inventario.php';
+}
 
     private function parseDate(string $value): string
     {
         $date = DateTime::createFromFormat('Y-m-d', substr($value, 0, 10));
         return $date ? $date->format('Y-m-d') : date('Y-m-d');
     }
+
+    private function buildPdfDocument(array $lines): string
+    {
+        if (empty($lines)) {
+            $lines = ['Reporte sin informacion'];
+        }
+
+        $maxLinesPerPage = 42;
+        $pagesContent    = array_chunk($lines, $maxLinesPerPage);
+
+        $objects              = [];
+        $objects[1]           = '<< /Type /Catalog /Pages 2 0 R >>';
+        $objects[2]           = ''; // placeholder for /Pages
+        $fontObjNum           = 3;
+        $objects[$fontObjNum] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+        $pageRefs = [];
+        foreach ($pagesContent as $chunk) {
+            $contentStream           = $this->createPdfContentStream($chunk);
+            $contentObjNum           = count($objects) + 1;
+            $objects[$contentObjNum] = $contentStream;
+
+            $pageObjNum           = $contentObjNum + 1;
+            $objects[$pageObjNum] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ' . $fontObjNum . ' 0 R >> >> /Contents ' . $contentObjNum . ' 0 R >>';
+            $pageRefs[]           = $pageObjNum . ' 0 R';
+        }
+
+        if (empty($pageRefs)) {
+            // Garantizar al menos una pagina vacia
+            $contentStream           = $this->createPdfContentStream(['(Sin contenido)']);
+            $contentObjNum           = count($objects) + 1;
+            $objects[$contentObjNum] = $contentStream;
+            $pageObjNum              = $contentObjNum + 1;
+            $objects[$pageObjNum]    = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ' . $fontObjNum . ' 0 R >> >> /Contents ' . $contentObjNum . ' 0 R >>';
+            $pageRefs[]              = $pageObjNum . ' 0 R';
+        }
+
+        $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', $pageRefs) . '] /Count ' . count($pageRefs) . ' >>';
+
+        $pdf         = "%PDF-1.4\n";
+        $offsets     = [];
+        $objectCount = count($objects);
+
+        for ($i = 1; $i <= $objectCount; $i++) {
+            $offsets[$i] = strlen($pdf);
+            $pdf .= $i . " 0 obj\n" . $objects[$i] . "\nendobj\n";
+        }
+
+        $xrefPosition = strlen($pdf);
+        $pdf .= "xref\n0 " . ($objectCount + 1) . "\n";
+        $pdf .= "0000000000 65535 f \n";
+        for ($i = 1; $i <= $objectCount; $i++) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
+        }
+        $pdf .= "trailer << /Size " . ($objectCount + 1) . " /Root 1 0 R >>\n";
+        $pdf .= "startxref\n" . $xrefPosition . "\n%%EOF";
+
+        return $pdf;
+    }
     
+    private function createPdfContentStream(array $lines): string
+    {
+        $leading = 14;
+        $startY  = 792 - 72;
+        $content = "BT\n/F1 11 Tf\n{$leading} TL\n72 {$startY} Td\n";
+
+        $total = count($lines);
+        foreach ($lines as $index => $line) {
+            $content .= '(' . $this->escapePdfText($line) . ") Tj\n";
+            if ($index < $total - 1) {
+                $content .= "T*\n";
+            }
+        }
+
+        $content .= "ET\n";
+        $length = strlen($content);
+
+        return "<< /Length {$length} >>\nstream\n{$content}\nendstream";
+    }
+
 }
