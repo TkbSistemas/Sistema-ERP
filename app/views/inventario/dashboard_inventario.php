@@ -131,14 +131,14 @@ $buildQuery = function(array $overrides = []) {
                 <form method="get" class="inventario-filters-form">
                     <div class="inv-filter-row">
                         <div class="inv-filter-field">
-                            <label for="buscar">Búsqueda global</label>
+                            <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, código, descripción o proveedor" value="<?= $buscar ?>">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción o proveedor" value="<?= $buscar ?>">
                             </div>
                         </div>
                         <div class="inv-filter-field">
-                            <label for="codigo_barras">Código de barras</label>
+                            <label for="codigo_barras">Código de Barras</label>
                             <input type="text" id="codigo_barras" name="codigo_barras" value="<?= htmlspecialchars($filtros['codigo_barras'] ?? '') ?>" placeholder="Escanea o escribe codigo">
                         </div>
                         <div class="inv-filter-field">
@@ -150,15 +150,15 @@ $buildQuery = function(array $overrides = []) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="inv-filter-field">
+                        <!--div class="inv-filter-field">
                             <label for="almacen_id">Almacén</label>
                             <select id="almacen_id" name="almacen_id">
                                 <option value="">Todos</option>
-                                <?php foreach ($almacenes as $almacen): ?>
-                                    <option value="<?= $almacen['id'] ?>" <?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
-                                <?php endforeach; ?>
+                                <//?php foreach ($almacenes as $almacen): ?>
+                                    <option value="<//?= $almacen['id'] ?>" <//?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><//?= htmlspecialchars($almacen['nombre']) ?></option>
+                                <//?php endforeach; ?>
                             </select>
-                        </div>
+                        </div-->
                         <div class="inv-filter-field">
                             <label for="proveedor_id">Proveedor</label>
                             <select id="proveedor_id" name="proveedor_id">
@@ -181,7 +181,7 @@ $buildQuery = function(array $overrides = []) {
                             </select>
                         </div>
                         <div class="inv-filter-field">
-                            <label for="estado">Estado físico</label>
+                            <label for="estado">Estado Físico</label>
                             <select id="estado" name="estado">
                                 <option value="">Todos</option>
                                 <?php foreach ($estadosProducto as $estado): ?>
@@ -190,16 +190,7 @@ $buildQuery = function(array $overrides = []) {
                             </select>
                         </div>
                         <div class="inv-filter-field">
-                            <label for="activo_id">Disponibilidad</label>
-                            <select id="activo_id" name="activo_id">
-                                <option value="">Todas</option>
-                                <?php foreach ($estadosActivos as $estado): ?>
-                                    <option value="<?= $estado['id'] ?>" <?= $activoFiltro == $estado['id'] ? 'selected' : '' ?>><?= htmlspecialchars($estado['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="stock_flag">Estado de stock</label>
+                            <label for="stock_flag">Estado de Stock</label>
                             <select id="stock_flag" name="stock_flag">
                                 <option value="">Todos</option>
                                 <option value="bajo" <?= $stockFlag === 'bajo' ? 'selected' : '' ?>>Stock bajo</option>
@@ -207,30 +198,8 @@ $buildQuery = function(array $overrides = []) {
                                 <option value="suficiente" <?= $stockFlag === 'suficiente' ? 'selected' : '' ?>>Stock suficiente</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="inv-filter-row">
                         <div class="inv-filter-field">
-                            <label for="valor_min">Valor mínimo (MXN)</label>
-                            <input type="number" step="0.01" id="valor_min" name="valor_min" value="<?= $valorMin ?>">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="valor_max">Valor máximo (MXN)</label>
-                            <input type="number" step="0.01" id="valor_max" name="valor_max" value="<?= $valorMax ?>">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="fecha_desde">Fecha de alta (desde)</label>
-                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= $fechaDesde ?>">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="fecha_hasta">Fecha de alta (hasta)</label>
-                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= $fechaHasta ?>">
-                        </div>
-                    </div>
-
-                    <div class="inv-filter-row">
-                        <div class="inv-filter-field">
-                            <label for="unidad_medida_id">Unidad de medida</label>
+                            <label for="unidad_medida_id">Unidad de Medida</label>
                             <select id="unidad_medida_id" name="unidad_medida_id">
                                 <option value="">Todas</option>
                                 <?php foreach ($unidades as $unidad): ?>
@@ -238,16 +207,40 @@ $buildQuery = function(array $overrides = []) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                    </div>
+
+                    <div class="inv-filter-row">
+                        <?php if ($mostrarCostos):?>
                         <div class="inv-filter-field">
-                            <label for="per_page">Resultados por página</label>
+                            <label for="valor_min">Valor Mínimo (MXN)</label>
+                            <input type="number" step="10" id="valor_min" name="valor_min" value="<?= $valorMin ?>">
+                        </div>
+                        <div class="inv-filter-field">
+                            <label for="valor_max">Valor Máximo (MXN)</label>
+                            <input type="number" step="10" id="valor_max" name="valor_max" value="<?= $valorMax ?>">
+                        </div>
+                        <?php endif; ?>
+                        <div class="inv-filter-field">
+                            <label for="fecha_desde">Fecha de Alta (desde)</label>
+                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= $fechaDesde ?>">
+                        </div>
+                        <div class="inv-filter-field">
+                            <label for="fecha_hasta">Fecha de Alta (hasta)</label>
+                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= $fechaHasta ?>">
+                        </div>
+                        <div class="inv-filter-field">
+                            <label for="per_page">Resultados por Página</label>
                             <select id="per_page" name="per_page" onchange="this.form.submit()">
                                 <?php foreach ($perPageOptions as $option): ?>
                                     <option value="<?= $option ?>" <?= (int)$perPage === (int)$option ? 'selected' : '' ?>><?= $option ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="inv-filter-field inv-filter-actions">
-                            <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar filtros</button>
+                    </div>
+
+                    <div class="inv-filter-row">
+                        <div class="inv-filter-actions">
+                            <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar Filtros</button>
                             <?php if ($hayFiltros): ?>
                                 <a class="btn-ghost" href="inventario_actual"><i class="fa fa-eraser"></i> Limpiar</a>
                             <?php endif; ?>
@@ -354,14 +347,11 @@ $buildQuery = function(array $overrides = []) {
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
-            // Añade o quita la clase '.collapsed' al menú
             console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
             
-            // Añade o quita la clase '.collapsed' al contenido para que se estire
             mainContent.classList.toggle('collapsed');
             
-            // Opcional: Cambia el icono de barras (三) a una equis (X) cuando abra/cierre
             const icon = toggleBtn.querySelector('i');
             if (icon) {
                 if (sidebar.classList.contains('collapsed')) {

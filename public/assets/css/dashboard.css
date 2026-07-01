@@ -790,6 +790,10 @@ body, html {
 }
 
 .btn-table {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     background: #f2f4f8;
     color: #294982;
     border: none;
@@ -799,9 +803,6 @@ body, html {
     margin-right: 5px;
     cursor: pointer;
     transition: background 0.13s, color 0.13s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
 }
 .btn-table:last-child { margin-right: 0; }
 .btn-table:hover { background: #e5eeff; color: #1842ac; }

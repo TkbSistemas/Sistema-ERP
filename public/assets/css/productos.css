@@ -337,6 +337,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     border-radius: 8px;
     border: 1px solid #d9deef;
     color: #2c4482;

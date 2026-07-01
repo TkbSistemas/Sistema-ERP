@@ -163,6 +163,8 @@
 
 .filter-input-icon input {
     padding-left: 34px;
+    width: 100px;
+    max-width: 80%;
 }
 
 .inv-filter-actions {
@@ -170,6 +172,7 @@
     align-items: center;
     gap: 12px;
     margin-top: 24px;
+    justify-content: flex-end;
 }
 
 .inventario-table-card {

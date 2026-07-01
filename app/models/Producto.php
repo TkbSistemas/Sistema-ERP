@@ -161,11 +161,10 @@ class Producto
         $stmt = $db->prepare($sql);
         return $stmt->execute([
             $data['codigo'], $data['codigo_barras'], $data['nombre'], $data['descripcion'], $data['proveedor_id'], $data['categoria_id'],
-            $data['peso'], $data['ancho'], $data['alto'], $data['profundidad'], $data['unidad_medida_id'],
-            $data['clase_categoria'], $data['marca'], $data['color'], $data['forma'], $data['especificaciones_tecnicas'],
-            $data['origen'], $data['costo_compra'], $data['precio_venta'], $data['stock_minimo'], $data['stock_actual'],
-            $data['almacen_id'], $data['ubicacion_fisica'], $data['estado'], $data['tipo'], $data['imagen_url'],
-            $data['last_requested_by_user_id'], $data['last_request_date'], $data['tags']
+            $data['peso'], $data['ancho'], $data['alto'], $data['profundidad'], $data['unidad_medida_id'], $data['clase_categoria'], 
+            $data['marca'], $data['color'], $data['forma'], $data['especificaciones_tecnicas'], $data['origen'], 
+            $data['costo_compra'], $data['precio_venta'], $data['stock_minimo'], $data['stock_actual'], $data['almacen_id'], 
+            $data['ubicacion_fisica'], $data['estado'], $data['tipo'], $data['imagen_url'],$data['last_requested_by_user_id'], $data['last_request_date'], $data['tags']
         ]);
     }
 
@@ -548,10 +547,7 @@ class Producto
             $params[] = $filtros['estado'];
         }
 
-        if (!empty($filtros['activo_id'])) {
-            $condiciones[] = 'p.activo_id = ?';
-            $params[] = (int) $filtros['activo_id'];
-        }
+        $condiciones[] = 'p.activo_id = 1';
 
         if (!empty($filtros['unidad_medida_id'])) {
             $condiciones[] = 'p.unidad_medida_id = ?';

@@ -47,11 +47,11 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
         <main class="dashboard-main productos-main">
             <div class="productos-header">
                 <div>
-                    <h1>Imprimir etiquetas</h1>
-                    <p class="productos-header-desc">Genera etiquetas PDF con código de barras para el producto seleccionado.</p>
+                    <h1>Imprimir Etiquetas</h1>
+                    <p class="productos-header-desc">Genera Etiquetas PDF con Código de Barras para el Producto Seleccionado.</p>
                 </div>
                 <div class="productos-header-actions">
-                    <a class="btn-secondary" href="productos_view.php?id=<?= (int) ($producto['id'] ?? 0) ?>"><i class="fa fa-arrow-left"></i> Volver al producto</a>
+                    <a class="btn-secondary" href="ver_producto?id=<?= (int) ($producto['id'] ?? 0) ?>"><i class="fa fa-arrow-left"></i> Volver al Producto</a>
                 </div>
             </div>
 
@@ -59,8 +59,8 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
                 <div>
                     <h1><?= htmlspecialchars($producto['nombre'] ?? 'Producto') ?></h1>
                     <div class="hero-meta">
-                        <span class="badge badge-stock ok">Código interno: <?= htmlspecialchars($producto['codigo'] ?? '-') ?></span>
-                        <span class="badge badge-stock ok">Código de barras: <?= htmlspecialchars($producto['codigo_barras'] ?? '-') ?></span>
+                        <span class="badge badge-stock ok">Código Interno: <?= htmlspecialchars($producto['codigo'] ?? '-') ?></span>
+                        <span class="badge badge-stock ok">Código de Barras: <?= htmlspecialchars($producto['codigo_barras'] ?? '-') ?></span>
                         <span class="badge badge-activo"><?= htmlspecialchars($producto['almacen'] ?? 'Sin almacen') ?></span>
                     </div>
                     <?php if (!empty($producto['descripcion'])): ?>
@@ -70,7 +70,7 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
             </section>
 
             <section class="productos-detail-card">
-                <h2><i class="fa fa-print"></i> Configuración de etiquetas</h2>
+                <h2><i class="fa fa-print"></i> Información de Etiquetas</h2>
 
                 <?php if (!empty($error)): ?>
                     <div class="alert alert-danger"><i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($error) ?></div>
@@ -81,7 +81,7 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
                     <div class="form-group">
                         <label for="almacen_id">Almacén</label>
                         <select id="almacen_id" name="almacen_id" required>
-                            <option value="">Selecciona un almacén</option>
+                            <option value="">Selecciona un Almacén</option>
                             <?php foreach ($almacenes as $almacen): ?>
                                 <option value="<?= (int) $almacen['id'] ?>" <?= (int) $almacen['id'] === $almacenSeleccionado ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($almacen['nombre']) ?>
@@ -91,30 +91,53 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
                     </div>
 
                     <div class="form-group">
-                        <label for="lote">Lote o referencia</label>
+                        <label for="lote">Lote o Referencia</label>
                         <input type="text" id="lote" name="lote" maxlength="50" value="<?= htmlspecialchars($loteValor) ?>">
                     </div>
 
                     <div class="form-group">
-                        <label for="unidad_etiqueta">Unidad mostrada</label>
+                        <label for="unidad_etiqueta">Unidad Mostrada</label>
                         <input type="text" id="unidad_etiqueta" name="unidad_etiqueta" maxlength="20" value="<?= htmlspecialchars($unidadEtiqueta) ?>">
                     </div>
 
                     <div class="form-group">
-                        <label for="cantidad">Cantidad de etiquetas</label>
+                        <label for="cantidad">Cantidad de Etiquetas</label>
                         <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="<?= (int) $cantidadValor ?>">
-                        <small>Maximo 50 etiquetas por generacion.</small>
+                        <small>Maximo 50 Etiquetas.</small>
                     </div>
 
                     <div class="form-actions">
                         <button type="submit" class="btn-main"><i class="fa fa-file-pdf"></i> Generar PDF</button>
-                        <a href="productos.php" class="btn-secondary"><i class="fa fa-times"></i> Cancelar</a>
+                        <a class="btn-secondary" href="ver_producto?id=<?= (int) ($producto['id'] ?? 0) ?>"><i class="fa fa-times"></i> Cancelar</a>
                     </div>
                 </form>
             </section>
         </main>
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.querySelector('.main_sidebar'); 
+        const mainContent = document.querySelector('.content-area');
+
+        if (toggleBtn && sidebar && mainContent) {
+            toggleBtn.addEventListener('click', function () {
+                console.log('Sidebar toggle script loaded');
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('collapsed');
+                const icon = toggleBtn.querySelector('i');
+                if (icon) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.className = 'fa-solid fa-bars'; // Icono normal
+                    } else {
+                        icon.className = 'fa-solid fa-xmark'; // Icono de cerrar
+                    }
+                }
+            });
+        }
+    });
+</script>
 </body>
 </html>
 

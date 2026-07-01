@@ -39,7 +39,7 @@ class AuthController
             $_SESSION['alerta'] = [
                 'tipo' => 'error',
                 'titulo' => 'Error de Inicio de Sesión',
-                'mensaje' => 'Usuario o contraseña Incorrectos. Por favor, inténtalo de nuevo.',
+                'mensaje' => 'Usuario o contraseña Incorrectos. Inténtalo de nuevo.',
             ];
         }
 

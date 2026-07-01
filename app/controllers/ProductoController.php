@@ -205,8 +205,8 @@ class ProductoController
 
         include __DIR__ . '/../views/inventario/productos/edit.php';
     }
-    public function view($id)
-    {
+    
+    public function view($id){
         Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
         $producto = Producto::find($id);
         if (! $producto) {
@@ -752,8 +752,7 @@ class ProductoController
         return $data;
     }
 
-    private function buildEtiquetasPdf(array $labels): string
-    {
+    private function buildEtiquetasPdf(array $labels): string{
         $pageWidth            = 226.0;
         $pageHeight           = 170.0;
         $objects              = [];

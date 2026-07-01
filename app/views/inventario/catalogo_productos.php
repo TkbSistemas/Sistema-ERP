@@ -52,9 +52,10 @@ $buildQuery = function(array $overrides = []) {
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
     <link rel="stylesheet" href="assets/css/productos.css">
+    <link rel="stylesheet" href="assets/css/inventario.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
     <style>
-        /* Ensures the Stock column is a bit wider and numbers don't wrap/cut */
         .productos-table .col-stock { width: 140px; min-width: 120px; text-align: center; }
         .productos-table td.col-stock { white-space: nowrap; }
         .productos-table td.col-stock .badge { display: inline-block; }
@@ -88,8 +89,6 @@ $buildQuery = function(array $overrides = []) {
                     <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
                 </div>
             </header>
-
-
         <main class="dashboard-main productos-main">
             <?php if ($mensajeError): ?>
                 <div class="alert alert-danger"><i class="fa fa-circle-exclamation"></i> <?= htmlspecialchars($mensajeError) ?></div>
@@ -119,13 +118,27 @@ $buildQuery = function(array $overrides = []) {
                                     <li><?= htmlspecialchars($error) ?></li>
                                 <?php endforeach; ?>
                                 <?php if (count($importErrors) > 8): ?>
-                                    <li>Se omitieron <?= count($importErrors) - 8 ?> mensajes adicionales.</li>
+                                    <li>Se Omitieron <?= count($importErrors) - 8 ?> Mensajes Adicionales.</li>
                                 <?php endif; ?>
                             </ul>
                         </div>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+
+            <?php if (isset($_SESSION['alerta'])): ?>
+                    <script>
+                        Swal.fire({
+                            icon: '<?php echo $_SESSION['alerta']['tipo']; ?>',
+                            title: '<?php echo $_SESSION['alerta']['titulo']; ?>',
+                            text: '<?php echo $_SESSION['alerta']['mensaje']; ?>',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    </script>
+                    <?php 
+                        unset($_SESSION['alerta']); 
+                    ?>
+                <?php endif; ?>
 
             <div class="productos-header">
                 <div>
@@ -135,13 +148,13 @@ $buildQuery = function(array $overrides = []) {
                     <p class="productos-import-note desktop-only">Usa la plantilla para cargar múltiples productos. Los valores deben corresponder con los IDs de catálogos ya registrados (categorías, proveedores, almacenes, unidades).</p-->
                 </div>
                 <div class="productos-header-actions">
-                    <a class="btn-secondary" href="productos_template.php"><i class="fa-solid fa-download"></i> Descargar Plantilla</a>
-                    <form class="productos-import-form" action="productos_import.php" method="post" enctype="multipart/form-data">
-                        <!--label class="btn-secondary btn-file">
-                            <i class="fa-solid fa-file-csv"></i> Seleccionar CSV
-                            <input type="file" name="productos_archivo" accept=".csv,text/csv" required>
-                        </label-->
-                        <button type="submit" class="btn-main"><i class="fa-solid fa-upload"></i> Importar Catálogo</button>
+                    <a class="btn-secondary" href="descargar_plantilla"><i class="fa-solid fa-download"></i> Descargar Plantilla</a>
+                    <form class="productos-import-form" id="importForm" action="importar_catalogo" method="post" enctype="multipart/form-data">
+                        <input type="file" id="csvFileInput" name="productos_archivo" accept=".csv,text/csv" style="display: none;" required>
+                        
+                        <button type="button" id="btnImportar" class="btn-main">
+                            <i class="fa-solid fa-file-csv"></i> Importar Catálogo
+                        </button>
                     </form>
                     <!-- <a class="btn-secondary" href="productos_barcode.php"><i class="fa fa-barcode"></i> Buscar por código</a> -->
                     <a class="btn-main" href="producto_nuevo"><i class="fa fa-plus"></i> Nuevo Producto</a>
@@ -149,7 +162,7 @@ $buildQuery = function(array $overrides = []) {
                 <p class="productos-import-note mobile-only">Usa la plantilla para cargar múltiples productos. Los valores deben corresponder con los IDs de catálogos ya registrados (categorías, proveedores, almacenes, unidades).</p>
             </div>
 
-            <section class="productos-filters-card">
+            <section class="inventario-filters-card">
                 <form method="get" class="productos-filters-form">
                     <div class="filter-row">
                         <div class="filter-field">
@@ -219,14 +232,24 @@ $buildQuery = function(array $overrides = []) {
 
                     <div class="filter-row">
                         <div class="filter-field">
-                            <label for="activo_id">Disponibilidad</label>
-                            <select id="activo_id" name="activo_id">
-                                <option value="">Todas</option>
-                                <?php foreach ($estadosActivos as $estadoActivo): ?>
-                                    <option value="<?= $estadoActivo['id'] ?>" <?= $filtros['activo_id'] == $estadoActivo['id'] ? 'selected' : '' ?>><?= htmlspecialchars($estadoActivo['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
+                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
                         </div>
+                        <div class="filter-field">
+                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
+                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
+                        </div>
+                        <div class="filter-field">
+                            <label for="valor_min">Valor Inventario mínimo</label>
+                            <input type="number" step="0.01" id="valor_min" name="valor_min" value="<?= htmlspecialchars($filtros['valor_min']) ?>" placeholder="Ej. 1000">
+                        </div>
+                        <div class="filter-field">
+                            <label for="valor_max">Valor Inventario máximo</label>
+                            <input type="number" step="0.01" id="valor_max" name="valor_max" value="<?= htmlspecialchars($filtros['valor_max']) ?>" placeholder="Ej. 5000">
+                        </div>
+                    </div>
+
+                    <div class="filter-row">
                         <div class="filter-field">
                             <label for="stock_flag">Estado de Stock</label>
                             <select id="stock_flag" name="stock_flag">
@@ -249,28 +272,6 @@ $buildQuery = function(array $overrides = []) {
                             <label for="tags">Tags</label>
                             <input type="text" id="tags" name="tags" value="<?= htmlspecialchars($filtros['tags']) ?>" placeholder="Palabras clave">
                         </div>
-                    </div>
-
-                    <div class="filter-row">
-                        <div class="filter-field">
-                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
-                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
-                        </div>
-                        <div class="filter-field">
-                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
-                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
-                        </div>
-                        <div class="filter-field">
-                            <label for="valor_min">Valor Inventario mínimo</label>
-                            <input type="number" step="0.01" id="valor_min" name="valor_min" value="<?= htmlspecialchars($filtros['valor_min']) ?>" placeholder="Ej. 1000">
-                        </div>
-                        <div class="filter-field">
-                            <label for="valor_max">Valor Inventario máximo</label>
-                            <input type="number" step="0.01" id="valor_max" name="valor_max" value="<?= htmlspecialchars($filtros['valor_max']) ?>" placeholder="Ej. 5000">
-                        </div>
-                    </div>
-
-                    <div class="filter-row">
                         <div class="filter-field">
                             <label for="per_page">Resultados por Página</label>
                             <select id="per_page" name="per_page" onchange="this.form.submit()">
@@ -279,10 +280,13 @@ $buildQuery = function(array $overrides = []) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="filter-actions">
+                    </div>
+
+                    <div class="inv-filter-row">
+                        <div class="inv-filter-actions">
                             <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar Filtros</button>
                             <?php if ($hayFiltros): ?>
-                                <a class="btn-ghost" href="catalogo_productos"><i class="fa fa-eraser"></i> Limpiar</a>
+                                <a class="btn-ghost" href="inventario_actual"><i class="fa fa-eraser"></i> Limpiar</a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -358,24 +362,36 @@ $buildQuery = function(array $overrides = []) {
                                     <td><?= htmlspecialchars($producto['proveedor'] ?? '-') ?></td>
                                     <!--td>$<//?= number_format($valorInventario, 2) ?></td-->
                                     <td class="col-actions">
-                                        <a class="btn-table" title="Ver detalle" href="productos_view.php?id=<?= $producto['id'] ?>"><i class="fa fa-eye"></i></a>
-                                        <a class="btn-table" title="Editar" href="productos_edit.php?id=<?= $producto['id'] ?>"><i class="fa fa-pen"></i></a>
-                                        <!--a class="btn-table" title="Imprimir etiqueta" href="productos_etiqueta.php?id=<?= $producto['id'] ?>"><i class="fa fa-barcode"></i></a-->
-                                        <form method="post" action="productos_setactive.php" class="inline-form" style="display:inline-block">
+                                        <a class="btn-table" title="Ver Detalles" href="ver_producto?id=<?= $producto['id'] ?>"><i class="fa fa-eye"></i></a>
+                                        <form method="post" action="eliminar_producto" class="inline-form form-eliminar" style="display:inline-block">
                                             <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
                                             <input type="hidden" name="id" value="<?= (int) $producto['id'] ?>">
-                                            <input type="hidden" name="active" value="<?= (int)($producto['activo_id'] ?? 1) === 1 ? 0 : 1 ?>">
+                                            <input type="hidden" name="active" value="0">
+                                            
+                                            <button type="submit" 
+                                                    class="btn-table btn-danger" 
+                                                    title="Eliminar Producto"
+                                                    data-nombre="<?= htmlspecialchars($producto['nombre']) ?>">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        <!--a class="btn-table" title="Editar" href="productos_edit.php?id=<//?= $producto['id'] ?>"><i class="fa fa-pen"></i></a-->
+                                        <!--a class="btn-table" title="Imprimir etiqueta" href="productos_etiqueta.php?id=<//?= $producto['id'] ?>"><i class="fa fa-barcode"></i></a-->
+                                        <!--form method="post" action="eliminar_producto" class="inline-form" style="display:inline-block">
+                                            <input type="hidden" name="csrf" value="<//?= Session::csrfToken() ?>">
+                                            <input type="hidden" name="id" value="<//?= (int) $producto['id'] ?>">
+                                            <input type="hidden" name="active" value="<//?= (int)($producto['activo_id'] ?? 1) === 1 ? 0 : 1 ?>">
                                             <button type="submit" class="btn-table btn-danger" title="Eliminar">
                                                 <i class="fa fa-trash"></i>
                                             </button>
-                                            <!--button type="submit"
+                                            <button type="submit"
                                                     class="btn-table"
                                                     title="<//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'Desactivar' : 'Activar' ?>"
                                                     data-confirm-click="<//?= (int)($producto['activo_id'] ?? 1) === 1 ? '?Desactivar este producto?' : '?Activar este producto?' ?>">
                                                 <i class="fa <//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'fa-toggle-off' : 'fa-toggle-on' ?>"></i>
-                                            </button-->
+                                            </button>
                                         </form>
-                                        <!--form method="post" action="productos_delete.php" class="inline-form" style="display:inline-block" data-confirm="?Eliminar el producto seleccionado? Esta acci?n no se puede deshacer.">
+                                        <form method="post" action="productos_delete.php" class="inline-form" style="display:inline-block" data-confirm="?Eliminar el producto seleccionado? Esta acci?n no se puede deshacer.">
                                             <input type="hidden" name="csrf" value="<//?= Session::csrfToken() ?>">
                                             <input type="hidden" name="id" value="<//?= (int) $producto['id'] ?>">
                                             <button type="submit" class="btn-table btn-danger" title="Eliminar">
@@ -411,6 +427,23 @@ $buildQuery = function(array $overrides = []) {
     </div>
 </div>
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const btnImportar = document.getElementById('btnImportar');
+        const fileInput = document.getElementById('csvFileInput');
+        const importForm = document.getElementById('importForm');
+        btnImportar.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                btnImportar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Subiendo Archivo...';
+                
+                importForm.submit();
+            }
+        });
+    });
+
     document.addEventListener("DOMContentLoaded", function () {
     const toggleBtn = document.getElementById('toggleSidebar');
    const sidebar = document.querySelector('.main_sidebar'); 
@@ -418,14 +451,9 @@ $buildQuery = function(array $overrides = []) {
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
-            // Añade o quita la clase '.collapsed' al menú
             console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
-            
-            // Añade o quita la clase '.collapsed' al contenido para que se estire
             mainContent.classList.toggle('collapsed');
-            
-            // Opcional: Cambia el icono de barras (三) a una equis (X) cuando abra/cierre
             const icon = toggleBtn.querySelector('i');
             if (icon) {
                 if (sidebar.classList.contains('collapsed')) {
@@ -436,6 +464,35 @@ $buildQuery = function(array $overrides = []) {
             }
         });
     }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    const formularios = document.querySelectorAll('.form-eliminar');
+
+    formularios.forEach(formulario => {
+        formulario.addEventListener('submit', function(e) {
+            e.preventDefault(); // Frenamos el envío automático
+
+            const boton = formulario.querySelector('button[type="submit"]');
+            const nombreProducto = boton.getAttribute('data-nombre');
+
+            Swal.fire({
+                title: '¿Estás Seguro de Eliminar este Producto?',
+                text: `"${nombreProducto}" Será Removido del Inventario.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33', // Rojo de eliminación
+                cancelButtonColor: '#7286a6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    formulario.submit(); // Enviamos el formulario si confirma
+                }
+            });
+        });
+    });
 });
 </script>
 </body>

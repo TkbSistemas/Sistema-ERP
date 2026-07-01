@@ -39,9 +39,40 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->obtenerCatalogo();
         break;
+    case 'descargar_plantilla':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->downloadTemplate();
+        break;
+    case 'importar_catalogo':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->importar();
+        break;
     case 'producto_nuevo':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearProducto();
+        break;
+    case 'ver_producto':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        $id = $_GET['id'] ?? 0;
+        (new InventarioController())->ver_producto($id);
+        break;
+    case 'eliminar_producto':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->eliminarProducto($_POST['id'] ?? 0, $_POST['active'] ?? 0);
+        break;
+    case 'editar_producto':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        $id = $_GET['id'] ?? 0;
+        (new InventarioController())->editarProducto($id);
+        break;
+    case 'etiqueta_producto':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        $id = $_GET['id'] ?? 0;
+        (new InventarioController())->obtenerEtiqueta($id);
+        break;
+    case 'rotacion_inventario':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->obtenerRotacion();
         break;
     case 'inventario_entrada':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
@@ -71,10 +102,6 @@ switch ($route) {
     case 'prestamos_herramientas':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->pendientes();
-        break;
-    case 'rotacion_inventario':
-        require_once __DIR__ . '/../app/controllers/ReporteController.php';
-        (new ReporteController())->rotacion();
         break;
     case 'reportes':
         require_once __DIR__ . '/../app/controllers/ReporteController.php';
