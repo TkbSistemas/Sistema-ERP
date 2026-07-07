@@ -330,8 +330,17 @@ asigando roles con sus respectivas funcionalidades.
 - Muestra formulario para buscar/seleccionar los materiales a dar de baja (Nombre, Cantidad, Razón, Fecha, etc).
 - Genera formato de impresión con la lista de seleccionados (Campo de firma de autorización).
 
+### 8.8 Solicitar Reabastecimiento
 
-### 8.8 Crear Etiquetas
+**Controller**: `AlmacenController`
+
+**View**: `solicitar_stock`
+
+**Lógica Esperada**:
+- Muestra formulario para buscar/seleccionar los materiales de los que solicitar stock.
+- Crea orden de compra para autorizar el reabastecimiento del almacen.
+
+### 8.9 Crear Etiquetas
 
 **Controller**: `AlmacenController`
 
