@@ -46,13 +46,15 @@ asigando roles con sus respectivas funcionalidades.
 
 ---
 
-## 1. MÓDULO DE INICIO DE SESION
+## 1. MÓDULO DE INICIO DE SESIÓN
 
 ### 1.1 Obtener Inicio de Sesión
 
 **Controller**: `AuthController`
 
 **View**: `login`
+
+**DB**: `usuarios`
 
 **Request**:
 - `username`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
@@ -62,7 +64,7 @@ asigando roles con sus respectivas funcionalidades.
 - Valida las credenciales para el incio de sesión.
 - Implementa Token de Seguridad.
 - Registra movimiento en la Bitacora del Sistema.
-- Extrae los Datos de la cuenta del usuario desde la DB.
+- Extrae los datos de la cuenta del usuario desde la DB.
 - Asigna y redirecciona al Dashboard según el rol del usuario.
 
 **Response**:
@@ -97,6 +99,8 @@ asigando roles con sus respectivas funcionalidades.
 
 **View**: `dashboard_inventario`
 
+**DB**: `inventario`
+
 **Request**:
 - `role`: Rol de usuario que está ingresando.
   
@@ -113,6 +117,8 @@ asigando roles con sus respectivas funcionalidades.
 **Controller**: `InventarioController`
 
 **View**: `catalogo_productos`
+
+**DB**: `inventario`
   
 **Lógica Esperada**:
 - Despliega caja de búsqueda con filtros para el catalogo.
@@ -127,6 +133,8 @@ asigando roles con sus respectivas funcionalidades.
 **Controller**: `InventarioController`
 
 **View**: `reportes_rotacion`
+
+**DB**: `inventario`
 
 **Request**:
 - `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
@@ -152,6 +160,20 @@ asigando roles con sus respectivas funcionalidades.
 - Despliega caja de filtros para las estadisticas.
 - Muestra con graficas de barras un historico del valor del inventario.
 - Muestra con grafica de pastel como se reparte el valor del inventario entre las distintas categorías.
+
+
+### 2.5 Inventario de Merma
+
+**Controller**: `InventarioController`
+
+**View**: `inventario_merma`
+
+**DB**: `inventario_merma`
+  
+**Lógica Esperada**:
+- Muestra tarjetas de resumen (Productos Registrados).
+- Despliega caja de búsqueda con filtros para el inventario.
+- Lista de el inventario de acuerdo a los filtros elegidos, incluye paginación.
 
 
 ## 3. MÓDULO DE ADMINISTRACIÓN RH
@@ -186,7 +208,7 @@ asigando roles con sus respectivas funcionalidades.
 ## 7. MÓDULO DE EJECUCIÓN DE PROYECTOS
 ## 8. MÓDULO DE ALMACÉN
 
-### 8.1 Obtener Dashboard del Almacen
+### 8.1 Obtener Dashboard del Almacén
 
 **Controller**: `AlmacenController`
 
@@ -207,6 +229,8 @@ asigando roles con sus respectivas funcionalidades.
 
 **View**: `solicitudes_material`
 
+**DB**: `solicitudes_material`
+
 **Request**:
 - `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
 - `fecha_fin`: Fecha hasta la cual se toman los movimientos (Default: Día Actual).
@@ -214,17 +238,42 @@ asigando roles con sus respectivas funcionalidades.
 **Lógica Esperada**:
 - Muestra tarjetas de resumen (Solicitudes de Material Pendientes).
 - Despliega caja de búsqueda con filtros para las solicitudes.
-- Lista las ultimas n solicitudes de material pendientes.
+- Lista las últimas n solicitudes de material pendientes.
 - Lista historial de todas las solicitudes con su estado (Entregadas/Rechazadas).
 
 
 ### 8.3 Crear Entrada de Material
 
-### 8.4 Obtener Préstamos de Herramientas
+**Controller**: `AlmacenController`
+
+**View**: `registrar_entrada`
+
+**Lógica Esperada**:
+- Despliega formulario para ingresar folio de una orden de compra.
+- Marca como completa o incompleta la lista por cada producto.
+- Si la orden llegó completa se suma al inventario.
+- Si la orden llegó incompleta no se registra y regresa a compras.
+
+
+### 8.4 Crear Entrada Rápida
+
+**Controller**: `AlmacenController`
+
+**View**: `entrada_rapida`
+
+**Lógica Esperada**:
+- Despliega formulario para registrar lista de productos.
+- NO necesita que exista orden de compra previa.
+- Suma el listado al sock del inventario.
+
+  
+### 8.5 Obtener Préstamos de Herramientas
 
 **Controller**: `AlmacenController`
 
 **View**: `prestamos_herramientas`
+
+**DB**: `prestamos_herramientas`
 
 **Request**:
 - `fecha_inicio`: Fecha a partir de la cual se toman los movimientos (Default: Inicio de mes)
@@ -240,11 +289,13 @@ asigando roles con sus respectivas funcionalidades.
 - Incluye la acción de extender el plazo en el caso de los prestamos activos.
 
 
-### 8.5 Obtener Cajas de Herramientas
+### 8.6 Obtener Cajas de Herramientas
 
 **Controller**: `AlmacenController`
 
 **View**: `cajas_herramientas`
+
+**DB**: `cajas_herramientas`
 
 **Lógica Esperada**:
 - Muestra tarjetas de resumen (Cajas Incompletas, Cajas Disponibles, Ultimo Inventario).
@@ -252,7 +303,7 @@ asigando roles con sus respectivas funcionalidades.
 - Genera un inventario de los elementos que contiene cada caja, dando opción de imprimir formato.
   
 
-### 8.6 Crear Baja de Productos
+### 8.7 Crear Baja de Productos
 
 **Controller**: `AlmacenController`
 
@@ -263,7 +314,7 @@ asigando roles con sus respectivas funcionalidades.
 - Genera formato de impresión con la lista de seleccionados (Campo de firma de autorización).
 
 
-### 8.7 Crear Etiquetas
+### 8.8 Crear Etiquetas
 
 **Controller**: `AlmacenController`
 
