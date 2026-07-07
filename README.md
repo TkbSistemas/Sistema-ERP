@@ -241,6 +241,22 @@ asigando roles con sus respectivas funcionalidades.
 - Lista las últimas n solicitudes de material pendientes.
 - Lista historial de todas las solicitudes con su estado (Entregadas/Rechazadas).
 
+**Response**:
+```json
+{
+  "num_pendientes": 4,
+  "num_mes": 24,
+  "pendientes" = [
+    "nombre_solicitante": "Javier Lopez",
+    "folio": "PBUAP-0215",
+    "fecha_solicitud": "01-01-1999",
+    "materiales" = [
+       "nombre_producto": "Desarmador Plano",
+        "cantidad": 1 
+    ]
+  ]
+```
+
 
 ### 8.3 Crear Entrada de Material
 
