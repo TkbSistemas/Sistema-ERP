@@ -102,14 +102,14 @@ class SolicitudMaterial {
     }
 
     // Solicitudes pendientes por aprobar para admin/almacén (todas o filtradas por estado, fecha y buscador)
-    public static function listarPendientes($estados = ['pendiente'], $fecha_inicio = null, $fecha_fin = null, $search = null) {
+    public static function listarPendientes($estado = ['pendiente'], $fecha_inicio = null, $fecha_fin = null, $search = null) {
         $db = Database::getInstance()->getConnection();
-        $placeholders = implode(',', array_fill(0, count($estados), '?'));
+        $placeholders = implode(',', array_fill(0, count($estado), '?'));
         $sql = "SELECT s.*, u.nombre_completo AS usuario 
                 FROM solicitudes_material s 
                 LEFT JOIN usuarios u ON s.usuario_id = u.id
                 WHERE s.estado IN ($placeholders)";
-        $params = $estados;
+        $params = $estado;
 
         if ($fecha_inicio) {
             $sql .= " AND DATE(s.fecha_solicitud) >= ?";
@@ -130,8 +130,82 @@ class SolicitudMaterial {
         $sql .= " ORDER BY s.fecha_solicitud DESC";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(); //un array con todas las solicitudes pendientes
     }
+
+    public function crearEntrada(){
+        Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+
+        $productos     = Producto::all();
+        $almacenes     = Almacen::all();
+        $msg           = '';
+        $error         = '';
+        $entradaItems  = [];
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $entradaItems = $this->normalizarLineasEntrada($_POST);
+            if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
+               $error = 'Token CSRF invalido.';
+            } elseif (empty($entradaItems)) {
+                $error = 'Agrega al menos un producto a la captura de entrada.';
+            } else {
+                $db = Database::getInstance()->getConnection();
+
+                try {
+                    $db->beginTransaction();
+    
+                    foreach ($entradaItems as $indice => $linea) {
+                        $productoId = (int) ($linea['producto_id'] ?? 0);
+                        $almacenId  = (int) ($linea['almacen_id'] ?? 0);
+                        $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+                        if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
+                            throw new RuntimeException('La linea ' . ($indice + 1) . ' es invalida.');
+                        }
+
+                        $data = [
+                            'producto_id'        => $productoId,
+                            'tipo'               => 'Entrada',
+                            'cantidad'           => $cantidad,
+                            'usuario_id'         => $_SESSION['user_id'],
+                            'almacen_destino_id' => $almacenId,
+                            'observaciones'      => trim((string) ($linea['observaciones'] ?? '')),
+                        ];
+
+                        if (! MovimientoInventario::registrar($data)) {
+                            throw new RuntimeException('No fue posible registrar la linea ' . ($indice + 1) . '.');
+                        }
+
+                        Producto::sumarStock($productoId, $cantidad, $almacenId);
+                        ActivityLogger::log('inventario_entrada', 'Entrada de inventario registrada', [
+                            'producto_id' => $productoId,
+                            'almacen_id'  => $almacenId,
+                            'cantidad'    => $cantidad,
+                            'linea'       => $indice + 1,
+                        ]);
+                    }
+
+                    $db->commit();
+
+                    $totalLineas = count($entradaItems);
+                        $msg = $totalLineas === 1
+                            ? 'Entrada registrada correctamente.'
+                            : 'Se registraron ' . $totalLineas . ' productos en la entrada correctamente.';
+
+                        $entradaItems = [];
+                        $_POST = [];
+                    } catch (\Throwable $e) {
+                        if ($db->inTransaction()) {
+                            $db->rollBack();
+                        }
+                        $error = 'No fue posible registrar la entrada. Revisa los datos e intenta nuevamente.';
+                    }
+                }
+            }
+
+            $movimientosRecientes = MovimientoInventario::ultimos('Entrada', 6);
+
+            include __DIR__ . '/../views/inventario/main/entrada.php';
+        }
 
     // Cambia estado (aprobada, rechazada, entregada, cancelada), guarda usuario y observación de respuesta
     public static function actualizarEstado($id, $nuevoEstado, $usuarioId, $observacion = null) {

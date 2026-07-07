@@ -53,13 +53,22 @@ if (!isset($total_paginas)) $total_paginas = 1;
         </div>
         
             <section class="dashboard-cards-row">
-                <div class="dashboard-card yellow">
+                <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Solicitudes Pendientes</div>
                         <div class="card-value">10</div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-clock-alert"></span>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-info">
+                        <div class="card-label">Solicitudes Este Mes</div>
+                        <div class="card-value">10</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-clock-check"></span>
                     </div>
                 </div>
             </section>
@@ -78,12 +87,12 @@ if (!isset($total_paginas)) $total_paginas = 1;
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($prestamos as $p): ?>
+            <?php foreach ($solicitudes as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($p['empleado']) ?></td>
-                    <td><?= htmlspecialchars($p['codigo_producto']) ?></td>
-                    <td><?= htmlspecialchars($p['producto']) ?></td>
-                    <td><?= htmlspecialchars($p['fecha_prestamo']) ?></td>
+                    <td><?= htmlspecialchars($s['empleado']) ?></td>
+                    <td><?= htmlspecialchars($s['codigo_producto']) ?></td>
+                    <td><?= htmlspecialchars($s['producto']) ?></td>
+                    <td><?= htmlspecialchars($s['fecha_prestamo']) ?></td>
 
                     <td>
                         <a href="prestamo_devolver.php?id=<?= $p['id'] ?>" class="btn-devolver">
@@ -122,27 +131,27 @@ if (!isset($total_paginas)) $total_paginas = 1;
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-    const toggleBtn = document.getElementById('toggleSidebar');
-   const sidebar = document.querySelector('.main_sidebar'); 
-    const mainContent = document.querySelector('.content-area');
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.querySelector('.main_sidebar'); 
+        const mainContent = document.querySelector('.content-area');
 
-    if (toggleBtn && sidebar && mainContent) {
-        toggleBtn.addEventListener('click', function () {
-            sidebar.classList.toggle('collapsed');
-            
-            mainContent.classList.toggle('collapsed');
-            
-            const icon = toggleBtn.querySelector('i');
-            if (icon) {
-                if (sidebar.classList.contains('collapsed')) {
-                    icon.className = 'fa-solid fa-bars'; 
-                } else {
-                    icon.className = 'fa-solid fa-xmark'; 
+        if (toggleBtn && sidebar && mainContent) {
+            toggleBtn.addEventListener('click', function () {
+                sidebar.classList.toggle('collapsed');
+                
+                mainContent.classList.toggle('collapsed');
+                
+                const icon = toggleBtn.querySelector('i');
+                if (icon) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.className = 'fa-solid fa-bars'; 
+                    } else {
+                        icon.className = 'fa-solid fa-xmark'; 
+                    }
                 }
-            }
-        });
-    }
-});
+            });
+        }
+    });
 </script>
 </body>
 </html>

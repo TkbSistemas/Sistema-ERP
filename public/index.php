@@ -74,10 +74,6 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->obtenerRotacion();
         break;
-    case 'inventario_entrada':
-        require_once __DIR__ . '/../app/controllers/InventarioController.php';
-        (new InventarioController())->crearEntrada();
-        break;
     case 'ajustes':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearEntrada();
@@ -93,7 +89,11 @@ switch ($route) {
         break;
     case 'solicitudes_material':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
-        (new AlmacenController())->obtenerSolicitudes();
+        (new AlmacenController())->obtenerSolicitudesMaterial();
+        break;
+    case 'registrar_entrada':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->indexRegistrarEntrada();
         break;
     case 'etiquetas':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
@@ -102,6 +102,10 @@ switch ($route) {
     case 'prestamos_herramientas':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->pendientes();
+        break;
+    case 'registrar_salida':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->crearSalida();
         break;
     case 'reportes':
         require_once __DIR__ . '/../app/controllers/ReporteController.php';

@@ -18,6 +18,14 @@ class AlmacenController
         include __DIR__ . '/../views/almacenes/index.php';
     }
 
+    public function indexRegistrarEntrada(){
+        $productos = Producto::All();
+        $almacenes = Almacen::all();
+        Session::requireLogin(['Administrador', 'Almacen']);
+        
+        include __DIR__ . '/../views/almacen/registrar_entrada.php';
+    }
+
     public function create(): void
     {
         Session::requireLogin(['Administrador', 'Almacen']);
@@ -90,10 +98,10 @@ class AlmacenController
 
        $_SESSION['menu_items'] = [
             ['slug' => 'solicitudes_material', 'label' => 'Solicitudes de Material', 'icon' => 'fa-solid fa-file-signature', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Entrada de Productos', 'icon' => 'fa-solid fa-boxes-stacked', 'role' => 'Todos'],
+            ['slug' => 'registrar_entrada', 'label' => 'Entrada de Productos', 'icon' => 'fa-solid fa-boxes-stacked', 'role' => 'Todos'],
             ['slug' => 'prestamos_herramientas', 'label' => 'Préstamos de Herramientas','icon' => 'fa-solid fa-tools', 'role' => 'Todos'],
             ['slug' => '', 'label' => 'Cajas de Herramientas', 'icon' => 'fa-solid fa-toolbox', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Baja de Productos', 'icon' => 'fa-solid fa-trash-arrow-up', 'role' => 'Todos'],
+            ['slug' => 'registrar_salida', 'label' => 'Baja de Productos', 'icon' => 'fa-solid fa-trash-arrow-up', 'role' => 'Todos'],
             ['slug' => '', 'label' => 'Etiquetas', 'icon' => 'fa-solid fa-tags', 'role' => 'Todos'],
             //['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
             ['slug' => 'inventario', 'label' => 'Ir a Inventario', 'icon' => 'fa-solid fa-warehouse', 'role' => 'Todos'],
@@ -231,19 +239,42 @@ class AlmacenController
     }
 
     public function obtenerSolicitudes()
-        {
+    {
             Session::requireLogin(['Almacen']);
             
             $filtros = [
-                'search'       => $_GET['search'] ?? '',
+                'estado'       => $_GET['estado'] ?? '',
                 'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
                 'fecha_fin'    => $_GET['fecha_fin'] ?? '',
-                'estado'       => $_GET['estado'] ?? ''
+                'search'       => $_GET['search'] ?? ''
             ];
             
             $solicitudes = SolicitudMaterial::historialPorUsuario($_SESSION['user_id'], $filtros);
             include __DIR__ . '/../views/almacen/solicitudes_material.php';
         }
+
+    public function obtenerSolicitudesMaterial(){
+            Session::requireLogin(['Almacen']);
+            
+            /*$filtros = [
+                'search'       => $_GET['search'] ?? '',
+                'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
+                'fecha_fin'    => $_GET['fecha_fin'] ?? '',
+                'estado'       => $_GET['estado'] ?? ''
+            ];*/
+            
+            $solicitudes = SolicitudMaterial::listarPendientes();
+            include __DIR__ . '/../views/almacen/solicitudes_material.php';
+    }
+
+    public function crearSalida(){
+
+        $productos = Producto::All();
+        $almacenes = Almacen::all();
+        Session::requireLogin(['Administrador', 'Almacen']);
+            include __DIR__ . '/../views/almacen/registrar_salida.php';
+
+    }
 
     public function crearEtiquetas($id)
     {

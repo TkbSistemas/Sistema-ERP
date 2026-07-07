@@ -330,6 +330,7 @@
             Session::requireLogin();
 
             $_SESSION['menu_items'] = [
+                ['slug' => 'dashboard_inventario', 'label' => 'Inventario General', 'icon' => 'fa-solid fa-outdent', 'role' => 'Todos'],
                 ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
                 ['slug' => 'rotacion_inventario', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
                 ['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
