@@ -255,6 +255,7 @@ asigando roles con sus respectivas funcionalidades.
         "cantidad": 1 
     ]
   ]
+}
 ```
 
 
