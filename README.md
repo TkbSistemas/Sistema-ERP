@@ -37,13 +37,10 @@ asigando roles con sus respectivas funcionalidades.
 
 ### 1. Inicio de Sesión
 ### 2. Inventario
-### 3. Administración RH
-### 4. Comercial
-### 5. Costos y Presupuestos
-### 6. Licitaciones
-### 7. Ejecución de Proyectos
-### 8. Almacén
-
+### 3. Almacén
+### 4. Compras
+### 5. Proyectos
+### 6. Administración RH
 ---
 
 ## 1. MÓDULO DE INICIO DE SESIÓN
@@ -321,13 +318,94 @@ asigando roles con sus respectivas funcionalidades.
 - Genera formato de impresión con la lista de etiquetas seleccionadas, con el formato según se necesite.
 
 
-## 3. MÓDULO DE COMPRAS
+## 4. MÓDULO DE COMPRAS
+
+### 4.1 Dasboard Compras
+
+**Controller**: `ComprasController`
+
+**View**: `dashboard_compras`
+
+**Lógica Esperada**:
+- Comprueba que el rol del usuario coincida con el módulo.
+- Muestra Tarjetas Resumen de las actividades (Proyectos Activos, Ordenes de Compra Pendientes, Cotizaciones Pendientes)
+- Lista brevemente las ultimas ordenes de compra generadas.
+
+### 4.2 Crear Cotización
+
+**Controller**: `ComprasController`
+
+**View**: `crear_cotizacion`
+
+**DB**: `cotizaciones`
+
+**Lógica Esperada**:
+- Despliega formulario para seleccionar la cotización, entre aquellas que se encuentran activas o bien crear una nueva.
+- Muestra formulario en tabla estilo excel para llenar datos de cotizacion.
+- Permite guardar con estado pendiente, terminada, cancelada o completa.
+- Opcionalmente se puede exportar a formato de excel o imprimir los datos.
+
+### 4.3 Listar Ordenes de Compra
+
+**Controller**: `ComprasController`
+
+**View**: `ordenes_compra`
+
+**DB**: `ordenes_compra`
+
+**Lógica Esperada**:
+- Despliega formulario de busqueda por folio y por fechas.
+- Muestra ordenes de compra pendientes de aprobacion.
+- Lista historico de ordenes de compra SOLO aquellas realizadas por el usuario,
+- Permite cancelar o editar aquellas con estatus pendiente.
+
+### 4.4 Crear Orden de Compra
+
+**Controller**: `ComprasController`
+
+**View**: `crear_compra`
+
+**DB**: `ordenes_compra`
+
+**Lógica Esperada**:
+- Permite asociar una cotizacion existente.
+- Lista todos los elementos con los datos de la cotización.
+- Permite quitar o añadir elementos a la lista.
+- Guarda la orden de compra en espera de autoizacion
+- Genera formato imprimible de la orden
+
+### 4.3 Listar Ordenes de Compra
+
+**Controller**: `ComprasController`
+
+**View**: `ordenes_compra`
+
+**Lógica Esperada**:
+- Despliega formulario de busqueda por folio y por fechas.
+- Muestra ordenes de compra pendientes de aprobacion.
+- Lista historico de ordenes de compra SOLO aquellas realizadas por el usuario,
+- Permite cancelar o editar aquellas con estatus pendiente.
+
+### 4.5 Agregar al Catálogo de Productos
+
+**Controller**: `InventarioController`
+
+**View**: `catalogo_productos`
+
+**DB**: `inventario`
+  
+**Lógica Esperada**:
+- Despliega caja de búsqueda con filtros para el catalogo.
+- Lista de el catalogo de acuerdo a los filtros elegidos, incluye paginación.
+- Implementa acciones en la lista (Editar, Desactivar y Eliminar).
+- Incluye sistema de importación y exportación a formato csv.
+- Despliega formulario completo para registrar un nuevo tipo de producto (Información General, Dimensiones y Peso, Inventario y Costos, Imagenes y Archivos).
 
 
 
-## 4. MÓDULO DE PROYECTOS
+## 5. MÓDULO DE PROYECTOS
 
-## 5. MÓDULO DE ADMINISTRACIÓN RH
+## 6. MÓDULO DE ADMINISTRACIÓN RH
 
 ### 3.1 Crear Proyecto Nuevo
 
