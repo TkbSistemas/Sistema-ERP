@@ -80,6 +80,11 @@
                         if ($db->inTransaction()) {
                             $db->rollBack();
                         }
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'error',
+                            'titulo' => 'Error de Registro',
+                            'mensaje' => 'Falló al Guardar .',
+                        ];
                         $error = 'No fue posible registrar la entrada. Revisa los datos e intenta nuevamente.';
                     }
                 }
@@ -87,7 +92,14 @@
 
             $movimientosRecientes = MovimientoInventario::ultimos('Entrada', 6);
 
-            include __DIR__ . '/../views/inventario/main/entrada.php';
+            
+            $_SESSION['alerta'] = [
+                'tipo' => 'success',
+                'titulo' => 'Registro Creado',
+                'mensaje' => 'Entrada Registrada Exitosamente.',
+            ];
+
+            include __DIR__ . '/../views/inventario/registrar_entrada.php';
         }
 
         private function normalizarLineasEntrada(array $post): array

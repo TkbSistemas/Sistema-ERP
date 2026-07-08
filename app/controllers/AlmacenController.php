@@ -127,7 +127,7 @@ class AlmacenController
 
         $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
         $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado IN ('pendiente','aprobada')")->fetchColumn();
-
+        
         $datos['productosAlmacen']   = $productosAlmacen;
         $datos['solicitudesAlmacen'] = $solicitudesPorGestionar;
         $datos['ultimosMovimientos'] = $this->expuestosMovimientos($db);
@@ -135,8 +135,7 @@ class AlmacenController
         return $datos;
     }
 
-     private function datosGenerales($db): array
-    {
+     private function datosGenerales($db): array{
         $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
         $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM productos WHERE stock_actual < stock_minimo')->fetchColumn();
         $valorTotal            = (float) $db->query('SELECT SUM(stock_actual * costo_compra) FROM productos')->fetchColumn();
@@ -251,19 +250,48 @@ class AlmacenController
             
             $solicitudes = SolicitudMaterial::historialPorUsuario($_SESSION['user_id'], $filtros);
             include __DIR__ . '/../views/almacen/solicitudes_material.php';
-        }
+    }
 
     public function obtenerSolicitudesMaterial(){
-            Session::requireLogin(['Almacen']);
-            
-            /*$filtros = [
-                'search'       => $_GET['search'] ?? '',
-                'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
-                'fecha_fin'    => $_GET['fecha_fin'] ?? '',
-                'estado'       => $_GET['estado'] ?? ''
-            ];*/
-            
-            $solicitudes = SolicitudMaterial::listarPendientes();
+            Session::requireLogin(['Administrador', 'Almacen']);
+
+            $db = Database::getInstance()->getConnection();
+            $datos = [];
+
+            $solicitudesEsteMes = $db->query("
+                SELECT id, usuario_id, extras, fecha_solicitud
+                FROM solicitudes_material 
+                WHERE estado IN ('rechazada', 'aprobada', 'entregada')
+                AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+                AND fecha_solicitud <= NOW()
+            ")->fetchAll();
+
+            $numSolicitudesEsteMes = (int) $db->query("
+                SELECT COUNT(*) 
+                FROM solicitudes_material 
+                WHERE estado IN ('rechazada', 'aprobada', 'entregada')
+                AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+                AND fecha_solicitud <= NOW()
+            ")->fetchColumn();
+
+            $solicitudesPendientes = $db->query("
+                SELECT id,usuario_id, extras, fecha_solicitud
+                FROM solicitudes_material
+                WHERE estado IN ('pendiente')
+            ")->fetchAll();
+
+            $numSolicitudesPendientes = (int) $db->query("
+                SELECT COUNT(*) 
+                FROM solicitudes_material 
+                WHERE estado IN ('pendiente')
+            ")->fetchColumn();
+
+
+            $datos['numSolicitudesEsteMes'] = $numSolicitudesEsteMes;
+            $datos['solicitudesEsteMes'] = $solicitudesEsteMes;
+            $datos['solicitudesPendientes'] = $solicitudesPendientes;
+            $datos['numSolicitudesPendientes'] = $numSolicitudesPendientes;
+
             include __DIR__ . '/../views/almacen/solicitudes_material.php';
     }
 
@@ -339,6 +367,103 @@ class AlmacenController
 
         include __DIR__ . '/../views/almacen/etiquetas.php';
     }
+
+    public function crearEntrada(){
+            Session::requireLogin(['Administrador', 'Almacen']);
+
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $entradaItems = $this->normalizarLineasEntrada($_POST);
+
+                if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'error',
+                        'titulo' => 'Seguridad',
+                        'mensaje' => 'Token CSRF inválido.'
+                    ];
+                    header("Location: " . $_SERVER['REQUEST_URI']);
+                    exit;
+                } elseif (empty($entradaItems)) {
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'warning',
+                        'titulo' => 'Captura Vacía',
+                        'mensaje' => 'Agrega al menos un producto a la captura de entrada.'
+                    ];
+                    header("Location: " . $_SERVER['REQUEST_URI']);
+                    exit;
+                } else {
+                    $db = Database::getInstance()->getConnection();
+
+                    try {
+                        $db->beginTransaction();
+    
+                        foreach ($entradaItems as $indice => $linea) {
+                            $productoId = (int) ($linea['producto_id'] ?? 0);
+                            $almacenId  = (int) ($linea['almacen_id'] ?? 0);
+                            $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+
+                            if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
+                                throw new RuntimeException('La linea ' . ($indice + 1) . ' es invalida.');
+                            }
+
+                            $data = [
+                                'producto_id'        => $productoId,
+                                'tipo'               => 'Entrada',
+                                'cantidad'           => $cantidad,
+                                'usuario_id'         => $_SESSION['user_id'],
+                                'almacen_destino_id' => $almacenId,
+                                'observaciones'      => trim((string) ($linea['observaciones'] ?? '')),
+                            ];
+
+                            if (! MovimientoInventario::registrar($data)) {
+                                throw new RuntimeException('No fue posible registrar la linea ' . ($indice + 1) . '.');
+                            }
+
+                            Producto::sumarStock($productoId, $cantidad, $almacenId);
+                            ActivityLogger::log('inventario_entrada', 'Entrada de inventario registrada', [
+                                'producto_id' => $productoId,
+                                'almacen_id'  => $almacenId,
+                                'cantidad'    => $cantidad,
+                                'linea'       => $indice + 1,
+                            ]);
+                        }
+
+                        $db->commit();
+
+                        $totalLineas = count($entradaItems);
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'success',
+                            'titulo' => 'Registro Creado',
+                            'mensaje' => $totalLineas === 1 
+                                ? 'Entrada registrada Correctamente.' 
+                                : 'Se registraron ' . $totalLineas . ' Productos Correctamente.'
+                        ];
+
+            // REDIRECCIÓN DE ÉXITO: Limpia los datos de envío y cambia la petición a GET
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
+                    } catch (\Throwable $e) {
+                        if ($db->inTransaction()) {
+                            $db->rollBack();
+                        }
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'error',
+                            'titulo' => 'Error de Registro',
+                            'mensaje' => 'No fue posible registrar la entrada. Revisa los datos.'
+                        ];
+                        
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
+                    }
+                }
+            }
+
+            $productos            = Producto::all();
+            $almacenes            = Almacen::all();
+            $movimientosRecientes = MovimientoInventario::ultimos('Entrada', 6);
+            $entradaItems         = [];
+
+            include __DIR__ . '/../views/almacen/registrar_entrada.php';
+        }
 
     private function buildEtiquetasPdf(array $labels): string
     {

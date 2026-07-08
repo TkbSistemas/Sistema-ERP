@@ -56,7 +56,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Solicitudes Pendientes</div>
-                        <div class="card-value">10</div>
+                        <div class="card-value"><?= number_format($datos['numSolicitudesPendientes'] ?? 0)?></div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-clock-alert"></span>
@@ -65,7 +65,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Solicitudes Este Mes</div>
-                        <div class="card-value">10</div>
+                        <div class="card-value"><?= number_format($datos['numSolicitudesEsteMes'] ?? 0)?></div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-clock-check"></span>
@@ -81,26 +81,39 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <tr>
                     <th>Empleado</th>
                     <th>Folio</th>
-                    <th>Materiales</th>
+                    <th>Proyecto</th>
                     <th>Fecha Solicitud</th>
+                    <th>Comentarios</th>
                     <th>Acción</th>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($solicitudes as $s): ?>
+           
+        <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['empleado']) ?></td>
-                    <td><?= htmlspecialchars($s['codigo_producto']) ?></td>
-                    <td><?= htmlspecialchars($s['producto']) ?></td>
-                    <td><?= htmlspecialchars($s['fecha_prestamo']) ?></td>
-
+                    <td><?= htmlspecialchars($s['usuario_id']) ?></td>
+                    <td>Folio EJMP</td>
+                    <td>Proyecto EMPL</td>
+                    <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
+                    <td>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit vel facere dolor et</td>
                     <td>
-                        <a href="prestamo_devolver.php?id=<?= $p['id'] ?>" class="btn-devolver">
-                            <i class="fa fa-undo"></i> Registrar devolución
-                        </a>
+                        <a class="btn-table" title="Aprobar" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
+                        <a class="btn-table" title="Aprobar" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-circle-check"></i></a>
+                        <form method="post" action="eliminar_producto" class="inline-form form-eliminar" style="display:inline-block">
+                            <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
+                            <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+                            <input type="hidden" name="active" value="0">
+                                            
+                            <button type="submit" 
+                            class="btn-table btn-danger" 
+                            title="Rechazar"
+                            >
+                            <i class="fa fa-circle-xmark"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+        <?php endforeach; ?>
             </tbody>
         </table>
         

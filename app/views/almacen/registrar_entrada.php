@@ -30,9 +30,12 @@ $breadcrumbs = [
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario_form.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
 <body>
 <?php $seccion_activa = 'registrar_entrada'; ?>
+
+                
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
@@ -54,6 +57,19 @@ $breadcrumbs = [
                     <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
                 </div>
             </header>
+
+        <?php if (isset($_SESSION['alerta'])): ?>
+            <script>
+                Swal.fire({
+                    icon: '<?php echo $_SESSION['alerta']['tipo']; ?>',
+                    title: '<?php echo $_SESSION['alerta']['titulo']; ?>',
+                    text: '<?php echo $_SESSION['alerta']['mensaje']; ?>',
+                    confirmButtonColor: '#3085d6'
+                });
+            </script>
+        <?php unset($_SESSION['alerta']); ?>
+        <?php endif; ?>
+
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
@@ -69,6 +85,8 @@ $breadcrumbs = [
             <?php if (!empty($error)): ?>
                 <div class="alert alert-danger"><i class="fa fa-circle-exclamation"></i> <?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
+
+
 
             <div class="inventario-form-grid">
                 
