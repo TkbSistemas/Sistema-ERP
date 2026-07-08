@@ -176,39 +176,9 @@ asigando roles con sus respectivas funcionalidades.
 - Lista de el inventario de acuerdo a los filtros elegidos, incluye paginación.
 
 
-## 3. MÓDULO DE ADMINISTRACIÓN RH
+## 3. MÓDULO DE ALMACÉN
 
-### 3.1 Crear Proyecto Nuevo
-
-**Controller**: `AdminController`
-
-**Request**:
-- `nom_proyecto`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
-- `prioridad`: Contraseña de la cuenta.
-  
-**Lógica Esperada**:
-- Valida las credenciales para el incio de sesión.
-- Implementa Token de Seguridad.
-- Registra movimiento en la Bitacora del Sistema.
-- Extrae los Datos de la cuenta del usuario desde la DB.
-- Asigna y redirecciona al Dashboard según el rol del usuario.
-
-**Response**:
-```json
-{
-  "id": 101,
-  "nombre": "Juan Perez Dominguez",
-  "rol": "Administrador"
-}
-```
-
-## 4. MÓDULO DE COMERCIAL
-## 5. MÓDULO DE COSTOS Y PRESUPUESTOS
-## 6. MÓDULO DE LICITACIONES
-## 7. MÓDULO DE EJECUCIÓN DE PROYECTOS
-## 8. MÓDULO DE ALMACÉN
-
-### 8.1 Obtener Dashboard del Almacén
+### 3.1 Obtener Dashboard del Almacén
 
 **Controller**: `AlmacenController`
 
@@ -223,7 +193,7 @@ asigando roles con sus respectivas funcionalidades.
 - Despliega alertas del sistema, de momento solo las correspondientes al stock bajo y prestamos vencido.
 
 
-### 8.2 Obtener Solicitudes de Material
+### 3.2 Obtener Solicitudes de Material
 
 **Controller**: `AlmacenController`
 
@@ -259,7 +229,7 @@ asigando roles con sus respectivas funcionalidades.
 ```
 
 
-### 8.3 Crear Entrada de Material
+### 3.3 Crear Entrada de Material
 
 **Controller**: `AlmacenController`
 
@@ -272,7 +242,7 @@ asigando roles con sus respectivas funcionalidades.
 - Si la orden llegó incompleta no se registra y regresa a compras.
 
 
-### 8.4 Crear Entrada Rápida
+### 3.4 Crear Entrada Rápida
 
 **Controller**: `AlmacenController`
 
@@ -284,7 +254,7 @@ asigando roles con sus respectivas funcionalidades.
 - Suma el listado al sock del inventario.
 
   
-### 8.5 Obtener Préstamos de Herramientas
+### 3.5 Obtener Préstamos de Herramientas
 
 **Controller**: `AlmacenController`
 
@@ -306,7 +276,7 @@ asigando roles con sus respectivas funcionalidades.
 - Incluye la acción de extender el plazo en el caso de los prestamos activos.
 
 
-### 8.6 Obtener Cajas de Herramientas
+### 3.6 Obtener Cajas de Herramientas
 
 **Controller**: `AlmacenController`
 
@@ -320,7 +290,7 @@ asigando roles con sus respectivas funcionalidades.
 - Genera un inventario de los elementos que contiene cada caja, dando opción de imprimir formato.
   
 
-### 8.7 Crear Baja de Productos
+### 3.7 Crear Baja de Productos
 
 **Controller**: `AlmacenController`
 
@@ -330,7 +300,7 @@ asigando roles con sus respectivas funcionalidades.
 - Muestra formulario para buscar/seleccionar los materiales a dar de baja (Nombre, Cantidad, Razón, Fecha, etc).
 - Genera formato de impresión con la lista de seleccionados (Campo de firma de autorización).
 
-### 8.8 Solicitar Reabastecimiento
+### 3.8 Solicitar Reabastecimiento
 
 **Controller**: `AlmacenController`
 
@@ -340,7 +310,7 @@ asigando roles con sus respectivas funcionalidades.
 - Muestra formulario para buscar/seleccionar los materiales de los que solicitar stock.
 - Crea orden de compra para autorizar el reabastecimiento del almacen.
 
-### 8.9 Crear Etiquetas
+### 3.9 Crear Etiquetas
 
 **Controller**: `AlmacenController`
 
@@ -349,3 +319,38 @@ asigando roles con sus respectivas funcionalidades.
 **Lógica Esperada**:
 - Muestra formulario para buscar/seleccionar los materiales a imprimir su etiqueta.
 - Genera formato de impresión con la lista de etiquetas seleccionadas, con el formato según se necesite.
+
+
+## 3. MÓDULO DE COMPRAS
+
+
+
+## 4. MÓDULO DE PROYECTOS
+
+## 5. MÓDULO DE ADMINISTRACIÓN RH
+
+### 3.1 Crear Proyecto Nuevo
+
+**Controller**: `AdminController`
+
+**Request**:
+- `nom_proyecto`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
+- `prioridad`: Contraseña de la cuenta.
+  
+**Lógica Esperada**:
+- Valida las credenciales para el incio de sesión.
+- Implementa Token de Seguridad.
+- Registra movimiento en la Bitacora del Sistema.
+- Extrae los Datos de la cuenta del usuario desde la DB.
+- Asigna y redirecciona al Dashboard según el rol del usuario.
+
+**Response**:
+```json
+{
+  "id": 101,
+  "nombre": "Juan Perez Dominguez",
+  "rol": "Administrador"
+}
+```
+
+
