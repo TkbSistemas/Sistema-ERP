@@ -374,17 +374,6 @@ asigando roles con sus respectivas funcionalidades.
 - Guarda la orden de compra en espera de autoizacion
 - Genera formato imprimible de la orden
 
-### 4.3 Listar Ordenes de Compra
-
-**Controller**: `ComprasController`
-
-**View**: `ordenes_compra`
-
-**Lógica Esperada**:
-- Despliega formulario de busqueda por folio y por fechas.
-- Muestra ordenes de compra pendientes de aprobacion.
-- Lista historico de ordenes de compra SOLO aquellas realizadas por el usuario,
-- Permite cancelar o editar aquellas con estatus pendiente.
 
 ### 4.5 Agregar al Catálogo de Productos
 
@@ -401,6 +390,19 @@ asigando roles con sus respectivas funcionalidades.
 - Incluye sistema de importación y exportación a formato csv.
 - Despliega formulario completo para registrar un nuevo tipo de producto (Información General, Dimensiones y Peso, Inventario y Costos, Imagenes y Archivos).
 
+### 4.6 Listar Catálogo de Proveedores
+
+**Controller**: `ConomprasController`
+
+**View**: `catalogo_proveedores`
+
+**DB**: `catalogo_proveedores`
+  
+**Lógica Esperada**:
+- Despliega caja de búsqueda con filtros para el catálogo.
+- Muestra el catálogo de los proveedores según los filtros elegidos.
+- Permite añadir o eliminar proveedores de la lista.
+- Permite editar información de los proveedores actuales.
 
 
 ## 5. MÓDULO DE PROYECTOS
