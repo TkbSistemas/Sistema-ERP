@@ -1,26 +1,29 @@
 <?php
-require_once __DIR__ . '/../../helpers/Navigation.php';
-
-$role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
 $nombre = $nombre ?? ($_SESSION['nombre'] ?? '');
-$breadcrumbsExtra = $breadcrumbs ?? null;
-$breadcrumbsOverride = $breadcrumbsOverride ?? null;
+$role = $role ?? ($_SESSION['role'] ?? '');
 
-$breadcrumbsMarkup = '';
-if (is_array($breadcrumbsOverride)) {
-    $breadcrumbsMarkup = Navigation::renderBreadcrumbs($breadcrumbsOverride);
-} else {
-    $breadcrumbsMarkup = Navigation::renderBreadcrumbs(is_array($breadcrumbsExtra) ? $breadcrumbsExtra : null);
+$dashboard_slug = 'dashboard_empleado'; // Por defecto
+
+switch ($role) {
+    case 'Administrador':
+        $dashboard_slug = 'dashboard_admin';
+        break;
+    case 'Compras':
+        $dashboard_slug = 'dashboard_compras';
+        break;
+    case 'Almacen':
+        $dashboard_slug = 'dashboard_almacen';
+        break;
 }
 ?>
+
 <header class="top-header">
     <div class="top-header-left">
-        <?= $breadcrumbsMarkup ?>
     </div>
     <div class="top-header-user">
         <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
         <i class="fa-solid fa-user-circle"></i>
-        <a href="menu.php" class="logout-btn" title="Ir al menú"><i class="fa-solid fa-home"></i></a>
-        <a href="logout.php" class="logout-btn" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
+        <a href="<?= $dashboard_slug ?>" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
+        <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a> 
     </div>
 </header>

@@ -74,21 +74,7 @@ $buildQuery = function(array $overrides = []) {
     </button>
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     <div class="content-area">
-         <?php
-            require_once __DIR__ . '/../../helpers/Navigation.php';
-
-            $role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
-        ?>
-            <header class="top-header">
-                <div class="top-header-left">
-                </div>
-                <div class="top-header-user">
-                    <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
-                    <i class="fa-solid fa-user-circle"></i>
-                    <a href="dashboard_almacen" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
-                    <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
-                </div>
-            </header>
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
         <main class="dashboard-main productos-main">
             <?php if ($mensajeError): ?>
                 <div class="alert alert-danger"><i class="fa fa-circle-exclamation"></i> <?= htmlspecialchars($mensajeError) ?></div>

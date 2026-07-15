@@ -369,6 +369,11 @@ body, html {
     color: #fff;
     border-color: #13275b;
 }
+
+.dashboard-card.warning{
+    color: #b48a00; /* Color del texto para la tarjeta amarilla */
+}
+
 .dashboard-card.blue .card-value { color: #fff; }
 .dashboard-card.red {
     background: #fff4f4;

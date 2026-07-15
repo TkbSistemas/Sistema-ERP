@@ -10,6 +10,40 @@ class AlmacenController
 {
     private $menu_items;
 
+    public function obtenerDashboardAlmacen(): void{
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        $role   = $_SESSION['role'] ?? '';
+        $nombre = $_SESSION['nombre'] ?? '';
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+
+       $_SESSION['menu_items'] = [
+            ['slug' => 'solicitudes_material', 'label' => 'Solicitudes de Material', 'icon' => 'fa-solid fa-file-signature', 'role' => 'Todos'],
+            ['slug' => 'registrar_entrada', 'label' => 'Entrada de Productos', 'icon' => 'fa-solid fa-boxes-stacked', 'role' => 'Todos'],
+            ['slug' => 'prestamos_herramientas', 'label' => 'Préstamos de Herramientas','icon' => 'fa-solid fa-tools', 'role' => 'Todos'],
+            ['slug' => 'construccion', 'label' => 'Cajas de Herramientas', 'icon' => 'fa-solid fa-toolbox', 'role' => 'Todos'],
+            ['slug' => 'registrar_salida', 'label' => 'Baja de Productos', 'icon' => 'fa-solid fa-trash-arrow-up', 'role' => 'Todos'],
+            ['slug' => 'construccion', 'label' => 'Reabastecimiento', 'icon' => 'fa-solid fa-truck-loading', 'role' => 'Todos'],
+            ['slug' => '', 'label' => 'Etiquetas', 'icon' => 'fa-solid fa-tags', 'role' => 'Todos'],
+            //['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
+            ['slug' => 'inventario', 'label' => 'Ir a Inventario', 'icon' => 'fa-solid fa-warehouse', 'role' => 'Todos'],
+            ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
+        ];
+
+        $db = Database::getInstance()->getConnection();
+
+        $datos = [
+            'nombre'      => $nombre,
+            'role'        => $role,
+            'last_update' => date('d/m/Y, h:i:s a'),
+            'alertas'     => [],
+        ];
+
+        $datos = array_merge($datos, $this->datosAlmacen($db));
+
+        include __DIR__ . '/../views/almacen/dashboard_almacen.php';
+    }
+
     public function index(): void
     {
         Session::requireLogin(['Administrador', 'Almacen']);
@@ -88,45 +122,12 @@ class AlmacenController
         exit();
     }
 
-    public function obtenerDashboardAlmacen(): void
-    {
-        Session::requireLogin(['Administrador', 'Almacen']);
-
-        $role   = $_SESSION['role'] ?? '';
-        $nombre = $_SESSION['nombre'] ?? '';
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
-
-       $_SESSION['menu_items'] = [
-            ['slug' => 'solicitudes_material', 'label' => 'Solicitudes de Material', 'icon' => 'fa-solid fa-file-signature', 'role' => 'Todos'],
-            ['slug' => 'registrar_entrada', 'label' => 'Entrada de Productos', 'icon' => 'fa-solid fa-boxes-stacked', 'role' => 'Todos'],
-            ['slug' => 'prestamos_herramientas', 'label' => 'Préstamos de Herramientas','icon' => 'fa-solid fa-tools', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Cajas de Herramientas', 'icon' => 'fa-solid fa-toolbox', 'role' => 'Todos'],
-            ['slug' => 'registrar_salida', 'label' => 'Baja de Productos', 'icon' => 'fa-solid fa-trash-arrow-up', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Etiquetas', 'icon' => 'fa-solid fa-tags', 'role' => 'Todos'],
-            //['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
-            ['slug' => 'inventario', 'label' => 'Ir a Inventario', 'icon' => 'fa-solid fa-warehouse', 'role' => 'Todos'],
-            ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
-        ];
-
-        $db = Database::getInstance()->getConnection();
-
-        $datos = [
-            'nombre'      => $nombre,
-            'role'        => $role,
-            'last_update' => date('d/m/Y, h:i:s a'),
-            'alertas'     => [],
-        ];
-
-        $datos = array_merge($datos, $this->datosAlmacen($db));
-
-        include __DIR__ . '/../views/almacen/dashboard_almacen.php';
-    }
 
     private function datosAlmacen($db): array{
         $datos = $this->datosGenerales($db);
 
         $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
-        $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado IN ('pendiente','aprobada')")->fetchColumn();
+        $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado IN ('Pendiente','Aprobada')")->fetchColumn();
         
         $datos['productosAlmacen']   = $productosAlmacen;
         $datos['solicitudesAlmacen'] = $solicitudesPorGestionar;
@@ -164,9 +165,9 @@ class AlmacenController
         $alertas = [];
         foreach ($productos as $p) {
             $alertas[] = [
-                $p['nombre'] . ' por debajo del stock mínimo',
+                $p['nombre'] . ' por Debajo del Stock Mínimo',
                 $p['fecha'],
-                'alta',
+                'Alta',
             ];
         }
         return $alertas;

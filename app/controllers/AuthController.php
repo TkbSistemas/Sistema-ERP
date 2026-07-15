@@ -103,6 +103,10 @@ class AuthController
         }
     }
 
+    public function enConstruccion(){
+        include __DIR__ . '/../views/auth/construction.php';
+    }
+
     private function sanitizeNext($next): ?string{
         if (!$next || !is_string($next)) {
             return null;

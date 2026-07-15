@@ -8,7 +8,7 @@ $route = $_GET['route'] ?? 'home';
 
 // Diccionario de rutas: mapeamos la URL con su Controlador y su Método
 switch ($route) {
-    // Rutas públicas (no requieren autenticación)
+    // ================================== Rutas públicas (no requieren autenticación) =================================================
      case 'home':
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         (new AuthController())->index();
@@ -25,7 +25,11 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         (new AuthController())->logout();
         break;
-    //Rutas para el Administrador
+    case 'construccion':
+       require_once __DIR__ . '/../app/controllers/AuthController.php';
+        (new AuthController())->enConstruccion();
+        break;    
+    // ================================= Rutas para el Administrador =======================================================
     case 'dashboard_admin':
         require_once __DIR__ . '/../app/controllers/DashboardController.php';
         (new DashboardController())->obtenerDashboardAdmin();
@@ -82,7 +86,7 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearSalida();
         break;
-    //Rutas para el Almacén
+    // ===================================== Rutas para el Almacén ======================================================
     case 'dashboard_almacen':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->obtenerDashboardAlmacen();
@@ -118,6 +122,11 @@ switch ($route) {
     case 'gestion_usuarios':
         require_once __DIR__ . '/../app/controllers/UsuarioController.php';
         (new UsuarioController())->index();
+        break;
+    // ===================================== Rutas para Compras  ======================================================
+    case 'dashboard_compras':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->obtenerDashboardCompras();
         break;
     default:
         // Si la ruta no existe, mandamos un error 404
