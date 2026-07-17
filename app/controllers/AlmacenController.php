@@ -24,7 +24,7 @@ class AlmacenController
             ['slug' => 'construccion', 'label' => 'Cajas de Herramientas', 'icon' => 'fa-solid fa-toolbox', 'role' => 'Todos'],
             ['slug' => 'registrar_salida', 'label' => 'Baja de Productos', 'icon' => 'fa-solid fa-trash-arrow-up', 'role' => 'Todos'],
             ['slug' => 'construccion', 'label' => 'Reabastecimiento', 'icon' => 'fa-solid fa-truck-loading', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Etiquetas', 'icon' => 'fa-solid fa-tags', 'role' => 'Todos'],
+            ['slug' => 'construccion', 'label' => 'Etiquetas', 'icon' => 'fa-solid fa-tags', 'role' => 'Todos'],
             //['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
             ['slug' => 'inventario', 'label' => 'Ir a Inventario', 'icon' => 'fa-solid fa-warehouse', 'role' => 'Todos'],
             ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
@@ -44,20 +44,30 @@ class AlmacenController
         include __DIR__ . '/../views/almacen/dashboard_almacen.php';
     }
 
-    public function index(): void
-    {
-        Session::requireLogin(['Administrador', 'Almacen']);
-
+    public function viewRegistrarEntradaRapida(){
+        $productos = Producto::All();
         $almacenes = Almacen::all();
-        include __DIR__ . '/../views/almacenes/index.php';
+        Session::requireLogin(['Administrador', 'Almacen']);
+        
+        include __DIR__ . '/../views/almacen/entrada_rapida.php';
     }
-
-    public function indexRegistrarEntrada(){
+    
+    public function viewRegistrarEntrada(){
         $productos = Producto::All();
         $almacenes = Almacen::all();
         Session::requireLogin(['Administrador', 'Almacen']);
         
         include __DIR__ . '/../views/almacen/registrar_entrada.php';
+    }
+
+    public function registrarEntrada(){
+        $_SESSION['alerta'] = [
+            'tipo' => 'warning',
+            'titulo' => 'Folio Inválido',
+            'mensaje' => 'No se Encontró Compra Asociada.'
+        ];
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit;
     }
 
     public function create(): void

@@ -167,6 +167,7 @@
     max-width: 80%;
 }
 
+
 .inv-filter-actions {
     display: flex;
     align-items: center;
@@ -215,9 +216,12 @@
     border-collapse: collapse;
 }
 
-.inventario-table th,
 .inventario-table td {
     padding: 12px 14px;
+    vertical-align: middle;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
     border-bottom: 1px solid #edf0f6;
     text-align: left;
     font-size: 0.95rem;
@@ -230,6 +234,7 @@
     letter-spacing: 0.4px;
     font-size: 0.9rem;
     color: #5a6a94;
+    text-align: center;
 }
 
 .inventario-table tbody tr:hover {
@@ -309,4 +314,39 @@
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+.input-cantidad-real {
+    width: 100%;
+    max-width: 70px;
+    padding: 5px;
+    text-align: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.input-cantidad-real:focus {
+    border-color: #3085d6;
+    box-shadow: 0 0 0 3px rgba(48, 133, 214, 0.15);
+    outline: none;
+    background-color: #f8fafc;
+}
+
+/* --- EFECTO VISUAL DE ESCANEO EXITOSO --- */
+.tabla-recepcion tbody tr {
+    transition: background-color 0.5s ease;
+}
+
+/* --- ESTILO PARA EL MENSAJE PREVENTIVO VACÍO --- */
+.placeholder-vacio {
+    padding: 30px;
+    background-color: #fffbeb;
+    border: 1px dashed #fef08a;
+    border-radius: 6px;
+    color: #713f12;
+    text-align: center;
+    margin: 15px 0;
+    font-size: 0.95rem;
 }

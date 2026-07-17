@@ -17,34 +17,19 @@ if (!isset($total_paginas)) $total_paginas = 1;
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>PRESTAMOS HERRAMINETAS | TAKAB</title>
+    <title>PRESTAMOS HERRAMIENTAS | TAKAB</title>
     <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 </head>
 <body>
+<?php $seccion_activa = 'prestamos_herramientas'; ?>
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
     </button>
-    <aside class="main_sidebar">
-        <div class="sidebar-header">
-            <div class="login-logo"><img src="assets/images/icono_takab.png" alt="logo_TAKAB" width="90" height="55"></div>
-            <div>
-                <div class="sidebar-title">TAKAB</div>
-                <div class="sidebar-desc">ERP Takab</div>
-            </div>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="dashboard.php" class="active"><i class="fa-solid fa-house"></i> Solicitudes de Material</a>
-            <a href="gestion_productos"><i class="fa-solid fa-boxes-stacked"></i> Entrada de Productos</a>
-            <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Baja de Productos</a>
-            <a href="prestamos" ><i class="fa-solid fa-screwdriver-wrench"></i> Prestamos de Herramientas</a>
-             <?php if ($role === 'Administrador'): ?> <a href="inventario_actual" ><i class="fa-solid fa-list-check"></i> Reportes de Inventario</a> <?php endif; ?>
-            <a href="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</a>
-        </nav>
-    </aside>
+    <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 
     <div class="content-area">
         <?php 
@@ -70,7 +55,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
         </div>
         
             <section class="dashboard-cards-row">
-                <div class="dashboard-card blue">
+                <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Prestamos Activos</div>
                         <div class="card-value">10</div>
@@ -79,7 +64,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                         <span class="mdi mdi-clock-check"></span>
                     </div>
                 </div>
-                <div class="dashboard-card yellow">
+                <div class="dashboard-card warning">
                     <div class="card-info">
                         <div class="card-label">Prestamos Pendientes</div>
                         <div class="card-value"><//?= number_format($datos['solicitudesAlmacen'] ?? 0) ?></div>
@@ -88,7 +73,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                         <span class="mdi mdi-clock-alert"></span>
                     </div>
                 </div>
-                <div class="dashboard-card red">
+                <div class="dashboard-card caution">
                     <div class="card-info">
                         <div class="card-label">Prestamos Vencidos</div>
                         <div class="card-value"><//?= number_format($datos['stockBajo'] ?? 0) ?></div>

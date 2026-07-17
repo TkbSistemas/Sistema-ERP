@@ -38,7 +38,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
         </div>
         
             <section class="dashboard-cards-row">
-                <div class="dashboard-card">
+                <div class="dashboard-card warning">
                     <div class="card-info">
                         <div class="card-label">Solicitudes Pendientes</div>
                         <div class="card-value"><?= number_format($datos['numSolicitudesPendientes'] ?? 0)?></div>

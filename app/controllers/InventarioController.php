@@ -347,6 +347,7 @@
                 ['slug' => 'rotacion_inventario', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
                 ['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
                 ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
+                ['slug' => '', 'label' => 'Auditar Inventario', 'icon' => 'fa-solid fa-house-circle-exclamation', 'role' => 'Todos'],
                 ['slug' => '', 'label' => 'Ir a Dashboard', 'icon' => 'fa-solid fa-grip', 'role' => 'Administrador'],
                 ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
             ];

@@ -97,7 +97,11 @@ switch ($route) {
         break;
     case 'registrar_entrada':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
-        (new AlmacenController())->indexRegistrarEntrada();
+        (new AlmacenController())->viewRegistrarEntrada();
+        break;
+    case 'entrada_rapida':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->viewRegistrarEntradaRapida();
         break;
     case 'etiquetas':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
