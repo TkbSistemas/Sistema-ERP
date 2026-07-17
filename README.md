@@ -213,14 +213,18 @@ asigando roles con sus respectivas funcionalidades.
 {
   "num_pendientes": 4,
   "num_mes": 24,
-  "pendientes" = [
-    "nombre_solicitante": "Javier Lopez",
-    "folio": "PBUAP-0215",
-    "fecha_solicitud": "01-01-1999",
-    "materiales" = [
-       "nombre_producto": "Desarmador Plano",
-        "cantidad": 1 
-    ]
+  "pendientes": [
+    {
+      "nombre_solicitante": "Javier Lopez",
+      "folio": "PBUAP-0215",
+      "fecha_solicitud": "01-01-1999",
+      "materiales": [
+        {
+          "nombre_producto": "Desarmador Plano",
+          "cantidad": 1
+        }
+      ]
+    }
   ]
 }
 ```
@@ -407,30 +411,5 @@ asigando roles con sus respectivas funcionalidades.
 
 ## 5. MÓDULO DE PROYECTOS
 
-## 6. MÓDULO DE ADMINISTRACIÓN RH
-
-### 3.1 Crear Proyecto Nuevo
-
-**Controller**: `AdminController`
-
-**Request**:
-- `nom_proyecto`: Nombre de usuario de la cuenta (Primer Nombre + Inicial Apelido Paterno + Inicial Apelido Materno)
-- `prioridad`: Contraseña de la cuenta.
-  
-**Lógica Esperada**:
-- Valida las credenciales para el incio de sesión.
-- Implementa Token de Seguridad.
-- Registra movimiento en la Bitacora del Sistema.
-- Extrae los Datos de la cuenta del usuario desde la DB.
-- Asigna y redirecciona al Dashboard según el rol del usuario.
-
-**Response**:
-```json
-{
-  "id": 101,
-  "nombre": "Juan Perez Dominguez",
-  "rol": "Administrador"
-}
-```
 
 
