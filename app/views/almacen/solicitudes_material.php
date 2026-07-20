@@ -4,11 +4,6 @@ Session::requireLogin(['Administrador', 'Almacen']);
 $role = $_SESSION['role'] ?? '';
 $nombre = $_SESSION['nombre'] ?? '';
 
-// Variables necesarias:
-// $prestamos           - array de registros a mostrar
-// $pagina              - página actual (entero, desde 1)
-// $total_paginas       - total de páginas (entero)
-
 if (!isset($pagina)) $pagina = 1;
 if (!isset($total_paginas)) $total_paginas = 1;
 ?>
@@ -134,12 +129,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                             <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
                             <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
                             <input type="hidden" name="active" value="0">
-                                            
-                            <button type="submit" 
-                            class="btn-table btn-danger" 
-                            title="Rechazar"
-                            >
-                            <i class="fa fa-circle-xmark"></i>
+                            <button type="submit" class="btn-table btn-danger" title="Rechazar"> <i class="fa fa-circle-xmark"></i>
                             </button>
                         </form>
                     </td>

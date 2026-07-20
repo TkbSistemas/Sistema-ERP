@@ -32,22 +32,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 
     <div class="content-area">
-        <?php 
-            require_once __DIR__ . '/../../helpers/Navigation.php';
-
-            $role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
-            ?>
-            <header class="top-header">
-                <div class="top-header-left">
-                </div>
-                <div class="top-header-user">
-                    <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
-                    <i class="fa-solid fa-user-circle"></i>
-                    <a href="dashboard_almacen" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
-                    <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
-                </div>
-            </header>
-
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
         <main class="prestamos-main">
         <div class="prestamos-title">
             <i class="fa-solid fa-toolbox"></i>
@@ -83,41 +68,147 @@ if (!isset($total_paginas)) $total_paginas = 1;
                     </div>
                 </div>
             </section>
-        <div class="prestamos-tabs">
-            <a href="prestamos_historial.php" class="prestamos-tab">Activos</a>
-            <a href="prestamos_pendientes.php" class="prestamos-tab active">Pendientes</a>
-            <a href="prestamos_historial.php" class="prestamos-tab">Vencidos</a>
-            <a href="prestamos_historial.php" class="prestamos-tab">Historial</a>
+        <?php 
+            $tab_activa = $_GET['tab'] ?? 'pendientes'; 
+            ?>
+
+            <div class="tab-container">
+                <a href="?tab=activas" class="prestamos-tab <?= $tab_activa === 'activas' ? 'active' : '' ?>">Activas</a>
+                <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="?tab=vencidas" class="prestamos-tab <?= $tab_activa === 'vencidas' ? 'active' : '' ?>">Vencidas</a>
+                <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
         </div>
+        <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
         <table class="takab-table">
             <thead>
                 <tr>
+                    <th>Folio</th>
                     <th>Empleado</th>
-                    <th>Código</th>
-
                     <th>Herramienta</th>
-                <th>Fecha Préstamo</th>
-
-                <th>Acción</th>
+                    <th>Fecha Préstamo</th>
+                    <th>Fecha Devolución</th>
+                    <th>Acción</th>
             </tr>
-        </thead>
+            </thead>
         <tbody>
             <?php foreach ($prestamos as $p): ?>
                 <tr>
+                    <td><?= htmlspecialchars($p['folio']) ?></td>
                     <td><?= htmlspecialchars($p['empleado']) ?></td>
-                    <td><?= htmlspecialchars($p['codigo_producto']) ?></td>
-                    <td><?= htmlspecialchars($p['producto']) ?></td>
+                    <td><?= htmlspecialchars($p['herramienta']) ?></td>
                     <td><?= htmlspecialchars($p['fecha_prestamo']) ?></td>
-
+                    <td><?= htmlspecialchars($p['fecha_devolucion']) ?></td>
                     <td>
-                        <a href="prestamo_devolver.php?id=<?= $p['id'] ?>" class="btn-devolver">
-                            <i class="fa fa-undo"></i> Registrar devolución
-                        </a>
+                        <a class="btn-table" title="Ver" href="ver_solicitud?id=<?= $p['id'] ?>"><i class="fa fa-eye"></i></a>
+                        <a class="btn-table" title="Aprobar" href="aprobar_prestamo?id=<?= $p['id'] ?>"><i class="fa fa-circle-check"></i></a>
+                        <form method="post" action="rechazar_prestamo" class="inline-form form-eliminar" style="display:inline-block">
+                            <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
+                            <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                            <input type="hidden" name="active" value="0">
+                            <button type="submit" class="btn-table btn-danger" title="Aplazar Devolución"> <i class="fa fa-circle-xmark"></i> </button>
+                        </form>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
+
+        <div id="wrapper-historial" <?= $tab_activa !== 'historial' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Estatus</th>
+                    <th>Empleado</th>
+                    <th>Herramienta</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Acción</th>
+            </tr>
+            </thead>
+        <tbody>
+            <?php foreach ($prestamos as $p): ?>
+                <tr>
+                    <td><?= htmlspecialchars($p['folio']) ?></td>
+                    <td><?= htmlspecialchars($p['estatus']) ?></td>
+                    <td><?= htmlspecialchars($p['empleado']) ?></td>
+                    <td><?= htmlspecialchars($p['herramienta']) ?></td>
+                    <td><?= htmlspecialchars($p['fecha_solicitud']) ?></td>
+                    <td>
+                        <a class="btn-table" title="Ver" href="ver_solicitud?id=<?= $p['id'] ?>"><i class="fa fa-eye"></i></a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+
+        <div id="wrapper-vencidas" <?= $tab_activa !== 'vencidas' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Empleado</th>
+                    <th>Herramienta</th>
+                    <th>Fecha Préstamo</th>
+                    <th>Fecha Devolución</th>
+                    <th>Acción</th>
+            </tr>
+            </thead>
+        <tbody>
+            <?php foreach ($prestamos as $p): ?>
+                <tr>
+                    <td><?= htmlspecialchars($p['folio']) ?></td>
+                    <td><?= htmlspecialchars($p['estatus']) ?></td>
+                    <td><?= htmlspecialchars($p['empleado']) ?></td>
+                    <td><?= htmlspecialchars($p['herramienta']) ?></td>
+                    <td><?= htmlspecialchars($p['fecha_solicitud']) ?></td>
+                    <td><?= htmlspecialchars($p['fecha_devolucion']) ?></td>
+                    <td>
+                        <a class="btn-table" title="Ver" href="ver_solicitud?id=<?= $p['id'] ?>"><i class="fa fa-eye"></i></a>
+                        <a class="btn-table" title="Marcar Devolución" href="aprobar_prestamo?id=<?= $p['id'] ?>"><i class="fa fa-circle-check"></i></a>
+                        <form method="post" action="rechazar_prestamo" class="inline-form form-eliminar" style="display:inline-block">
+                            <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                            <input type="hidden" name="active" value="0">
+                            <button type="submit" class="btn-table btn-danger" title="Aplazar Devolución"> <i class="fa fa-circle-xmark"></i> </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+
+        <div id="wrapper-activas" <?= $tab_activa !== 'activas' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Empleado</th>
+                    <th>Herramienta</th>
+                    <th>Fecha Préstamo</th>
+                    <th>Fecha Devolución</th>
+                    <th>Acción</th>
+            </tr>
+            </thead>
+        <tbody>
+            <?php foreach ($prestamos as $p): ?>
+                <tr>
+                    <td><?= htmlspecialchars($p['folio']) ?></td>
+                    <td><?= htmlspecialchars($p['estatus']) ?></td>
+                    <td><?= htmlspecialchars($p['empleado']) ?></td>
+                    <td><?= htmlspecialchars($p['herramienta']) ?></td>
+                    <td><?= htmlspecialchars($p['fecha_solicitud']) ?></td>
+                    <td><?= htmlspecialchars($p['fecha_devolucion']) ?></td>
+                    <td>
+                        <a class="btn-table" title="Ver" href="ver_solicitud?id=<?= $p['id'] ?>"><i class="fa fa-eye"></i></a>
+                        <a class="btn-table" title="Marcar Devolución" href="aprobar_prestamo?id=<?= $p['id'] ?>"><i class="fa fa-circle-check"></i></a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
         
         <!-- PAGINACIÓN -->
         <?php if ($total_paginas > 1): ?>
