@@ -398,14 +398,13 @@
             }
 
             $db          = Database::getInstance()->getConnection();
-            $categorias  = $db->query("SELECT id, nombre FROM categorias ORDER BY nombre ASC")->fetchAll();
+            $categorias  = $db->query("SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC")->fetchAll();
             $almacenes   = $db->query("SELECT id, nombre FROM almacenes ORDER BY nombre ASC")->fetchAll();
-            $proveedores = $db->query("SELECT id, nombre FROM proveedores ORDER BY nombre ASC")->fetchAll();
-            $unidades    = $db->query("SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC")->fetchAll();
+            //$proveedores = $db->query("SELECT id, nombre FROM proveedores ORDER BY nombre ASC")->fetchAll();
+            $unidades    = $db->query("SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC")->fetchAll();
 
             $tiposProducto   = Producto::tiposDisponibles();
             $estadosProducto = Producto::estadosDisponibles();
-            $estadosActivos  = Producto::estadosActivos();
 
             $hayFiltros = false;
             foreach ($filtros as $valor) {
@@ -430,7 +429,7 @@
             'categoria_id'     => $_GET['categoria_id'] ?? '',
             'almacen_id'       => $_GET['almacen_id'] ?? '',
             'proveedor_id'     => $_GET['proveedor_id'] ?? '',
-            'estado'           => $_GET['estado'] ?? '',
+            'estatus'           => $_GET['estatus'] ?? '',
             'activo_id'        => $_GET['activo_id'] ?? '',
             'stock_flag'       => $_GET['stock_flag'] ?? '',
             'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
@@ -467,11 +466,9 @@
         }
 
         $db              = Database::getInstance()->getConnection();
-        $categorias      = $db->query('SELECT id, nombre FROM categorias ORDER BY nombre ASC')->fetchAll();
+        $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
-        $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
-        $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
-        $estadosActivos  = Producto::estadosActivos();
+        $unidades        = $db->query('SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
         $estadosProducto = Producto::estadosDisponibles();
         $tiposProducto   = Producto::tiposDisponibles();
 
@@ -501,11 +498,9 @@
         Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
         $db              = Database::getInstance()->getConnection();
-        $categorias      = $db->query('SELECT id, nombre FROM categorias ORDER BY nombre ASC')->fetchAll();
-        $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
+        $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
-        $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
-        $estadosProducto = Producto::estadosDisponibles();
+        $unidades        = $db->query('SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $errors = [];
@@ -519,13 +514,9 @@
             } else {
                 $data = $this->collectProductoData($_POST, $errors);
 
-                if (Producto::findByCodigo($data['codigo'])) {
+                if (Producto::findByCodigo($data['codigo_fabricante'] ?? '')) {
                     $errors[] = 'Ya Existe un Producto con Ese Código Interno.';
                     $mensaje_error = 'CÓDIGO DEL PRODUCTO REGISTRADO.';
-                }
-
-                if ($data['codigo_barras'] === '') {
-                    $data['codigo_barras'] = $this->generarCodigoBarras($data['codigo']);
                 }
 
                 $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors);
@@ -537,13 +528,11 @@
                 }
 
                 if (empty($errors)) {
-                    $payload                              = $data;
-                    $payload['last_requested_by_user_id'] = null;
-                    $payload['last_request_date']         = null;
+                    $payload = $data;
 
                     Producto::create($payload);
                     ActivityLogger::log('producto_creado', 'Se registro el producto ' . $payload['nombre'], [
-                        'codigo' => $payload['codigo'],
+                        'codigo' => $payload['codigo_fabricante'],
                     ]);
                     $_SESSION['alerta'] = [
                         'tipo' => 'success',

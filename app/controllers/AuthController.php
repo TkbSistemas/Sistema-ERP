@@ -12,38 +12,48 @@ class AuthController
             $next = $this->sanitizeNext($_GET['next'] ?? null);
             $this->redirectUser(Session::user(), $next);
         }
-
-        $allowedModules = ['nomina', 'rh', 'gestion_usuarios', 'contabilidad', 'bancos', 'compras', 'inventario', 'ventas', 'proyectos', 'clientes'];
         $module = $_GET['module'] ?? $_POST['module'] ?? null;
-        if ($module !== null && !in_array($module, $allowedModules, true)) {
-            $module = null;
-        }
-
         $next = $this->sanitizeNext($_GET['next'] ?? $_POST['next'] ?? null);
-
         //Manejo del intento de login (POST)
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
             $user = Usuario::findByUsername($username);
-
-            if ($user && $this->credentialsMatch($user, $password)) {
+            $this->console_log($user); // Log the user data for debugging
+            if(!$user) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Error de Inicio de Sesión',
+                    'mensaje' => 'El Usuario no esta Registrado.',
+                ];
+            } elseif ($user['baja'] == 1) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Cuenta Inactiva',
+                    'mensaje' => 'El Empleado o la Cuenta Fueron Dados de Baja.',
+                ];
+            } elseif ($this->credentialsMatch($user, $password)) { //Si las credenciales coinciden, iniciar sesión
                 Session::regen();
                 Session::setUser($user);
 
                 //Usamos el nuevo método centralizado
                 $this->redirectUser($user, $next, $module);
+            } else {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Error de Inicio de Sesión',
+                    'mensaje' => 'Usuario o contraseña Incorrectos. Inténtalo de nuevo.',
+                ];
             }
-
-            //Configuración de alerta en caso de error
-            $_SESSION['alerta'] = [
-                'tipo' => 'error',
-                'titulo' => 'Error de Inicio de Sesión',
-                'mensaje' => 'Usuario o contraseña Incorrectos. Inténtalo de nuevo.',
-            ];
         }
 
         include __DIR__ . '/../views/auth/login.php';
+    }
+
+    function console_log($data) {
+        echo '<script>';
+        echo 'console.log(' . json_encode($data) . ');';
+        echo '</script>';
     }
 
     private function redirectUser($user, $next = null, $module = null) {
@@ -62,7 +72,7 @@ class AuthController
             'RH'            => 'dashboard_rh',
             'Compras'       => 'dashboard_compras',
             'Licitaciones'  => 'dashboard_licitaciones',
-            'Campo'         => 'dashboard_campo',
+            'Empleado'      => 'dashboard_empleado',
             'Inventario'    => 'dashboard_inventario'
         ];
 

@@ -28,21 +28,7 @@ $breadcrumbs = [
     </button>
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     <div class="content-area">
-         <?php
-            require_once __DIR__ . '/../../helpers/Navigation.php';
-
-            $role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
-        ?>
-            <header class="top-header">
-                <div class="top-header-left">
-                </div>
-                <div class="top-header-user">
-                    <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
-                    <i class="fa-solid fa-user-circle"></i>
-                    <a href="dashboard_almacen" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
-                    <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
-                </div>
-            </header>
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
 
         <main class="dashboard-main productos-main">
             <?php if (!empty($errors)): ?>
@@ -88,13 +74,13 @@ $breadcrumbs = [
                     <h2><i class="fa fa-info-circle"></i> Información General</h2>
                     <div class="productos-form-grid">
                         <div class="productos-form-field">
-                            <label for="codigo">Código Interno *</label>
-                            <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($values['codigo'] ?? '') ?>" required>
+                            <label for="codigo_fabricante">Código del Fabricante *</label>
+                            <input type="text" id="codigo_fabricante" name="codigo_fabricante" value="<?= htmlspecialchars($values['codigo_fabricante'] ?? '') ?>" required>
                         </div>
                         <div class="productos-form-field">
-                            <label for="codigo_barras">Código de Barras</label>
-                            <input type="text" id="codigo_barras" name="codigo_barras" value="<?= htmlspecialchars($values['codigo_barras'] ?? '') ?>" placeholder="Generado automaticamente si se deja vacio">
-                            <span class="productos-form-note">Escanea o Deja Vacío para Autogenerar.</span>
+                            <label for="codigos_barras">Código de Barras</label>
+                            <input type="text" id="codigos_barras" name="codigos_barras" value="<?= htmlspecialchars($values['codigos_barras'] ?? '') ?>">
+                            <span class="productos-form-note">Escanea o Captura.</span>
                         </div>
                         <div class="productos-form-field">
                             <label for="nombre">Nombre *</label>

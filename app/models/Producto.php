@@ -12,18 +12,12 @@ class Producto
         $sql = "SELECT p.*,
                        c.nombre AS categoria,
                        a.nombre AS almacen,
-                       u.nombre_completo AS last_user,
-                       pr.nombre AS proveedor,
                        um.nombre AS unidad_medida_nombre,
-                       um.abreviacion AS unidad_abreviacion,
-                       epa.nombre AS estado_activo
-                FROM productos p
-                LEFT JOIN categorias c ON p.categoria_id = c.id
+                       um.apodo AS unidad_abreviacion
+                FROM inventario p
+                LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                 LEFT JOIN almacenes a ON p.almacen_id = a.id
-                LEFT JOIN usuarios u ON p.last_requested_by_user_id = u.id
-                LEFT JOIN proveedores pr ON p.proveedor_id = pr.id
-                LEFT JOIN unidades_medida um ON p.unidad_medida_id = um.id
-                LEFT JOIN estados_producto_activo epa ON p.activo_id = epa.id
+                LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                 WHERE 1=1";
         $params = [];
 
@@ -61,11 +55,6 @@ class Producto
         if (!empty($filtros['almacen_id'])) {
             $sql .= " AND p.almacen_id = ?";
             $params[] = (int) $filtros['almacen_id'];
-        }
-
-        if (!empty($filtros['proveedor_id'])) {
-            $sql .= " AND p.proveedor_id = ?";
-            $params[] = (int) $filtros['proveedor_id'];
         }
 
         if (!empty($filtros['estado']) && in_array($filtros['estado'], self::ESTADOS, true)) {
@@ -144,27 +133,32 @@ class Producto
         return $stmt->fetchAll();
     }
 
+    public static function generarSku()
+    {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->query("SELECT MAX(id) AS max_id FROM inventario");
+        $row = $stmt->fetch();
+        $nextId = (int) ($row['max_id'] ?? 0) + 1;
+        return 'SKU' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+    }
+
     public static function create($data)
     {
-        $data['codigo'] = strtoupper(trim((string) ($data['codigo'] ?? '')));
-        $data['codigo_barras'] = isset($data['codigo_barras']) && $data['codigo_barras'] !== ''
-            ? strtoupper(trim((string) $data['codigo_barras']))
+        $data['codigo_fabricante'] = strtoupper(trim((string) ($data['codigo_fabricante'] ?? '')));
+        $data['codigos_barras'] = isset($data['codigos_barras']) && $data['codigos_barras'] !== ''
+            ? strtoupper(trim((string) $data['codigos_barras']))
             : null;
         $db = Database::getInstance()->getConnection();
-        $sql = "INSERT INTO productos (
-            codigo, codigo_barras, nombre, descripcion, proveedor_id, categoria_id,
-            peso, ancho, alto, profundidad, unidad_medida_id, clase_categoria,
-            marca, color, forma, especificaciones_tecnicas, origen,
-            costo_compra, precio_venta, stock_minimo, stock_actual, almacen_id,
-            ubicacion_fisica, estado, tipo, imagen_url, last_requested_by_user_id, last_request_date, tags
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO inventario (
+            codigo_fabricante, sku, num_serie, codigo_sat, codigos_barras, nombre, descripcion, tipo, categoria_id, 
+            marca, modelo, unidad_medida_id, precio_unitario, precio_iva, precio_beneficio, pais_origen, stock_minimo, stock_actual, 
+            color, almacen_id, ubicacion_fisica, estado, imagen_url, tags,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
-        return $stmt->execute([
-            $data['codigo'], $data['codigo_barras'], $data['nombre'], $data['descripcion'], $data['proveedor_id'], $data['categoria_id'],
-            $data['peso'], $data['ancho'], $data['alto'], $data['profundidad'], $data['unidad_medida_id'], $data['clase_categoria'], 
-            $data['marca'], $data['color'], $data['forma'], $data['especificaciones_tecnicas'], $data['origen'], 
-            $data['costo_compra'], $data['precio_venta'], $data['stock_minimo'], $data['stock_actual'], $data['almacen_id'], 
-            $data['ubicacion_fisica'], $data['estado'], $data['tipo'], $data['imagen_url'],$data['last_requested_by_user_id'], $data['last_request_date'], $data['tags']
+        return $stmt->execute([ //Regresa true o false dependiendo si se pudo ejecutar la consulta
+            $data['codigo_fabricante'], $data['sku'], $data['num_serie'], $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
+            $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.3, $data['pais_origen'], $data['stock_minimo'], $data['stock_actual'],
+            $data['color'], $data['almacen_id'], $data['ubicacion_fisica'], $data['estado'], $data['imagen_url'], $data['tags']
         ]);
     }
 
@@ -174,12 +168,10 @@ class Producto
         $stmt = $db->prepare("SELECT p.*,
                                      c.nombre AS categoria,
                                      a.nombre AS almacen,
-                                     u.nombre_completo AS last_user,
-                                     pr.nombre AS proveedor,
                                      um.nombre AS unidad_medida_nombre,
-                                     um.abreviacion AS unidad_abreviacion,
+                                     um.apodo AS unidad_abreviacion,
                                      epa.nombre AS estado_activo
-                              FROM productos p
+                              FROM inventario p
                               LEFT JOIN categorias c ON p.categoria_id = c.id
                               LEFT JOIN almacenes a ON p.almacen_id = a.id
                               LEFT JOIN usuarios u ON p.last_requested_by_user_id = u.id
@@ -222,7 +214,7 @@ class Producto
             return false;
         }
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT * FROM productos WHERE codigo = ?");
+        $stmt = $db->prepare("SELECT * FROM inventario WHERE codigo_fabricante = ?");
         $stmt->execute([$codigo]);
         return $stmt->fetch();
     }
@@ -234,7 +226,7 @@ class Producto
             return false;
         }
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT * FROM productos WHERE codigo_barras = ?");
+        $stmt = $db->prepare("SELECT * FROM inventario WHERE codigo_barras = ?");
         $stmt->execute([$codigoBarras]);
         return $stmt->fetch();
     }
@@ -247,10 +239,10 @@ class Producto
         }
         $db = Database::getInstance()->getConnection();
         if ($exceptId) {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM productos WHERE codigo_barras = ? AND id <> ?");
+            $stmt = $db->prepare("SELECT COUNT(*) FROM inventario WHERE codigo_barras = ? AND id <> ?");
             $stmt->execute([$codigoBarras, $exceptId]);
         } else {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM productos WHERE codigo_barras = ?");
+            $stmt = $db->prepare("SELECT COUNT(*) FROM inventario WHERE codigo_barras = ?");
             $stmt->execute([$codigoBarras]);
         }
         return (int) $stmt->fetchColumn() > 0;
@@ -260,7 +252,7 @@ class Producto
     {
         $codigo = strtoupper(trim($codigo));
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("UPDATE productos SET codigo_barras = ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE inventario SET codigo_barras = ? WHERE id = ?");
         return $stmt->execute([$codigo, $id]);
     }
 
@@ -271,7 +263,7 @@ class Producto
         if ($codigo === '') {
             return false;
         }
-        $stmt = $db->prepare("SELECT * FROM productos WHERE codigo = ? AND id != ?");
+        $stmt = $db->prepare("SELECT * FROM inventario WHERE codigo = ? AND id != ?");
         $stmt->execute([$codigo, $id]);
         return $stmt->fetch();
     }
@@ -279,7 +271,7 @@ class Producto
     public static function update($id, $data)
     {
         $db = Database::getInstance()->getConnection();
-        $sql = "UPDATE productos SET
+        $sql = "UPDATE inventario SET
             codigo=?, codigo_barras=?, nombre=?, descripcion=?, proveedor_id=?, categoria_id=?,
             peso=?, ancho=?, alto=?, profundidad=?, unidad_medida_id=?, clase_categoria=?,
             marca=?, color=?, forma=?, especificaciones_tecnicas=?, origen=?,
@@ -309,7 +301,7 @@ class Producto
 
             self::deleteRelatedRecords($db, (int) $id);
 
-            $stmt = $db->prepare("DELETE FROM productos WHERE id=?");
+            $stmt = $db->prepare("DELETE FROM inventario WHERE id=?");
             $stmt->execute([$id]);
 
             $db->commit();
@@ -343,7 +335,7 @@ class Producto
     {
         $db = Database::getInstance()->getConnection();
         $estado = $active ? 1 : 2;
-        $stmt = $db->prepare("UPDATE productos SET activo_id=? WHERE id=?");
+        $stmt = $db->prepare("UPDATE inventario SET activo_id=? WHERE id=?");
         return $stmt->execute([$estado, $id]);
     }
 
@@ -374,7 +366,7 @@ class Producto
     {
         $db = Database::getInstance()->getConnection();
         // Stock global
-        $stmt = $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE inventario SET stock_actual = stock_actual + ? WHERE id = ?");
         $ok = $stmt->execute([$cantidad, $id]);
         if (!$ok) return false;
 
@@ -393,7 +385,7 @@ class Producto
     {
         $db = Database::getInstance()->getConnection();
         // Stock global
-        $stmt = $db->prepare("UPDATE productos SET stock_actual = GREATEST(stock_actual - ?, 0) WHERE id = ?");
+        $stmt = $db->prepare("UPDATE inventario SET stock_actual = GREATEST(stock_actual - ?, 0) WHERE id = ?");
         $ok = $stmt->execute([$cantidad, $id]);
         if (!$ok) return false;
 
@@ -448,7 +440,7 @@ class Producto
     public static function actualizarAlmacen(int $id, int $almacenId): bool
     {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("UPDATE productos SET almacen_id = ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE inventario SET almacen_id = ? WHERE id = ?");
         return $stmt->execute([$almacenId, $id]);
     }
 
@@ -459,9 +451,9 @@ class Producto
                        c.nombre AS categoria,
                        u.abreviacion AS unidad,
                        (p.costo_compra * p.stock_actual) AS valor_total,
-                       (SELECT MAX(fecha) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento,
+                       (SELECT MAX(created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento,
                        epa.nombre AS estado_activo
-                FROM productos p
+                FROM inventario p
                 LEFT JOIN categorias c ON p.categoria_id = c.id
                 LEFT JOIN unidades_medida u ON p.unidad_medida_id = u.id
                 LEFT JOIN estados_producto_activo epa ON p.activo_id = epa.id
@@ -547,7 +539,7 @@ class Producto
             $params[] = $filtros['estado'];
         }
 
-        $condiciones[] = 'p.activo_id = 1';
+        $condiciones[] = 'p.activo = 1';
 
         if (!empty($filtros['unidad_medida_id'])) {
             $condiciones[] = 'p.unidad_medida_id = ?';
@@ -599,37 +591,33 @@ class Producto
             }
         }
 
-        $joins = " LEFT JOIN categorias c ON p.categoria_id = c.id"
+        $joins = " LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id"
                . " LEFT JOIN almacenes a ON p.almacen_id = a.id"
-               . " LEFT JOIN usuarios u ON p.last_requested_by_user_id = u.id"
-               . " LEFT JOIN proveedores pr ON p.proveedor_id = pr.id"
-               . " LEFT JOIN unidades_medida um ON p.unidad_medida_id = um.id"
-               . " LEFT JOIN estados_producto_activo epa ON p.activo_id = epa.id";
+               . " LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id";
 
         $whereSql = $condiciones ? ' WHERE ' . implode(' AND ', $condiciones) : '';
 
         $totalesSql = "SELECT COUNT(*) AS total,"
-                    . " SUM(p.costo_compra * p.stock_actual) AS valor_total,"
+                    . " SUM(p.precio_unitario * p.stock_actual) AS valor_total,"
                     . " SUM(CASE WHEN p.stock_actual < p.stock_minimo THEN 1 ELSE 0 END) AS stock_bajo,"
                     . " SUM(CASE WHEN p.stock_actual <= 0 THEN 1 ELSE 0 END) AS sin_stock,"
                     . " SUM(CASE WHEN p.tipo = 'Consumible' THEN 1 ELSE 0 END) AS consumibles,"
                     . " SUM(CASE WHEN p.tipo = 'Herramienta' THEN 1 ELSE 0 END) AS herramientas,"
-                    . " SUM(CASE WHEN p.activo_id = 1 THEN 1 ELSE 0 END) AS activos,"
-                    . " SUM(CASE WHEN p.activo_id <> 1 THEN 1 ELSE 0 END) AS inactivos"
-                    . " FROM productos p" . $joins . $whereSql;
+                    . " SUM(CASE WHEN p.activo = 1 THEN 1 ELSE 0 END) AS activos,"
+                    . " SUM(CASE WHEN p.activo <> 1 THEN 1 ELSE 0 END) AS inactivos"
+                    . " FROM inventario p" . $joins . $whereSql;
 
         $stmtTotales = $db->prepare($totalesSql);
         $stmtTotales->execute($params);
         $totales = $stmtTotales->fetch() ?: [];
 
-        $selectSql = "SELECT p.id, p.codigo, p.nombre, p.descripcion, p.tipo, p.estado, p.stock_actual, p.stock_minimo,"
-                    . " p.costo_compra, p.precio_venta, p.almacen_id, p.proveedor_id, p.activo_id, p.created_at,"
-                    . " c.nombre AS categoria, a.nombre AS almacen, pr.nombre AS proveedor, um.nombre AS unidad_medida_nombre,"
-                    . " um.abreviacion AS unidad_abreviacion, epa.nombre AS estado_activo, u.nombre_completo AS last_user,"
-                    . " p.last_requested_by_user_id, p.last_request_date, p.tags,"
-                    . " (p.costo_compra * p.stock_actual) AS valor_total,"
-                    . " (SELECT MAX(m.fecha) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento"
-                    . " FROM productos p" . $joins . $whereSql . " ORDER BY p.nombre ASC";
+        $selectSql = "SELECT p.id, p.codigo_fabricante, p.nombre, p.descripcion, p.tipo, p.estado, p.stock_actual, p.stock_minimo,"
+                    . " p.precio_unitario, p.precio_beneficio, p.almacen_id, p.activo, p.created_at,"
+                    . " c.nombre AS categoria, a.nombre AS almacen, um.nombre AS unidad_medida_nombre,"
+                    . " um.apodo AS unidad_abreviacion, p.tags,"
+                    . " (p.precio_unitario * p.stock_actual) AS valor_total,"
+                    . " (SELECT MAX(m.created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento"
+                    . " FROM inventario p" . $joins . $whereSql . " ORDER BY p.nombre ASC";
 
         if ($limit !== null) {
             $limit = max(1, (int) $limit);
@@ -673,9 +661,5 @@ class Producto
         return self::TIPOS;
     }
 
-    public static function estadosActivos(): array
-    {
-        $db = Database::getInstance()->getConnection();
-        return $db->query("SELECT id, nombre FROM estados_producto_activo ORDER BY id")->fetchAll();
-    }
+    
 }

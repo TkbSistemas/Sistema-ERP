@@ -75,7 +75,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <tbody>
         <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['usuario_id']) ?></td>
+                    <td><?= htmlspecialchars($s['solicitante_id']) ?></td>
                     <td>Folio EJMP</td>
                     <td>Proyecto EMPL</td>
                     <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>

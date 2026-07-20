@@ -136,8 +136,8 @@ class AlmacenController
     private function datosAlmacen($db): array{
         $datos = $this->datosGenerales($db);
 
-        $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
-        $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado IN ('Pendiente','Aprobada')")->fetchColumn();
+        $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
+        $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus IN ('Pendiente','Aprobada')")->fetchColumn();
         
         $datos['productosAlmacen']   = $productosAlmacen;
         $datos['solicitudesAlmacen'] = $solicitudesPorGestionar;
@@ -147,18 +147,16 @@ class AlmacenController
     }
 
      private function datosGenerales($db): array{
-        $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
-        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM productos WHERE stock_actual < stock_minimo')->fetchColumn();
-        $valorTotal            = (float) $db->query('SELECT SUM(stock_actual * costo_compra) FROM productos')->fetchColumn();
-        $herramientasPrestadas = (int) $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado'")->fetchColumn();
-        $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado' AND fecha_estimada_devolucion IS NOT NULL AND fecha_estimada_devolucion < NOW()")->fetchColumn();
+        $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
+        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM inventario WHERE stock_actual < stock_minimo')->fetchColumn();
+        $valorTotal            = (float) $db->query('SELECT SUM(stock_actual * precio_iva) FROM inventario')->fetchColumn();
+        $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM solicitudes_herramienta WHERE estatus = 'Activa' AND fecha_fin IS NOT NULL AND fecha_devolucion < NOW()")->fetchColumn();
 
         return [
             'totalProductos'        => $totalProductos,
             'stockBajo'             => $stockBajo,
             'valorTotalInventario'  => $valorTotal,
-            'herramientasPrestadas' => $herramientasPrestadas,
-            'alertas'               => array_merge($this->alertasInventario($db), $this->alertasPrestamosVencidos($db)),
+            'alertas'               => array_merge($this->alertasInventario($db)),
             'prestamosVencidos'     => $prestamosVencidos,
         ];
     }
@@ -166,7 +164,7 @@ class AlmacenController
     private function alertasInventario($db): array
     {
         $stmt = $db->query("SELECT nombre, stock_actual, stock_minimo, DATE_FORMAT(created_at, '%d/%m/%Y') AS fecha
-                             FROM productos
+                             FROM inventario
                              WHERE stock_actual < stock_minimo
                              ORDER BY stock_actual ASC
                              LIMIT 5");
@@ -187,9 +185,9 @@ class AlmacenController
     {
         $stmt = $db->query("SELECT p.nombre AS producto, pr.fecha_estimada_devolucion, u.nombre_completo AS empleado
                              FROM prestamos pr
-                             LEFT JOIN productos p ON pr.producto_id = p.id
+                             LEFT JOIN inventario p ON pr.producto_id = p.id
                              LEFT JOIN usuarios u ON pr.empleado_id = u.id
-                             WHERE pr.estado = 'Prestado'
+                             WHERE pr.estatus = 'Prestado'
                                AND pr.fecha_estimada_devolucion IS NOT NULL
                                AND pr.fecha_estimada_devolucion < NOW()
                              ORDER BY pr.fecha_estimada_devolucion ASC
@@ -215,7 +213,7 @@ class AlmacenController
                                     m.cantidad,
                                     COALESCE(a.nombre, ad.nombre) AS almacen
                              FROM movimientos_inventario m
-                             LEFT JOIN productos p ON m.producto_id = p.id
+                             LEFT JOIN inventario p ON m.producto_id = p.id
                              LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
                              LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
                              ORDER BY m.fecha DESC
@@ -226,16 +224,16 @@ class AlmacenController
     private function expuestosMovimientos($db): array
     {
         $stmt = $db->query("SELECT p.nombre,
-                                    p.codigo,
+                                    p.codigo_fabricante,
                                     m.tipo,
                                     m.cantidad,
-                                    m.fecha,
+                                    m.created_at,
                                     COALESCE(a.nombre, ad.nombre) AS almacen
                              FROM movimientos_inventario m
-                             LEFT JOIN productos p ON m.producto_id = p.id
-                             LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
-                             LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
-                             ORDER BY m.fecha DESC
+                             LEFT JOIN inventario p ON m.producto_id = p.id
+                             LEFT JOIN almacenes a ON m.almacen_entrada_id = a.id
+                             LEFT JOIN almacenes ad ON m.almacen_salida_id = ad.id
+                             ORDER BY m.created_at DESC
                              LIMIT 8");
         return $stmt->fetchAll();
     }
@@ -253,7 +251,7 @@ class AlmacenController
             Session::requireLogin(['Almacen']);
             
             $filtros = [
-                'estado'       => $_GET['estado'] ?? '',
+                'estatus'       => $_GET['estatus'] ?? '',
                 'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
                 'fecha_fin'    => $_GET['fecha_fin'] ?? '',
                 'search'       => $_GET['search'] ?? ''
@@ -270,9 +268,9 @@ class AlmacenController
             $datos = [];
 
             $solicitudesEsteMes = $db->query("
-                SELECT id, usuario_id, extras, fecha_solicitud
+                SELECT id, solicitante_id, fecha_solicitud
                 FROM solicitudes_material 
-                WHERE estado IN ('rechazada', 'aprobada', 'entregada')
+                WHERE estatus IN ('Rechazada', 'Aprobada', 'Entregada')
                 AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
                 AND fecha_solicitud <= NOW()
             ")->fetchAll();
@@ -280,21 +278,21 @@ class AlmacenController
             $numSolicitudesEsteMes = (int) $db->query("
                 SELECT COUNT(*) 
                 FROM solicitudes_material 
-                WHERE estado IN ('rechazada', 'aprobada', 'entregada')
+                WHERE estatus IN ('Rechazada', 'Aprobada', 'Entregada')
                 AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
                 AND fecha_solicitud <= NOW()
             ")->fetchColumn();
 
             $solicitudesPendientes = $db->query("
-                SELECT id,usuario_id, extras, fecha_solicitud
+                SELECT id,solicitante_id, fecha_solicitud
                 FROM solicitudes_material
-                WHERE estado IN ('pendiente')
+                WHERE estatus IN ('pendiente')
             ")->fetchAll();
 
             $numSolicitudesPendientes = (int) $db->query("
                 SELECT COUNT(*) 
                 FROM solicitudes_material 
-                WHERE estado IN ('pendiente')
+                WHERE estatus IN ('pendiente')
             ")->fetchColumn();
 
 

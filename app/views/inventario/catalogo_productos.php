@@ -303,9 +303,10 @@ $buildQuery = function(array $overrides = []) {
                                 <!--th>Estado</th-->
                                 <!--th>Disponibilidad</th-->
                                 <!--th>Almacén</th-->
-                                <th>Proveedor</th>
+                                <!--th>Proveedor</th-->
                                 <!--th>Valor</th-->
                                 <th >Acciones</th>
+                                <th >Imagen</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -322,7 +323,7 @@ $buildQuery = function(array $overrides = []) {
                                 }
                                 ?>
                                 <tr>
-                                    <td><span class="mono"><?= htmlspecialchars($producto['codigo']) ?></span></td>
+                                    <td><span class="mono"><?= htmlspecialchars($producto['codigo_fabricante']) ?></span></td>
                                     <!--td><span class="mono"><//?= htmlspecialchars($producto['codigo_barras'] ?? '') ?></span></td-->
                                     <td>
                                         <strong><?= htmlspecialchars($producto['nombre']) ?></strong>
@@ -334,18 +335,18 @@ $buildQuery = function(array $overrides = []) {
                                     <td><?= htmlspecialchars($producto['categoria'] ?? 'Sin categor?a') ?></td>
                                     <td class="col-stock">
                                         <span class="badge badge-stock <?= $badgeStock ?>">
-                                            <?= format_stock($stockActual) ?> <?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?>
+                                            <?= format_stock($stockActual) ?> <?= htmlspecialchars($producto['unidad_apodo'] ?? '') ?>
                                         </span>
                                         <small>Mín: <?= format_stock($stockMinimo) ?></small>
                                     </td>
                                     <!--td><//?= htmlspecialchars($producto['estado'] ?? '-') ?></td-->
                                     <!--td>
-                                        <span class="badge badge-activo <?= (int)($producto['activo_id'] ?? 1) === 1 ? 'activo' : 'inactivo' ?>">
+                                        <span class="badge badge-activo <//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'activo' : 'inactivo' ?>">
                                             <//?= htmlspecialchars($producto['estado_activo'] ?? 'Activo') ?>
                                         </span>
                                     </td-->
                                     <!--td><//?= htmlspecialchars($producto['almacen'] ?? '-') ?></td-->
-                                    <td><?= htmlspecialchars($producto['proveedor'] ?? '-') ?></td>
+                                    <!--td><//?= htmlspecialchars($producto['proveedor'] ?? '-') ?></td-->
                                     <!--td>$<//?= number_format($valorInventario, 2) ?></td-->
                                     <td class="col-actions">
                                         <a class="btn-table" title="Ver Detalles" href="ver_producto?id=<?= $producto['id'] ?>"><i class="fa fa-eye"></i></a>
@@ -385,6 +386,12 @@ $buildQuery = function(array $overrides = []) {
                                             </button>
                                         </form-->
                                     </td>
+                                    <td>
+                                        <?php if (!empty($producto['imagen'])): ?>
+                                            <img src="<?= htmlspecialchars($producto['imagen']) ?>" alt="Imagen de <?= htmlspecialchars($producto['nombre']) ?>" class="producto-imagen">
+                                        <?php else: ?>
+                                            <span class="sin-imagen">Sin Imagen</span>
+                                        <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
