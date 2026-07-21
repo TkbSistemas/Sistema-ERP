@@ -94,7 +94,7 @@ $buildQuery = function(array $overrides = []) {
             </div>
 
             <section class="dashboard-cards-row">
-                <div class="dashboard-card blue">
+                <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Productos Registrados</div>
                         <div class="card-value"><?= number_format($totalRegistros) ?></div>
@@ -104,7 +104,7 @@ $buildQuery = function(array $overrides = []) {
                         <span class="mdi mdi-shape-outline"></span>
                     </div>
                 </div>
-                <div class="dashboard-card red">
+                <div class="dashboard-card caution">
                     <div class="card-info">
                         <div class="card-label">Stock Bajo</div>
                         <div class="card-value"><?= number_format((int) ($stats['stock_bajo'] ?? 0)) ?></div>

@@ -133,15 +133,6 @@ class Producto
         return $stmt->fetchAll();
     }
 
-    public static function generarSku()
-    {
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->query("SELECT MAX(id) AS max_id FROM inventario");
-        $row = $stmt->fetch();
-        $nextId = (int) ($row['max_id'] ?? 0) + 1;
-        return 'SKU' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
-    }
-
     public static function create($data)
     {
         $data['codigo_fabricante'] = strtoupper(trim((string) ($data['codigo_fabricante'] ?? '')));
@@ -150,14 +141,14 @@ class Producto
             : null;
         $db = Database::getInstance()->getConnection();
         $sql = "INSERT INTO inventario (
-            codigo_fabricante, sku, num_serie, codigo_sat, codigos_barras, nombre, descripcion, tipo, categoria_id, 
+            sku, codigo_fabricante, num_serie, codigo_sat, codigos_barras, nombre, descripcion, tipo, categoria_id, 
             marca, modelo, unidad_medida_id, precio_unitario, precio_iva, precio_beneficio, pais_origen, stock_minimo, stock_actual, 
-            color, almacen_id, ubicacion_fisica, estado, imagen_url, tags,
+            color, almacen_id, ubicacion_fisica, estado, imagen_url, tags
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         return $stmt->execute([ //Regresa true o false dependiendo si se pudo ejecutar la consulta
-            $data['codigo_fabricante'], $data['sku'], $data['num_serie'], $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
-            $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.3, $data['pais_origen'], $data['stock_minimo'], $data['stock_actual'],
+            $data['sku'], $data['codigo_fabricante'], $data['num_serie'], $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
+            $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.508, $data['pais_origen'], $data['stock_minimo'], $data['stock_actual'],
             $data['color'], $data['almacen_id'], $data['ubicacion_fisica'], $data['estado'], $data['imagen_url'], $data['tags']
         ]);
     }
@@ -169,15 +160,11 @@ class Producto
                                      c.nombre AS categoria,
                                      a.nombre AS almacen,
                                      um.nombre AS unidad_medida_nombre,
-                                     um.apodo AS unidad_abreviacion,
-                                     epa.nombre AS estado_activo
+                                     um.apodo AS unidad_apodo,
                               FROM inventario p
-                              LEFT JOIN categorias c ON p.categoria_id = c.id
+                              LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                               LEFT JOIN almacenes a ON p.almacen_id = a.id
-                              LEFT JOIN usuarios u ON p.last_requested_by_user_id = u.id
-                              LEFT JOIN proveedores pr ON p.proveedor_id = pr.id
-                              LEFT JOIN unidades_medida um ON p.unidad_medida_id = um.id
-                              LEFT JOIN estados_producto_activo epa ON p.activo_id = epa.id
+                              LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                               WHERE p.id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch();

@@ -74,7 +74,7 @@ $breadcrumbs = [
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1><i class="fa fa-arrow-down"></i> Registro Rápido de Inventario</h1>
+                    <h1><i class="fa fa-arrow-down"></i> REGISTRO RÁPIDO DE INVENTARIO</h1>
                     <p class="form-desc">Captura Productos que NO Cuenten con Orden de Compra Asociada.</p>
                 </div>
                 <a class="btn-secondary" href="registrar_entrada"><i class="fa fa-arrow-left"></i> Volver a Entradas</a>
@@ -133,14 +133,14 @@ $breadcrumbs = [
                                     <option value="<?= $producto['id'] ?>"
                                         data-stock="<?= (float) ($producto['stock_actual'] ?? 0) ?>"
                                         data-min="<?= (float) ($producto['stock_minimo'] ?? 0) ?>"
-                                        data-unidad="<?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?>"
+                                        data-unidad="<?= htmlspecialchars($producto['apodo'] ?? '') ?>"
                                         data-almacen="<?= (int) ($producto['almacen_id'] ?? 0) ?>"
                                         data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
                                         data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>"
-                                        data-codigo="<?= htmlspecialchars($producto['codigo'] ?? '') ?>"
-                                        data-barras="<?= htmlspecialchars($producto['codigo_barras'] ?? '') ?>"
+                                        data-codigo="<?= htmlspecialchars($producto['codigo_fabricante'] ?? '') ?>"
+                                        data-barras="<?= htmlspecialchars($producto['codigos_barras'] ?? '') ?>"
                                         <?= $selectedProducto == $producto['id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($producto['nombre']) ?> (<?= htmlspecialchars($producto['codigo']) ?>)
+                                        <?= htmlspecialchars($producto['nombre']) ?> (<?= htmlspecialchars($producto['codigo_fabricante']) ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -168,7 +168,7 @@ $breadcrumbs = [
 
                         <div class="form-field">
                             <label for="observaciones">Observaciones</label>
-                            <textarea id="observaciones" name="observaciones" placeholder="Número de factura, lote, notas adicionales..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
+                            <textarea id="observaciones" name="observaciones" placeholder="Comentarios Adicionales..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
                         </div>
 
                         <div class="entry-batch-actions">
@@ -230,7 +230,7 @@ $breadcrumbs = [
                             <span class="value" id="summary-unidad">-</span>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Almacén sugerido</span>
+                            <span class="label">Almacén destino</span>
                             <span class="value" id="summary-almacen">-</span>
                         </div>
                     </div>

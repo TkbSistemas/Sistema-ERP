@@ -75,11 +75,11 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <tbody>
         <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['solicitante_id']) ?></td>
-                    <td>Folio EJMP</td>
-                    <td>Proyecto EMPL</td>
+                    <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
+                    <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
                     <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
-                    <td>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit vel facere dolor et</td>
+                    <td><?= nl2br($s['materiales_resumen']) ?></td>
                     <td>
                         <a class="btn-table" title="Ver" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
                         <a class="btn-table" title="Aprobar" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-circle-check"></i></a>
@@ -115,13 +115,13 @@ if (!isset($total_paginas)) $total_paginas = 1;
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
+        <?php foreach ($datos['solicitudesEsteMes'] as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['usuario_id']) ?></td>
-                    <td>Folio EJMP</td>
-                    <td>Proyecto EMPL</td>
-                    <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
-                    <td>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit vel facere dolor et</td>
+                    <td><?= htmlspecialchars($s['estatus']) ?></td>
+                    <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
+                    <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
+                    <td><?= htmlspecialchars($s['solicitante_id']) ?></td>
                     <td>
                         <a class="btn-table" title="Ver" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
                         <a class="btn-table" title="Aprobar" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-circle-check"></i></a>

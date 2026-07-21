@@ -73,32 +73,32 @@ $breadcrumbs = [
                 <section class="productos-form-card">
                     <h2><i class="fa fa-info-circle"></i> Información General</h2>
                     <div class="productos-form-grid">
+                         <div class="productos-form-field">
+                            <label for="nombre">Nombre *</label>
+                            <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($values['nombre'] ?? '') ?>" placeholder="Nombre Ejemplo Producto" required>
+                        </div>
                         <div class="productos-form-field">
-                            <label for="codigo_fabricante">Código del Fabricante *</label>
-                            <input type="text" id="codigo_fabricante" name="codigo_fabricante" value="<?= htmlspecialchars($values['codigo_fabricante'] ?? '') ?>" required>
+                            <label for="codigo_fabricante">Código del Fabricante</label>
+                            <input type="text" id="codigo_fabricante" name="codigo_fabricante" value="<?= htmlspecialchars($values['codigo_fabricante'] ?? '') ?>" placeholder="Código del Fabricante (Ej. Clave CT, )">
                         </div>
                         <div class="productos-form-field">
                             <label for="codigos_barras">Código de Barras</label>
-                            <input type="text" id="codigos_barras" name="codigos_barras" value="<?= htmlspecialchars($values['codigos_barras'] ?? '') ?>">
+                            <input type="text" id="codigos_barras" name="codigos_barras" value="<?= htmlspecialchars($values['codigos_barras'] ?? '') ?>" placeholder="Código de barras">
                             <span class="productos-form-note">Escanea o Captura.</span>
                         </div>
                         <div class="productos-form-field">
-                            <label for="nombre">Nombre *</label>
-                            <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($values['nombre'] ?? '') ?>" required>
+                            <label for="num_serie">Número de Serie</label>
+                            <input type="text" id="num_serie" name="num_serie" value="<?= htmlspecialchars($values['num_serie'] ?? '') ?>" placeholder="Número de serie">
+                        </div>
+                        <div class="productos-form-field">
+                            <label for="codigo_sat">Código SAT</label>
+                            <input type="text" id="codigo_sat" name="codigo_sat" value="<?= htmlspecialchars($values['codigo_sat'] ?? '') ?>" placeholder="Código SAT">
                         </div>
                         <div class="productos-form-field">
                             <label for="tipo">Tipo *</label>
                             <select id="tipo" name="tipo" required>
                                 <?php foreach ($tiposProducto as $tipo): ?>
                                     <option value="<?= $tipo ?>" <?= (($values['tipo'] ?? '') === $tipo) ? 'selected' : '' ?>><?= htmlspecialchars($tipo) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="estado">Estado Físico *</label>
-                            <select id="estado" name="estado" required>
-                                <?php foreach ($estadosProducto as $estado): ?>
-                                    <option value="<?= $estado ?>" <?= (($values['estado'] ?? '') === $estado) ? 'selected' : '' ?>><?= htmlspecialchars($estado) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -112,41 +112,24 @@ $breadcrumbs = [
                             </select>
                         </div>
                         <div class="productos-form-field">
-                            <label for="proveedor_id">Proveedor</label>
-                            <select id="proveedor_id" name="proveedor_id">
-                                <option value="">Selecciona un Proveedor</option>
-                                <?php foreach ($proveedores as $proveedor): ?>
-                                    <option value="<?= $proveedor['id'] ?>" <?= (($values['proveedor_id'] ?? '') == $proveedor['id']) ? 'selected' : '' ?>><?= htmlspecialchars($proveedor['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="marca">Marca *</label>
+                            <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($values['marca'] ?? '') ?>" placeholder="Marca del Producto" required>
+                        </div>
+                        <div class="productos-form-field">
+                            <label for="modelo"> Modelo </label>
+                            <input type="text" id="modelo" name="modelo" value="<?= htmlspecialchars($values['modelo'] ?? '') ?>" placeholder="Modelo del Producto">
+                        </div>
+                        <div class="productos-form-field">
+                            <label for="pais_origen">País de Origen</label>
+                            <input type="text" id="pais_origen" name="pais_origen" value="<?= htmlspecialchars($values['pais_origen'] ?? '') ?>" placeholder="País de Origen">
                         </div>
                         <div class="productos-form-field">
                             <label for="descripcion">Descripción</label>
-                            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Detalles Adicionales"><?= htmlspecialchars($values['descripcion'] ?? '') ?></textarea>
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="clase_categoria"> SKU </label>
-                            <input type="text" id="clase_categoria" name="clase_categoria" value="<?= htmlspecialchars($values['clase_categoria'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="marca">Marca</label>
-                            <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($values['marca'] ?? '') ?>">
+                            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Detalles del Producto"><?= htmlspecialchars($values['descripcion'] ?? '') ?></textarea>
                         </div>
                         <div class="productos-form-field">
                             <label for="color">Color</label>
-                            <input type="text" id="color" name="color" value="<?= htmlspecialchars($values['color'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="forma">Forma</label>
-                            <input type="text" id="forma" name="forma" value="<?= htmlspecialchars($values['forma'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="especificaciones_tecnicas">Especificaciones Técnicas</label>
-                            <textarea id="especificaciones_tecnicas" name="especificaciones_tecnicas" rows="3"><?= htmlspecialchars($values['especificaciones_tecnicas'] ?? '') ?></textarea>
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="origen">Origen</label>
-                            <input type="text" id="origen" name="origen" value="<?= htmlspecialchars($values['origen'] ?? '') ?>">
+                            <input type="text" id="color" name="color" value="<?= htmlspecialchars($values['color'] ?? '') ?>" placeholder="Color del Producto">
                         </div>
                         <div class="productos-form-field">
                             <label for="tags">Etiquetas</label>
@@ -156,34 +139,38 @@ $breadcrumbs = [
                 </section>
 
                 <section class="productos-form-card">
-                    <h2><i class="fa fa-weight-hanging"></i> Dimensiones y Peso</h2>
+                    <h2><i class="fa fa-weight-hanging"></i>Unidad de Medida del Producto</h2>
                     <div class="productos-form-grid">
-                        <div class="productos-form-field">
-                            <label for="peso">Peso (kg)</label>
-                            <input type="number" step="0.1" id="peso" name="peso" value="<?= htmlspecialchars($values['peso'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="ancho">Ancho (cm)</label>
-                            <input type="number" step="0.1" id="ancho" name="ancho" value="<?= htmlspecialchars($values['ancho'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="alto">Alto (cm)</label>
-                            <input type="number" step="0.1" id="alto" name="alto" value="<?= htmlspecialchars($values['alto'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="profundidad">Profundidad (cm)</label>
-                            <input type="number" step="0.1" id="profundidad" name="profundidad" value="<?= htmlspecialchars($values['profundidad'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="unidad_medida_id">Unidad de Medida</label>
-                            <select id="unidad_medida_id" name="unidad_medida_id">
-                                <option value="">Selecciona una Unidad</option>
-                                <?php foreach ($unidades as $unidad): ?>
-                                    <option value="<?= $unidad['id'] ?>" <?= (($values['unidad_medida_id'] ?? '') == $unidad['id']) ? 'selected' : '' ?>><?= htmlspecialchars($unidad['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <span class="productos-form-note">Define Cómo se Decrementa del Inventario (piezas, metros, kilos...).</span>
-                        </div>
+                            <div class="productos-form-field">
+                                <label for="sistema">Sistema de Medida</label>
+                                <select id="sistema" name="sistema">
+                                    <option value="">Selecciona un Sistema</option>
+                                    <?php 
+                                    $sistemasMostrados = []; 
+                                    foreach ($unidades as $unidad): 
+                                        $sistemaNombre = $unidad['sistema'] ?? '';
+                                        if (empty($sistemaNombre) || in_array($sistemaNombre, $sistemasMostrados)) continue;
+                                        $sistemasMostrados[] = $sistemaNombre;
+                                    ?>
+                                        <option value="<?= htmlspecialchars($sistemaNombre) ?>" <?= (($values['sistema'] ?? '') == $sistemaNombre) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($sistemaNombre) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="productos-form-field">
+                                <label for="unidad_medida_id">Unidad de Medida *</label>
+                                <select id="unidad_medida_id" name="unidad_medida_id" required>
+                                    <option value="">Selecciona una Unidad</option>
+                                    <?php foreach ($unidades as $unidad): ?>
+                                        <option value="<?= $unidad['id'] ?>" 
+                                                data-sistema="<?= htmlspecialchars($unidad['sistema']) ?>"
+                                                <?= (($values['unidad_medida_id'] ?? '') == $unidad['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($unidad['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                     </div>
                 </section>
 
@@ -204,20 +191,16 @@ $breadcrumbs = [
                             <input type="text" id="ubicacion_fisica" name="ubicacion_fisica" value="<?= htmlspecialchars($values['ubicacion_fisica'] ?? '') ?>" placeholder="Ej. Estante A-3">
                         </div>
                         <div class="productos-form-field">
-                            <label for="stock_actual">Stock Actual *</label>
-                            <input type="number" step="1" id="stock_actual" name="stock_actual" min="0" value="<?= htmlspecialchars($values['stock_actual'] ?? '0') ?>" required>
+                            <label for="stock_minimo">Stock Mínimo</label>
+                            <input type="number" step="1" id="stock_minimo" name="stock_minimo" min="0" value="<?= htmlspecialchars($values['stock_minimo'] ?? '0') ?>" >
                         </div>
                         <div class="productos-form-field">
-                            <label for="stock_minimo">Stock Mínimo *</label>
-                            <input type="number" step="1" id="stock_minimo" name="stock_minimo" min="0" value="<?= htmlspecialchars($values['stock_minimo'] ?? '0') ?>" required>
+                            <label for="precio_unitario">Precio de Unitario (MXN)</label>
+                            <input type="number" step="0.01" id="precio_unitario" min="0" name="precio_unitario" value="<?= htmlspecialchars($values['precio_unitario'] ?? '0.00') ?>">
                         </div>
                         <div class="productos-form-field">
-                            <label for="costo_compra">Costo de Compra (MXN)</label>
-                            <input type="number" step="1" id="costo_compra" name="costo_compra" value="<?= htmlspecialchars($values['costo_compra'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="precio_venta">Precio de Venta (MXN)</label>
-                            <input type="number" step="0.01" id="precio_venta" name="precio_venta" value="<?= htmlspecialchars($values['precio_venta'] ?? '') ?>">
+                            <label for="precio_unitario_usd">Precio de Unitario (USD)</label>
+                            <input type="number" step="0.01" id="precio_unitario_usd" min="0" name="precio_unitario_usd" value="<?= htmlspecialchars($values['precio_unitario_usd'] ?? '0.00') ?>">
                         </div>
                     </div>
                 </section>
@@ -262,6 +245,40 @@ $breadcrumbs = [
             }
         });
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selectSistema = document.getElementById('sistema_medida_id');
+    const selectUnidad = document.getElementById('unidad_medida_id');
+
+    function filtrarUnidades() {
+        const sistemaSeleccionado = selectSistema.value;
+        const opcionesUnidades = selectUnidad.querySelectorAll('option');
+
+        let unidadAunValida = false;
+
+        opcionesUnidades.forEach(option => {
+            if (!option.value) {
+                option.hidden = false;
+                return;
+            }
+
+            const sistemaDeEstaUnidad = option.dataset.sistema;
+            if (sistemaSeleccionado === '' || sistemaDeEstaUnidad === sistemaSeleccionado) {
+                option.hidden = false;
+                option.disabled = false;
+                if (option.selected) unidadAunValida = true;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+            }
+        });
+        if (!unidadAunValida && selectUnidad.value !== '') {
+            selectUnidad.value = '';
+        }
+    }
+    selectSistema.addEventListener('change', filtrarUnidades);
+    filtrarUnidades();
 });
 </script>
 </body>

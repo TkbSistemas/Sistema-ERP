@@ -346,8 +346,8 @@
                 ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
                 ['slug' => 'rotacion_inventario', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
                 ['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
-                ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
                 ['slug' => '', 'label' => 'Auditar Inventario', 'icon' => 'fa-solid fa-house-circle-exclamation', 'role' => 'Todos'],
+                ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
                 ['slug' => '', 'label' => 'Ir a Dashboard', 'icon' => 'fa-solid fa-grip', 'role' => 'Administrador'],
                 ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
             ];
@@ -500,12 +500,12 @@
         $db              = Database::getInstance()->getConnection();
         $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
-        $unidades        = $db->query('SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
+        $unidades        = $db->query('SELECT id, nombre, apodo, sistema FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $errors = [];
-        $data   = $this->defaultProductoData();
-        $error  = '';
+        $data   = [];
+        $values  = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
@@ -513,48 +513,71 @@
                 $mensaje_error = 'TOKEN CSRF NO VALIDO.';
             } else {
                 $data = $this->collectProductoData($_POST, $errors);
+                $values = $data;
 
-                if (Producto::findByCodigo($data['codigo_fabricante'] ?? '')) {
-                    $errors[] = 'Ya Existe un Producto con Ese Código Interno.';
-                    $mensaje_error = 'CÓDIGO DEL PRODUCTO REGISTRADO.';
+                $codigoFabricante = $data['codigo_fabricante'] ?? '';
+                $codigoBarras     = $data['codigos_barras'] ?? '';
+                $numSerie         = $data['num_serie'] ?? '';
+
+                if (empty($codigoFabricante) && empty($codigoBarras)) {
+                    $errors[] = 'Debes proporcionar al Menos uno de los Siguientes Identificadores: Código del Fabricante o Código de Barras.';
                 }
+
+                if (!empty($data['codigo_fabricante']) && Producto::findByCodigo($data['codigo_fabricante'])) {
+                    $errors[] = 'Ya Existe un Producto con Ese Código de Fabricante.';
+                }
+
+                if (!empty($data['codigos_barras']) && Producto::findByCodigoBarras($data['codigos_barras'])) {
+                    $errors[] = 'Ya Existe un Producto con Ese Código de Barras.';
+                }
+
+                $tasaCambioUsd = 18;
+
+                $precioMxnRaw = $input['precio_unitario'] ?? '';
+                $precioUsdRaw = $input['precio_unitario_usd'] ?? '';
+
+                $hasMxn = ($precioMxnRaw !== '' && is_numeric($precioMxnRaw));
+                $hasUsd = ($precioUsdRaw !== '' && is_numeric($precioUsdRaw));
+
+                $precioFinalMxn = 0.00;
+
+                if ($hasMxn) {
+                    $precioFinalMxn = (float) $precioMxnRaw;
+                } elseif ($hasUsd) {
+                    $precioFinalMxn = (float) $precioUsdRaw * $tasaCambioUsd;
+                }
+
+                $precioFinalMxn = max(0.00, $precioFinalMxn);
 
                 $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors);
                 if ($nuevaImagen === false) {
                     $errors[] = 'No Fue Posible Procesar la Imagen Adjunta.';
-                $mensaje_error = 'FALLO AL PROCESAR LA IMAGEN.';
+                    $mensaje_error = 'No Fue Posible Procesar la Imagen Adjunta.';
                 } elseif (is_string($nuevaImagen)) {
                     $data['imagen_url'] = $nuevaImagen;
                 }
 
                 if (empty($errors)) {
                     $payload = $data;
-
                     Producto::create($payload);
-                    ActivityLogger::log('producto_creado', 'Se registro el producto ' . $payload['nombre'], [
-                        'codigo' => $payload['codigo_fabricante'],
-                    ]);
                     $_SESSION['alerta'] = [
                         'tipo' => 'success',
                         'titulo' => 'Éxito al Crear',
                         'mensaje' => 'Producto Añadido al Catálogo',
                     ];
-                    include __DIR__ . '/../views/inventario/crear_producto.php';
+                    header('Location: producto_nuevo');
                     exit();
                 }
             }
+            if (! empty($errors)) {
+                $error = implode(PHP_EOL, $errors);
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Error en el Registro',
+                    'mensaje' => $mensaje_error,
+                ];
+            }
         }
-
-        if (! empty($errors)) {
-            $error = implode(PHP_EOL, $errors);
-            //Configuración de alerta en caso de error
-            $_SESSION['alerta'] = [
-                'tipo' => 'error',
-                'titulo' => 'ERROR AL CREAR',
-                'mensaje' => $mensaje_error,
-            ];
-        }
-
         include __DIR__ . '/../views/inventario/crear_producto.php';
     }
 
@@ -592,96 +615,86 @@
         return $candidate;
     }
 
+    public static function generarSku()
+    {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->query("SELECT MAX(id) AS max_id FROM inventario");
+        $row = $stmt->fetch();
+        $nextId = (int) ($row['max_id'] ?? 0) + 1; //Genera algo como TAKAB-000001, TAKAB-000002, etc.
+        return 'TAKAB-' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+    }
+
 
     private function collectProductoData(array $input, array &$errors, ?int $productoId = null): array
     {
-        $data = $this->defaultProductoData();
-
-        $data['codigo'] = strtoupper(trim($input['codigo'] ?? ''));
-        if ($data['codigo'] === '') {
-            $errors[] = 'El codigo interno es obligatorio.';
-        } elseif (mb_strlen($data['codigo']) > 50) {
-            $errors[] = 'El codigo no debe exceder 50 caracteres.';
-        } elseif (! preg_match('/^[A-Z0-9][A-Z0-9_.-]*$/', $data['codigo'])) {
-            $errors[] = 'El codigo solo puede contener letras, numeros, guion (-), guion bajo (_) o punto (.) sin espacios.';
+        $data['codigo_fabricante'] = strtoupper(trim($input['codigo_fabricante'] ?? ''));
+        if (mb_strlen($data['codigo_fabricante']) > 50) {
+            $errors[] = 'El Código es Demasiado Largo.';
+        } elseif (! preg_match('/^[A-Z0-9][A-Z0-9_.-]*$/', $data['codigo_fabricante'])) {
+            $errors[] = 'El Código Solo Puede Contener Letras, Números, Guion (-), Guion Bajo (_) o Punto (.) Sin Espacios.';
         }
+
+        $data['sku'] = self::generarSku();
 
         $data['codigo_barras'] = strtoupper(trim($input['codigo_barras'] ?? ''));
         if ($data['codigo_barras'] !== '') {
             if (mb_strlen($data['codigo_barras']) > 64) {
-                $errors[] = 'El codigo de barras no debe exceder 64 caracteres.';
+                $errors[] = 'El Código de Barras es Demasiado Largo.';
             } elseif (! preg_match('/^[A-Z0-9\\-_.]+$/', $data['codigo_barras'])) {
-                $errors[] = 'El codigo de barras solo puede contener letras, numeros y -_. (sin espacios).';
+                $errors[] = 'El Código de Barras Solo Puede Contener Letras, Números, Guión (-), Guion Bajo (_) o Punto (.) Sin Espacios.';
             } elseif (Producto::codigoBarrasExiste($data['codigo_barras'], $productoId)) {
-                $errors[] = 'Ya existe un producto con ese codigo de barras.';
+                $errors[] = 'Ya Existe un Producto con Ese Código de Barras.';
             }
         }
 
         $data['nombre'] = trim($input['nombre'] ?? '');
         if ($data['nombre'] === '') {
-            $errors[] = 'El nombre del producto es obligatorio.';
-        } elseif (mb_strlen($data['nombre']) > 150) {
-            $errors[] = 'El nombre no debe exceder 150 caracteres.';
+            $errors[] = 'El Nombre Del Producto es Obligatorio.';
+        } elseif (mb_strlen($data['nombre']) > 100) {
+            $errors[] = 'El Nombre es Demasiado Largo.';
         }
 
         $data['descripcion'] = trim($input['descripcion'] ?? '');
-        if (mb_strlen($data['descripcion']) > 1000) {
-            $errors[] = 'La descripcion no debe exceder 1000 caracteres.';
+        if (mb_strlen($data['descripcion']) > 255) {
+            $errors[] = 'La Descripción es Demasiado Larga.';
         }
 
-        $data['proveedor_id']     = $this->toNullableInt($input['proveedor_id'] ?? null);
         $data['categoria_id']     = $this->toNullableInt($input['categoria_id'] ?? null);
         $data['unidad_medida_id'] = $this->toNullableInt($input['unidad_medida_id'] ?? null);
         $data['almacen_id']       = $this->toNullableInt($input['almacen_id'] ?? null);
         if (empty($data['almacen_id'])) {
-            $errors[] = 'Debes seleccionar un almacen asignado.';
+            $errors[] = 'Debes Seleccionar un Almacén Asignado.';
         }
         $data['ubicacion_fisica'] = trim($input['ubicacion_fisica'] ?? '');
         if (mb_strlen($data['ubicacion_fisica']) > 150) {
-            $errors[] = 'La ubicacion fisica no debe exceder 150 caracteres.';
+            $errors[] = 'La Ubicación Física es Demasiado Larga.';
         }
 
-        $data['clase_categoria']           = trim($input['clase_categoria'] ?? '');
         $data['marca']                     = trim($input['marca'] ?? '');
+        $data['modelo']                     = trim($input['modelo'] ?? '');
         $data['color']                     = trim($input['color'] ?? '');
-        $data['forma']                     = trim($input['forma'] ?? '');
-        $data['especificaciones_tecnicas'] = trim($input['especificaciones_tecnicas'] ?? '');
-        $data['origen']                    = trim($input['origen'] ?? '');
+        $data['pais_origen']                    = trim($input['pais_origen'] ?? '');
         $data['tags']                      = trim($input['tags'] ?? '');
 
-        $data['peso']        = $this->normalizeDecimal($input['peso'] ?? null);
-        $data['ancho']       = $this->normalizeDecimal($input['ancho'] ?? null);
-        $data['alto']        = $this->normalizeDecimal($input['alto'] ?? null);
-        $data['profundidad'] = $this->normalizeDecimal($input['profundidad'] ?? null);
-
-        $data['stock_actual'] = $this->normalizeDecimal($input['stock_actual'] ?? 0);
-        if ($data['stock_actual'] === null || $data['stock_actual'] < 0) {
-            $errors[] = 'El stock actual debe ser un numero mayor o igual a cero.';
-        }
 
         $data['stock_minimo'] = $this->normalizeDecimal($input['stock_minimo'] ?? 0);
         if ($data['stock_minimo'] === null || $data['stock_minimo'] < 0) {
-            $errors[] = 'El stock minimo debe ser un numero mayor o igual a cero.';
+            $errors[] = 'El Stock Mínimo Debe Ser un Número Mayor o Igual a Cero.';
         }
 
-        $data['costo_compra'] = $this->normalizeDecimal($input['costo_compra'] ?? 0);
-        if ($data['costo_compra'] === null || $data['costo_compra'] < 0) {
-            $errors[] = 'El costo de compra debe ser un numero mayor o igual a cero.';
+        $data['precio_unitario'] = $this->normalizeDecimal($input['precio_unitario'] ?? 0);
+        if ($data['precio_unitario'] === null || $data['precio_unitario'] < 0) {
+            $errors[] = 'El precio Unitario Debe Ser un Número Mayor o Igual a Cero.';
         }
 
         $data['precio_venta'] = $this->normalizeDecimal($input['precio_venta'] ?? 0);
         if ($data['precio_venta'] === null || $data['precio_venta'] < 0) {
-            $errors[] = 'El precio de venta debe ser un numero mayor o igual a cero.';
+            $errors[] = 'El Precio de Venta Debe Ser un Número Mayor o Igual a Cero.';
         }
 
         $data['tipo'] = $input['tipo'] ?? 'Consumible';
         if (! in_array($data['tipo'], Producto::tiposDisponibles(), true)) {
-            $errors[] = 'El tipo seleccionado no es valido.';
-        }
-
-        $data['estado'] = $input['estado'] ?? 'Nuevo';
-        if (! in_array($data['estado'], Producto::estadosDisponibles(), true)) {
-            $errors[] = 'El estado seleccionado no es valido.';
+            $errors[] = 'El tipo Seleccionado no es Valido.';
         }
 
         return $data;
@@ -796,7 +809,7 @@
             'forma'                     => '',
             'especificaciones_tecnicas' => '',
             'origen'                    => '',
-            'costo_compra'              => 0.0,
+            'precio_unitario'           => 0.0,
             'precio_venta'              => 0.0,
             'stock_minimo'              => 0.0,
             'stock_actual'              => 0.0,
@@ -828,8 +841,8 @@
             'unidad_medida_id',
             'stock_actual',
             'stock_minimo',
-            'costo_compra',
-            'precio_venta',
+            'precio_unitario',
+            'precio_beneficio',
             'peso',
             'ancho',
             'alto',
@@ -1094,18 +1107,19 @@
             } else {
                 $data = $this->collectProductoData($_POST, $errors, (int) $id);
 
-                $existente = Producto::findByCodigo($data['codigo']);
+                $existente = Producto::findByCodigo($data['codigo_fabricante'] ?? '');
                 if ($existente && (int) $existente['id'] !== (int) $id) {
-                    $errors[] = 'Ya existe otro producto con ese codigo.';
+                    $errors[] = 'Ya Existe Otro Producto con ese Código de Fabricante.';
                 }
 
-                if ($data['codigo_barras'] === '') {
-                    $data['codigo_barras'] = $this->generarCodigoBarras($data['codigo']);
+                $existente = Producto::findByCodigoBarras($data['codigos_barras'] ?? '');
+                if ($existente && (int) $existente['id'] !== (int) $id) { // Verificamos si el producto existente no es el mismo que estamos editando
+                    $errors[] = 'Ya Existe Otro Producto con ese Código de Barras.';
                 }
 
                 $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors, $producto['imagen_url'] ?? null);
                 if ($nuevaImagen === false) {
-                    $errors[] = 'No fue posible procesar la imagen adjunta.';
+                    $errors[] = 'No Fue Posible Procesar la Imagen Adjunta.';
                 } elseif (is_string($nuevaImagen)) {
                     $data['imagen_url'] = $nuevaImagen;
                 } else {
@@ -1113,9 +1127,6 @@
                 }
 
                 if (empty($errors)) {
-                    $data['last_requested_by_user_id'] = $producto['last_requested_by_user_id'] ?? null;
-                    $data['last_request_date']         = $producto['last_request_date'] ?? null;
-
                     Producto::update($id, $data);
                     ActivityLogger::log('producto_actualizado', 'Se actualizo el producto ' . $data['nombre'], [
                         'codigo' => $data['codigo'],

@@ -51,6 +51,10 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->importar();
         break;
+    case 'view_producto_nuevo':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->crearProducto();
+        break;
     case 'producto_nuevo':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearProducto();

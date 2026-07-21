@@ -20,7 +20,7 @@ class AlmacenController
        $_SESSION['menu_items'] = [
             ['slug' => 'solicitudes_material', 'label' => 'Solicitudes de Material', 'icon' => 'fa-solid fa-file-signature', 'role' => 'Todos'],
             ['slug' => 'registrar_entrada', 'label' => 'Entrada de Productos', 'icon' => 'fa-solid fa-boxes-stacked', 'role' => 'Todos'],
-            ['slug' => 'prestamos_herramientas', 'label' => 'Préstamos de Herramientas','icon' => 'fa-solid fa-tools', 'role' => 'Todos'],
+            ['slug' => 'construccion', 'label' => 'Préstamos de Herramientas','icon' => 'fa-solid fa-tools', 'role' => 'Todos'],
             ['slug' => 'construccion', 'label' => 'Cajas de Herramientas', 'icon' => 'fa-solid fa-toolbox', 'role' => 'Todos'],
             ['slug' => 'registrar_salida', 'label' => 'Baja de Productos', 'icon' => 'fa-solid fa-trash-arrow-up', 'role' => 'Todos'],
             ['slug' => 'construccion', 'label' => 'Reabastecimiento', 'icon' => 'fa-solid fa-truck-loading', 'role' => 'Todos'],
@@ -268,7 +268,7 @@ class AlmacenController
             $datos = [];
 
             $solicitudesEsteMes = $db->query("
-                SELECT id, solicitante_id, fecha_solicitud
+                SELECT *
                 FROM solicitudes_material 
                 WHERE estatus IN ('Rechazada', 'Aprobada', 'Entregada')
                 AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
@@ -283,11 +283,30 @@ class AlmacenController
                 AND fecha_solicitud <= NOW()
             ")->fetchColumn();
 
+
             $solicitudesPendientes = $db->query("
-                SELECT id,solicitante_id, fecha_solicitud
-                FROM solicitudes_material
+                SELECT 
+                    s.id,
+                    s.folio,
+                    s.fecha_solicitud,
+                    s.proyecto_id,
+                    s.estatus,
+                    s.solicitante_id,
+                    u.nombre AS nombre_solicitante,
+                    COUNT(d.id) AS total_items,
+                    SUM(d.cantidad) AS total_cantidad_materiales,
+                    GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') AS materiales_resumen
+                FROM solicitudes_material s
+                LEFT JOIN usuarios u 
+                    ON s.solicitante_id = u.id
+                LEFT JOIN solicitudes_material_detalles d 
+                    ON s.id = d.solicitud_id
+                LEFT JOIN inventario i 
+                    ON d.producto_id = i.id
                 WHERE estatus IN ('pendiente')
-            ")->fetchAll();
+                GROUP BY s.id
+                ORDER BY s.fecha_solicitud DESC
+            ")->fetchAll(PDO::FETCH_ASSOC);
 
             $numSolicitudesPendientes = (int) $db->query("
                 SELECT COUNT(*) 
