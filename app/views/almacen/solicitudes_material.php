@@ -16,6 +16,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
 <body>
 <?php $seccion_activa = 'solicitudes_material'; ?>
@@ -64,6 +65,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <table class="takab-table">
             <thead>
                 <tr>
+                    <th>Estatus</th>
                     <th>Empleado</th>
                     <th>Folio</th>
                     <th>Proyecto</th>
@@ -75,26 +77,43 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <tbody>
         <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
                 <tr>
+                    <td><?= htmlspecialchars($s['estatus']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
                     <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
                     <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
                     <td><?= nl2br($s['materiales_resumen']) ?></td>
                     <td>
-                        <a class="btn-table" title="Ver" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
-                        <a class="btn-table" title="Aprobar" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-circle-check"></i></a>
-                        <form method="post" action="eliminar_producto" class="inline-form form-eliminar" style="display:inline-block">
-                            <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
-                            <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
-                            <input type="hidden" name="active" value="0">
-                                            
-                            <button type="submit" 
-                            class="btn-table btn-danger" 
-                            title="Rechazar"
-                            >
-                            <i class="fa fa-circle-xmark"></i>
-                            </button>
-                        </form>
+                        <a class="btn-table" title="Ver" href="ver_solicitud_material?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
+                        <?php if ($s['estatus'] === 'Pendiente'): ?>
+                            <a class="btn-table btn-confirmar" 
+                            title="Aprobar" 
+                            href="javascript:void(0)" 
+                            data-id="<?= $s['id'] ?>" 
+                            data-accion="aprobar" 
+                            data-folio="<?= htmlspecialchars($s['folio'] ?? '') ?>">
+                                <i class="fa fa-circle-check"></i>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if ($s['estatus'] === 'Aprobada'): ?>
+                            <a class="btn-table btn-entrega" 
+                            title="Procesar Entrega" 
+                            href="construccion">
+                                <i class="fa fa-circle-arrow-up"></i>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if (in_array($s['estatus'], ['Pendiente', 'Aprobada'])): ?>
+                            <a class="btn-table btn-confirmar" 
+                            title="Rechazar" 
+                            href="javascript:void(0)" 
+                            data-id="<?= $s['id'] ?>" 
+                            data-accion="rechazar" 
+                            data-folio="<?= htmlspecialchars($s['folio'] ?? '') ?>">
+                                <i class="fa fa-circle-xmark"></i>
+                            </a>
+                        <?php endif; ?>
                     </td>
                 </tr>
         <?php endforeach; ?>
@@ -108,9 +127,9 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <tr>
                     <th>Estatus</th>
                     <th>Folio</th>
-                    <th>Proyecto</th>
                     <th>Fecha Respuesta</th>
                     <th>Empleado</th>
+                    <th>Comentario</th>
                     <th>Acción</th>
             </tr>
         </thead>
@@ -119,20 +138,10 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <tr>
                     <td><?= htmlspecialchars($s['estatus']) ?></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
-                    <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
                     <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
-                    <td><?= htmlspecialchars($s['solicitante_id']) ?></td>
-                    <td>
-                        <a class="btn-table" title="Ver" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
-                        <a class="btn-table" title="Aprobar" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-circle-check"></i></a>
-                        <form method="post" action="eliminar_producto" class="inline-form form-eliminar" style="display:inline-block">
-                            <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
-                            <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
-                            <input type="hidden" name="active" value="0">
-                            <button type="submit" class="btn-table btn-danger" title="Rechazar"> <i class="fa fa-circle-xmark"></i>
-                            </button>
-                        </form>
-                    </td>
+                    <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
+                    <td><?= htmlspecialchars($s['comentario_responsable']) ?></td>
+                    <td> <a class="btn-table" title="Ver" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a> </td>
                 </tr>
         <?php endforeach; ?>
             </tbody>
@@ -167,6 +176,71 @@ if (!isset($total_paginas)) $total_paginas = 1;
 </div>
 
 <script>
+    //Alerta de confirmación para aprobar o rechazar solicitudes
+   document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.btn-confirmar').forEach(boton => {
+        boton.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const id = this.dataset.id;
+            const accion = this.dataset.accion;
+            const folio = this.dataset.folio ? `folio ${this.dataset.folio}` : 'esta solicitud';
+            const esAprobar = accion === 'aprobar';
+
+            Swal.fire({
+                title: esAprobar ? 'Aprobar Solicitud' : 'Rechazar Solicitud',
+                text: esAprobar 
+                    ? `¿Aprobar Solicitud con ${folio}?` 
+                    : `¿Rechazar Solicitud con ${folio}? Es Obligatorio Indicar el Motivo del Rechazo.`,
+                icon: esAprobar ? 'question' : 'warning',
+                
+                input: 'textarea',
+                inputPlaceholder: esAprobar ? 'Comentario u observaciones (Opcional)...' : 'Escribe aquí el motivo del rechazo *...',
+                inputAttributes: {
+                    'aria-label': 'Escribe tu comentario'
+                },
+                
+                showCancelButton: true,
+                confirmButtonColor: esAprobar ? '#28a745' : '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: esAprobar ? 'Sí, Aprobar' : 'Sí, Rechazar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+
+                inputValidator: (value) => {
+                    if (!esAprobar && !value.trim()) {
+                        return '¡Debe Especificar el Motivo del Rechazo!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const comentario = result.value ? result.value.trim() : '';
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `${accion}_solicitud_materiales`;
+
+                    const inputId = document.createElement('input');
+                    inputId.type = 'hidden';
+                    inputId.name = 'id';
+                    inputId.value = id;
+                    form.appendChild(inputId);
+
+                    const inputComentario = document.createElement('input');
+                    inputComentario.type = 'hidden';
+                    inputComentario.name = 'comentario';
+                    inputComentario.value = comentario;
+                    form.appendChild(inputComentario);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+    });
+
+    //Ocultar y mostrar el sidebar
     document.addEventListener("DOMContentLoaded", function () {
         const toggleBtn = document.getElementById('toggleSidebar');
         const sidebar = document.querySelector('.main_sidebar'); 

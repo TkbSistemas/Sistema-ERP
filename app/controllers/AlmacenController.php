@@ -44,6 +44,168 @@ class AlmacenController
         include __DIR__ . '/../views/almacen/dashboard_almacen.php';
     }
 
+    public function obtenerSolicitudesMaterial(){
+            Session::requireLogin(['Administrador', 'Almacen']);
+
+            $db = Database::getInstance()->getConnection();
+            $datos = [];
+
+            $solicitudesEsteMes = $db->query("
+                SELECT 
+                    s.id,
+                    s.folio,
+                    s.comentario_responsable,
+                    s.fecha_respuesta,
+                    s.proyecto_id,
+                    s.estatus,
+                    s.solicitante_id,
+                    u.nombre AS nombre_solicitante,
+                    COUNT(d.id) AS total_items,
+                    SUM(d.cantidad) AS total_cantidad_materiales,
+                    GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') AS materiales_resumen
+                FROM solicitudes_material s
+                LEFT JOIN usuarios u 
+                    ON s.solicitante_id = u.id
+                LEFT JOIN solicitudes_material_detalles d 
+                    ON s.id = d.solicitud_id
+                LEFT JOIN inventario i 
+                    ON d.producto_id = i.id 
+                WHERE estatus IN ('Rechazada', 'Entregada')
+                AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+                AND fecha_solicitud <= CONCAT(LAST_DAY(NOW()), ' 23:59:59')
+                GROUP BY s.id
+                ORDER BY s.fecha_solicitud DESC
+            ")->fetchAll();
+
+            $numSolicitudesEsteMes = (int) $db->query("
+                SELECT COUNT(*) 
+                FROM solicitudes_material 
+                WHERE estatus IN ('Rechazada', 'Entregada')
+                AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+                AND fecha_solicitud <= CONCAT(LAST_DAY(NOW()), ' 23:59:59')
+            ")->fetchColumn();
+
+
+            $solicitudesPendientes = $db->query("
+                SELECT 
+                    s.id,
+                    s.folio,
+                    s.fecha_solicitud,
+                    s.proyecto_id,
+                    s.estatus,
+                    s.solicitante_id,
+                    u.nombre AS nombre_solicitante,
+                    COUNT(d.id) AS total_items,
+                    SUM(d.cantidad) AS total_cantidad_materiales,
+                    GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') AS materiales_resumen
+                FROM solicitudes_material s
+                LEFT JOIN usuarios u 
+                    ON s.solicitante_id = u.id
+                LEFT JOIN solicitudes_material_detalles d 
+                    ON s.id = d.solicitud_id
+                LEFT JOIN inventario i 
+                    ON d.producto_id = i.id
+                WHERE estatus IN ('pendiente','aprobada')
+                GROUP BY s.id
+                ORDER BY s.fecha_solicitud DESC
+            ")->fetchAll(PDO::FETCH_ASSOC);
+
+            $numSolicitudesPendientes = (int) $db->query("
+                SELECT COUNT(*) 
+                FROM solicitudes_material 
+                WHERE estatus IN ('pendiente', 'aprobada')
+            ")->fetchColumn();
+
+
+            $datos['numSolicitudesEsteMes'] = $numSolicitudesEsteMes;
+            $datos['solicitudesEsteMes'] = $solicitudesEsteMes;
+            $datos['solicitudesPendientes'] = $solicitudesPendientes;
+            $datos['numSolicitudesPendientes'] = $numSolicitudesPendientes;
+
+            include __DIR__ . '/../views/almacen/solicitudes_material.php';
+    }
+
+    public function verSolicitudMaterial($id){
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        $solicitud = SolicitudMaterial::obtenerSolicitudConDetalles($id);
+        if (! $solicitud) {
+            die('Solicitud no encontrada.');
+        }
+
+        include __DIR__ . '/../templates/solicitud_material.php';
+    }
+
+    public function aprobarSolicitud($id){
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id         = (int) ($_POST['id'] ?? 0);
+            $comentario = trim($_POST['comentario'] ?? '');
+            if ($id > 0) {
+                $db = Database::getInstance()->getConnection();
+                
+                $stmt = $db->prepare("
+                    UPDATE solicitudes_material 
+                    SET estatus = 'Aprobada', 
+                        comentario_responsable = ?, 
+                        fecha_respuesta = NOW() 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$comentario, $id]);
+
+                $_SESSION['alerta'] = [
+                'tipo' => 'success',
+                'titulo' => 'Solicitud Aprobada',
+                'mensaje' => 'Solicitud Aprobada Éxitosamente.'
+            ];
+            } else {
+                    $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Error',
+                    'mensaje' => 'Error al Aprobar la Solicitud.'
+                ];
+            }
+            header('Location: solicitudes_material');
+            exit();
+        }
+    }
+
+    public function rechazarSolicitud($id){
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id         = (int) ($_POST['id'] ?? 0);
+            $comentario = trim($_POST['comentario'] ?? '');
+            if ($id > 0) {
+                $db = Database::getInstance()->getConnection();
+                
+                $stmt = $db->prepare("
+                    UPDATE solicitudes_material 
+                    SET estatus = 'Rechazada', 
+                        comentario_responsable = ?, 
+                        fecha_respuesta = NOW() 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$comentario, $id]);
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Solicitud Rechazada',
+                    'mensaje' => 'Solicitud Rechazada Éxitosamente.'
+                ];
+            } else {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Error',
+                    'mensaje' => 'Error al Rechazar la Solicitud.'
+                ];
+            }
+            header('Location: solicitudes_material');
+            exit();
+        }
+    }
+
     public function viewRegistrarEntradaRapida(){
         $productos = Producto::All();
         $almacenes = Almacen::all();
@@ -57,8 +219,11 @@ class AlmacenController
         $almacenes = Almacen::all();
         Session::requireLogin(['Administrador', 'Almacen']);
         
-        include __DIR__ . '/../views/almacen/registrar_entrada.php';
+        include __DIR__ . '/.
+        ./views/almacen/registrar_entrada.php';
     }
+
+    
 
     public function registrarEntrada(){
         $_SESSION['alerta'] = [
@@ -131,7 +296,6 @@ class AlmacenController
         header('Location: almacenes.php?error=not_found');
         exit();
     }
-
 
     private function datosAlmacen($db): array{
         $datos = $this->datosGenerales($db);
@@ -258,68 +422,6 @@ class AlmacenController
             ];
             
             $solicitudes = SolicitudMaterial::historialPorUsuario($_SESSION['user_id'], $filtros);
-            include __DIR__ . '/../views/almacen/solicitudes_material.php';
-    }
-
-    public function obtenerSolicitudesMaterial(){
-            Session::requireLogin(['Administrador', 'Almacen']);
-
-            $db = Database::getInstance()->getConnection();
-            $datos = [];
-
-            $solicitudesEsteMes = $db->query("
-                SELECT *
-                FROM solicitudes_material 
-                WHERE estatus IN ('Rechazada', 'Aprobada', 'Entregada')
-                AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
-                AND fecha_solicitud <= NOW()
-            ")->fetchAll();
-
-            $numSolicitudesEsteMes = (int) $db->query("
-                SELECT COUNT(*) 
-                FROM solicitudes_material 
-                WHERE estatus IN ('Rechazada', 'Aprobada', 'Entregada')
-                AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
-                AND fecha_solicitud <= NOW()
-            ")->fetchColumn();
-
-
-            $solicitudesPendientes = $db->query("
-                SELECT 
-                    s.id,
-                    s.folio,
-                    s.fecha_solicitud,
-                    s.proyecto_id,
-                    s.estatus,
-                    s.solicitante_id,
-                    u.nombre AS nombre_solicitante,
-                    COUNT(d.id) AS total_items,
-                    SUM(d.cantidad) AS total_cantidad_materiales,
-                    GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') AS materiales_resumen
-                FROM solicitudes_material s
-                LEFT JOIN usuarios u 
-                    ON s.solicitante_id = u.id
-                LEFT JOIN solicitudes_material_detalles d 
-                    ON s.id = d.solicitud_id
-                LEFT JOIN inventario i 
-                    ON d.producto_id = i.id
-                WHERE estatus IN ('pendiente')
-                GROUP BY s.id
-                ORDER BY s.fecha_solicitud DESC
-            ")->fetchAll(PDO::FETCH_ASSOC);
-
-            $numSolicitudesPendientes = (int) $db->query("
-                SELECT COUNT(*) 
-                FROM solicitudes_material 
-                WHERE estatus IN ('pendiente')
-            ")->fetchColumn();
-
-
-            $datos['numSolicitudesEsteMes'] = $numSolicitudesEsteMes;
-            $datos['solicitudesEsteMes'] = $solicitudesEsteMes;
-            $datos['solicitudesPendientes'] = $solicitudesPendientes;
-            $datos['numSolicitudesPendientes'] = $numSolicitudesPendientes;
-
             include __DIR__ . '/../views/almacen/solicitudes_material.php';
     }
 

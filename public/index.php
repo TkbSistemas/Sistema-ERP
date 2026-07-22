@@ -99,6 +99,18 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->obtenerSolicitudesMaterial();
         break;
+    case 'aprobar_solicitud_materiales':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->aprobarSolicitud();
+        break;
+    case 'rechazar_solicitud_materiales':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->rechazarSolicitud();
+        break;
+    case 'ver_solicitud_material':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->verSolicitudMaterial($_GET['id'] ?? 0);
+        break;
     case 'registrar_entrada':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->viewRegistrarEntrada();

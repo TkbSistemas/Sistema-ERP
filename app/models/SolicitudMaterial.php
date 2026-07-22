@@ -77,16 +77,46 @@ class SolicitudMaterial {
         return $stmt->fetchAll();
     }
 
-    public static function detalles($solicitud_id) {
-        $db = Database::getInstance()->getConnection();
-        $sql = "SELECT d.*, p.nombre AS producto
-                FROM detalle_solicitud d
-                LEFT JOIN productos p ON d.producto_id = p.id
-                WHERE d.solicitud_id = ?";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$solicitud_id]);
-        return $stmt->fetchAll();
+    public static function obtenerSolicitudConDetalles($solicitudId) {
+    $db = Database::getInstance()->getConnection();
+
+    $sqlCabecera = "SELECT 
+                        s.id, 
+                        s.solicitante_id,
+                        s.fecha_solicitud, 
+                        s.fecha_entregado, 
+                        s.comentario_solicitante, 
+                        u.nombre AS solicitante
+                    FROM solicitudes_material s
+                    LEFT JOIN usuarios u ON s.solicitante_id = u.id
+                    WHERE s.id = ?";
+    
+    $stmt = $db->prepare($sqlCabecera);
+    $stmt->execute([$solicitudId]);
+    $solicitud = $stmt->fetch();
+
+    if (!$solicitud) {
+        return null;
     }
+
+    $sqlDetalles = "SELECT 
+                        p.codigo_fabricante,
+                        p.nombre,
+                        p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
+                        um.apodo AS unidad_medida,
+                        d.cantidad
+                    FROM solicitudes_material_detalles d
+                    INNER JOIN inventario p ON d.producto_id = p.id
+                    LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
+                    WHERE d.solicitud_id = ?
+                    ORDER BY p.tipo ASC, p.nombre ASC";
+
+    $stmtDetalles = $db->prepare($sqlDetalles);
+    $stmtDetalles->execute([$solicitudId]);
+    $solicitud['items'] = $stmtDetalles->fetchAll();
+
+    return $solicitud;
+}
 
     public static function find($id, $usuario_id = null) {
         $db = Database::getInstance()->getConnection();
@@ -99,6 +129,17 @@ class SolicitudMaterial {
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetch();
+    }
+
+    public static function detalles($solicitud_id) {
+        $db = Database::getInstance()->getConnection();
+        $sql = "SELECT d.*, p.nombre AS producto
+                FROM detalle_solicitud d
+                LEFT JOIN productos p ON d.producto_id = p.id
+                WHERE d.solicitud_id = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$solicitud_id]);
+        return $stmt->fetchAll();
     }
 
     // Solicitudes pendientes por aprobar para admin/almacén (todas o filtradas por estado, fecha y buscador)
