@@ -359,7 +359,6 @@ class Producto
 
         // Stock por almacén
         if ($almacenId) {
-            self::ensureStockTable($db);
             $up = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock)
                                 VALUES (?, ?, ?)
                                 ON DUPLICATE KEY UPDATE stock = stock + VALUES(stock)");

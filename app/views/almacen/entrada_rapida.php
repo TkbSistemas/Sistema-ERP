@@ -91,7 +91,7 @@ $breadcrumbs = [
                 
                 <section class="inventario-form-card">
                     <h2><i class="fa fa-clipboard"></i> Detalles de la Entrada</h2>
-                    <form method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-entry-form">
+                    <form  action="registrar_entrada_rapida" method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-entry-form">
                         <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
 
                         <div class="form-field" style="margin-bottom:14px;">
@@ -133,7 +133,7 @@ $breadcrumbs = [
                                     <option value="<?= $producto['id'] ?>"
                                         data-stock="<?= (float) ($producto['stock_actual'] ?? 0) ?>"
                                         data-min="<?= (float) ($producto['stock_minimo'] ?? 0) ?>"
-                                        data-unidad="<?= htmlspecialchars($producto['apodo'] ?? '') ?>"
+                                        data-unidad="<?= htmlspecialchars($producto['unidad_medida_nombre'] ?? '') ?>"
                                         data-almacen="<?= (int) ($producto['almacen_id'] ?? 0) ?>"
                                         data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
                                         data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>"
@@ -172,9 +172,15 @@ $breadcrumbs = [
                         </div>
 
                         <div class="entry-batch-actions">
-                            <button type="button" class="btn-secondary" id="agregar-producto"><i class="fa fa-plus"></i> Agregar Producto</button>
-                            <button type="button" class="btn-ghost" id="limpiar-captura"><i class="fa fa-eraser"></i> Limpiar Captura</button>
-                            <button type="submit" class="btn-main" id="registrar-entrada"><i class="fa fa-save"></i> Registrar Entrada</button>
+                            <button type="button" class="btn-secondary" id="agregar-producto">
+                                <i class="fa fa-plus"></i> Agregar Producto
+                            </button>
+                            <button type="button" class="btn-ghost" id="limpiar-captura">
+                                <i class="fa fa-eraser"></i> Limpiar Captura
+                            </button>
+                            <button type="submit" class="btn-main" id="registrar-entrada">
+                                <i class="fa fa-save"></i> Registrar Entrada
+                            </button>
                         </div>
 
                         <section class="entry-items-panel">
@@ -226,8 +232,8 @@ $breadcrumbs = [
                             <span class="value" id="summary-min">-</span>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Unidad</span>
-                            <span class="value" id="summary-unidad">-</span>
+                            <span class="label">Categoría</span>
+                            <span class="value" id="summary-categoria">-</span>
                         </div>
                         <div class="summary-item">
                             <span class="label">Almacén destino</span>
@@ -239,13 +245,13 @@ $breadcrumbs = [
 
             <section class="inventario-form-card inventario-recents">
                 <div class="recents-header">
-                    <h2><i class="fa fa-clock"></i> Últimas Entradas Registradas</h2>
+                    <h2><i class="fa fa-clock"></i> Últimos Movimientos Registrados</h2>
                     <span class="recents-sub">Ayuda a Verificar Duplicados o Confirmar Capturas Recientes</span>
                 </div>
                 <?php if (empty($movimientosRecientes)): ?>
                     <div class="inventario-empty">
                         <i class="fa fa-inbox"></i>
-                        <p>Aún no se Registran Entradas de Inventario.</p>
+                        <p>Aún no se Registran Movimientos de Inventario.</p>
                     </div>
                 <?php else: ?>
                     <div class="recents-table-wrapper">
@@ -263,7 +269,7 @@ $breadcrumbs = [
                             <tbody>
                                 <?php foreach ($movimientosRecientes as $mov): ?>
                                     <tr>
-                                        <td><?= date('d/m/Y H:i', strtotime($mov['fecha'])) ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($mov['created_at'])) ?></td>
                                         <td><?= htmlspecialchars($mov['producto'] ?? '-') ?> <span class="mono">(<?= htmlspecialchars($mov['codigo_producto'] ?? '-') ?>)</span></td>
                                         <td><?= rtrim(rtrim(number_format((float) ($mov['cantidad'] ?? 0), 2), '0'), '.') ?></td>
                                         <td><?= htmlspecialchars($mov['almacen_destino'] ?? $mov['almacen_origen'] ?? '-') ?></td>
@@ -287,6 +293,7 @@ const productosSelect = document.getElementById('producto_id');
 const almacenSelect = document.getElementById('almacen_id');
 const cantidadInput = document.getElementById('cantidad');
 const observacionesInput = document.getElementById('observaciones');
+const folioInput = document.getElementById('folio');
 const agregarProductoBtn = document.getElementById('agregar-producto');
 const limpiarCapturaBtn = document.getElementById('limpiar-captura');
 const entradaItemsInputs = document.getElementById('entrada-items-inputs');
@@ -299,7 +306,7 @@ const summaryContent = document.getElementById('summary-content');
 const summaryNombre = document.getElementById('summary-nombre');
 const summaryStock = document.getElementById('summary-stock');
 const summaryMin = document.getElementById('summary-min');
-const summaryUnidad = document.getElementById('summary-unidad');
+const summaryCategoria = document.getElementById('summary-categoria');
 const summaryAlmacen = document.getElementById('summary-almacen');
 const filtroTexto = document.getElementById('filtro_texto');
 const filtroTipo = document.getElementById('filtro_tipo');
@@ -318,6 +325,7 @@ const entradaItems = Array.isArray(lineasIniciales) ? lineasIniciales.map((item)
     almacen_id: String(item.almacen_id || ''),
     cantidad: String(item.cantidad || ''),
     observaciones: String(item.observaciones || ''),
+    folio: String(item.folio || ''),
 })) : [];
 
 function obtenerOpcionProducto(productoId) {
@@ -337,7 +345,8 @@ function construirBorradorEntrada() {
     const almacenId = String(almacenSelect.value || '').trim();
     const cantidad = String(cantidadInput.value || '').trim();
     const observaciones = String(observacionesInput.value || '').trim();
-    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== '';
+    const folio = String(folioInput.value || '').trim();
+    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== '' || folio !== ''; //
 
     if (!tieneDatos) {
         return { empty: true, valid: false, item: null, message: '' };
@@ -348,7 +357,7 @@ function construirBorradorEntrada() {
             empty: false,
             valid: false,
             item: null,
-            message: 'Selecciona producto, almacén y una cantidad mayor a cero antes de continuar.'
+            message: 'Selecciona Producto, Almacén y una Cantidad Mayor a Cero Antes de Continuar.'
         };
     }
 
@@ -360,6 +369,7 @@ function construirBorradorEntrada() {
             almacen_id: almacenId,
             cantidad: cantidad,
             observaciones: observaciones,
+            folio: folio
         },
         message: ''
     };
@@ -369,6 +379,7 @@ function limpiarBorradorEntrada() {
     productosSelect.value = '';
     cantidadInput.value = '';
     observacionesInput.value = '';
+    folioInput.value = '';
     actualizarResumen();
 }
 
@@ -407,6 +418,7 @@ function renderEntradaItems() {
             ['lineas_almacen_id[]', item.almacen_id],
             ['lineas_cantidad[]', item.cantidad],
             ['lineas_observaciones[]', item.observaciones],
+            ['lineas_folio_solicitud[]', item.folio]
         ];
 
         campos.forEach(([name, value]) => {
@@ -500,16 +512,17 @@ function actualizarResumen() {
         return;
     }
 
-    const stock = option.dataset.stock ? parseFloat(option.dataset.stock) : 0;
+    const stock = option.dataset.stock ? parseFloat(option.dataset.stock) : 0; //
     const min = option.dataset.min ? parseFloat(option.dataset.min) : 0;
-    const unidad = option.dataset.unidad || '';
     const almacenId = option.dataset.almacen ? parseInt(option.dataset.almacen, 10) : 0;
+    const apodo = (option.dataset.unidad || '').trim();
+    const categoria = (option.dataset.categoria || '').trim();
 
     summaryNombre.textContent = option.textContent.trim();
-    summaryStock.textContent = `${Number.isNaN(stock) ? '-' : stock.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unidad}`;
-    summaryMin.textContent = Number.isNaN(min) ? '-' : min.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    summaryUnidad.textContent = unidad || '-';
-    summaryAlmacen.textContent = almacenesMap.get(almacenId) || 'Sin asignar';
+    summaryStock.textContent = `${Number.isNaN(stock) ? '-' : stock.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${apodo}`;
+    summaryMin.textContent = `${Number.isNaN(min) ? '-' : min.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${apodo}`;
+    summaryCategoria.textContent = categoria || '-';
+    summaryAlmacen.textContent = almacenesMap.get(almacenId) || 'Sin Asignar';
 
     if (almacenId && almacenSelect && almacenSelect.value === '') {
         almacenSelect.value = almacenId.toString();
@@ -547,14 +560,21 @@ entradaItemsBody.addEventListener('click', (event) => {
     renderEntradaItems();
 });
 
-entradaForm.addEventListener('submit', (event) => {
+aplicarFiltroProductos();
+renderEntradaItems();
+if (productosSelect.value) {
+    actualizarResumen();
+}
+
+entradaForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
     const draft = construirBorradorEntrada();
-    if (!draft.empty) { //Si hay datos en el formulario, se intenta agregar antes de enviar
+    if (!draft.empty) {
         if (!draft.valid) {
-            event.preventDefault();
-            swal.fire({
+            Swal.fire({
                 icon: 'warning',
-                title: 'Datos incompletos',
+                title: 'Datos Incompletos',
                 text: draft.message,
                 confirmButtonColor: '#3085d6'
             });
@@ -562,27 +582,35 @@ entradaForm.addEventListener('submit', (event) => {
         }
         entradaItems.push(draft.item);
         limpiarBorradorEntrada();
+        renderEntradaItems();
     }
 
     if (!entradaItems.length) {
-        event.preventDefault();
-        swal.fire({
+        Swal.fire({
             icon: 'warning',
             title: 'No Hay Productos',
-            text: 'Debes Agregar Productos a la Captura para Registrar la Entrada.',
+            text: 'Agrega Productos a la Captura para Registrar la Entrada.',
             confirmButtonColor: '#3085d6'
         });
         return;
     }
 
-    renderEntradaItems();
+    Swal.fire({
+        title: '¿Confirmar Entrada?',
+        text: 'Se Actualizará el Stock de los Productos Capturados.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fa fa-save"></i> Sí, Registrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            HTMLFormElement.prototype.submit.call(entradaForm);
+        }
+    });
 });
-
-aplicarFiltroProductos();
-renderEntradaItems();
-if (productosSelect.value) {
-    actualizarResumen();
-}
 
 document.addEventListener("DOMContentLoaded", function () {
         const toggleBtn = document.getElementById('toggleSidebar');

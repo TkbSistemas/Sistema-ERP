@@ -82,6 +82,7 @@ class SolicitudMaterial {
 
     $sqlCabecera = "SELECT 
                         s.id, 
+                        s.folio,
                         s.solicitante_id,
                         s.fecha_solicitud, 
                         s.fecha_entregado, 

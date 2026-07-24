@@ -66,8 +66,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
             <thead>
                 <tr>
                     <th>Estatus</th>
-                    <th>Empleado</th>
                     <th>Folio</th>
+                    <th>Empleado</th>
                     <th>Proyecto</th>
                     <th>Fecha Solicitud</th>
                     <th>Materiales</th>
@@ -78,8 +78,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
                 <tr>
                     <td><?= htmlspecialchars($s['estatus']) ?></td>
-                    <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
                     <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
                     <td><?= nl2br($s['materiales_resumen']) ?></td>
@@ -127,8 +127,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <tr>
                     <th>Estatus</th>
                     <th>Folio</th>
-                    <th>Fecha Respuesta</th>
                     <th>Empleado</th>
+                    <th>Fecha Respuesta</th>
                     <th>Comentario</th>
                     <th>Acción</th>
             </tr>
@@ -138,10 +138,12 @@ if (!isset($total_paginas)) $total_paginas = 1;
                 <tr>
                     <td><?= htmlspecialchars($s['estatus']) ?></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
-                    <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
+                    <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
                     <td><?= htmlspecialchars($s['comentario_responsable']) ?></td>
-                    <td> <a class="btn-table" title="Ver" href="ver_producto?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a> </td>
+                    <td>
+                        <a class="btn-table" title="Ver" href="ver_solicitud_material?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
+                    </td>
                 </tr>
         <?php endforeach; ?>
             </tbody>

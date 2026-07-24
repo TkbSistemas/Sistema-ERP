@@ -111,6 +111,7 @@
                 $almacenes     = $post['lineas_almacen_id'] ?? [];
                 $cantidades    = $post['lineas_cantidad'] ?? [];
                 $observaciones = $post['lineas_observaciones'] ?? [];
+                $folios        = $post['lineas_folio'] ?? [];
 
                 foreach ($productos as $indice => $productoId) {
                     $linea = [
@@ -118,9 +119,10 @@
                         'almacen_id'    => trim((string) ($almacenes[$indice] ?? '')),
                         'cantidad'      => trim((string) ($cantidades[$indice] ?? '')),
                         'observaciones' => trim((string) ($observaciones[$indice] ?? '')),
+                        'folio'          => trim((string) ($folios[$indice] ?? '')),
                     ];
 
-                    if ($linea['producto_id'] === '' && $linea['almacen_id'] === '' && $linea['cantidad'] === '' && $linea['observaciones'] === '') {
+                    if ($linea['producto_id'] === '' && $linea['almacen_id'] === '' && $linea['cantidad'] === '' && $linea['observaciones'] === '' && $linea['folio'] === '') {
                         continue;
                     }
 
@@ -132,9 +134,10 @@
                     'almacen_id'    => trim((string) ($post['almacen_id'] ?? '')),
                     'cantidad'      => trim((string) ($post['cantidad'] ?? '')),
                     'observaciones' => trim((string) ($post['observaciones'] ?? '')),
+                    'folio'        => trim((string) ($post['folio'] ?? ''))
                 ];
 
-                if ($linea['producto_id'] !== '' || $linea['almacen_id'] !== '' || $linea['cantidad'] !== '' || $linea['observaciones'] !== '') {
+                if ($linea['producto_id'] !== '' || $linea['almacen_id'] !== '' || $linea['cantidad'] !== '') {
                     $lineas[] = $linea;
                 }
             }

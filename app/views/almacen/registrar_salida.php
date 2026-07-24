@@ -6,7 +6,7 @@ $role = $_SESSION['role'] ?? 'Administrador';
 $nombre = $_SESSION['nombre'] ?? '';
 $selectedProducto = $_POST['producto_id'] ?? '';
 $selectedAlmacen = $_POST['almacen_id'] ?? '';
-$cantidadSolicitada = $_POST['cantidad'] ?? '';
+$cantidadIngresada = $_POST['cantidad'] ?? '';
 $observaciones = $_POST['observaciones'] ?? '';
 $salidaItems = $salidaItems ?? [];
 $error = $error ?? '';
@@ -25,14 +25,17 @@ $breadcrumbs = [
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Registrar Salida de Inventario | TAKAB</title>
+    <title>SALIDA RÁPIDA | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario_form.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
 <body>
-<?php $seccion_activa = 'registrar_entrada'; ?>
+<?php $seccion_activa = 'registrar_salida'; ?>
+
+                
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
@@ -55,11 +58,22 @@ $breadcrumbs = [
                 </div>
             </header>
 
+        <?php if (isset($_SESSION['alerta'])): ?>
+            <script>
+                Swal.fire({
+                    icon: '<?php echo $_SESSION['alerta']['tipo']; ?>',
+                    title: '<?php echo $_SESSION['alerta']['titulo']; ?>',
+                    text: '<?php echo $_SESSION['alerta']['mensaje']; ?>',
+                    confirmButtonColor: '#3085d6'
+                });
+            </script>
+        <?php unset($_SESSION['alerta']); ?>
+        <?php endif; ?>
 
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1><i class="fa fa-arrow-up"></i> Registrar Salida de Inventario</h1>
+                    <h1><i class="fa fa-arrow-up"></i>REGISTRAR BAJAS DE INVENTARIO</h1>
                     <p class="form-desc">Salida de Productos por Desecho.</p>
                 </div>
             </div>
@@ -75,12 +89,13 @@ $breadcrumbs = [
                 
                 <section class="inventario-form-card">
                     <h2><i class="fa fa-clipboard"></i> Detalles de la Salida</h2>
-                    <form method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-salida-form">
+                    <form  action="registrar_baja_inventario" method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-entry-form">
                         <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
+
                         <div class="form-field" style="margin-bottom:14px;">
                             <label>Buscador Avanzado</label>
                             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
-                                <input type="text" id="filtro_texto" placeholder="Buscar por nombre, codigo o barras">
+                                <input type="text" id="filtro_texto" placeholder="Buscar por nombre, código o barras">
                                 <select id="filtro_tipo">
                                     <option value="">Tipo</option>
                                     <option value="Consumible">Consumible</option>
@@ -94,7 +109,7 @@ $breadcrumbs = [
                                     <?php endforeach; ?>
                                 </select>
                                 <select id="filtro_almacen">
-                                    <option value="">Almacén Asignado</option>
+                                    <option value="">Almacén</option>
                                     <?php foreach ($almacenes as $almacen): ?>
                                         <option value="<?= (int) $almacen['id'] ?>"><?= htmlspecialchars($almacen['nombre']) ?></option>
                                     <?php endforeach; ?>
@@ -104,7 +119,7 @@ $breadcrumbs = [
                                 </label>
                             </div>
                             <div style="margin-top:8px; font-size:0.9rem; color:#5c6a96;">
-                                Productos Visibles: <span id="filtro_resultados">0</span>
+                                Productos visibles: <span id="filtro_resultados">0</span>
                             </div>
                         </div>
 
@@ -114,23 +129,23 @@ $breadcrumbs = [
                                 <option value="">Selecciona un Producto...</option>
                                 <?php foreach ($productos as $producto): ?>
                                     <option value="<?= $producto['id'] ?>"
-                                            data-stock="<?= (float) ($producto['stock_actual'] ?? 0) ?>"
-                                            data-min="<?= (float) ($producto['stock_minimo'] ?? 0) ?>"
-                                            data-unidad="<?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?>"
-                                            data-almacen="<?= (int) ($producto['almacen_id'] ?? 0) ?>"
-                                            data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
-                                            data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>"
-                                            data-codigo="<?= htmlspecialchars($producto['codigo'] ?? '') ?>"
-                                            data-barras="<?= htmlspecialchars($producto['codigo_barras'] ?? '') ?>"
-                                            <?= $selectedProducto == $producto['id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($producto['nombre']) ?> (<?= htmlspecialchars($producto['codigo']) ?>)
+                                        data-stock="<?= (float) ($producto['stock_actual'] ?? 0) ?>"
+                                        data-min="<?= (float) ($producto['stock_minimo'] ?? 0) ?>"
+                                        data-unidad="<?= htmlspecialchars($producto['unidad_medida_nombre'] ?? '') ?>"
+                                        data-almacen="<?= (int) ($producto['almacen_id'] ?? 0) ?>"
+                                        data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
+                                        data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>"
+                                        data-codigo="<?= htmlspecialchars($producto['codigo_fabricante'] ?? '') ?>"
+                                        data-barras="<?= htmlspecialchars($producto['codigos_barras'] ?? '') ?>"
+                                        <?= $selectedProducto == $producto['id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($producto['nombre']) ?> (<?= htmlspecialchars($producto['codigo_fabricante']) ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
 
                         <div class="form-field">
-                            <label for="almacen_id">Almacén Origen *</label>
+                            <label for="almacen_id">Almacén *</label>
                             <select id="almacen_id" name="almacen_id">
                                 <option value="">Selecciona un Almacén...</option>
                                 <?php foreach ($almacenes as $almacen): ?>
@@ -141,18 +156,18 @@ $breadcrumbs = [
 
                         <div class="form-field">
                             <label for="cantidad">Cantidad *</label>
-                            <input type="number" id="cantidad" name="cantidad" min="0" step="0.01" placeholder="Ej. 10" value="<?= htmlspecialchars($cantidadSolicitada) ?>">
+                            <input type="text" id="cantidad" name="cantidad" min="0" step="0.01" placeholder="Ej. 25" value="<?= htmlspecialchars($cantidadIngresada) ?>">
                         </div>
 
                         <div class="form-field">
                             <label for="observaciones">Observaciones</label>
-                            <textarea id="observaciones" name="observaciones" placeholder="Motivo de la salida, proyecto, folio..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
+                            <textarea id="observaciones" name="observaciones" placeholder="Comentarios Adicionales..." rows="3"><?= htmlspecialchars($observaciones) ?></textarea>
                         </div>
 
                         <div class="entry-batch-actions">
                             <button type="button" class="btn-secondary" id="agregar-producto"><i class="fa fa-plus"></i> Agregar Producto</button>
                             <button type="button" class="btn-ghost" id="limpiar-captura"><i class="fa fa-eraser"></i> Limpiar Captura</button>
-                            <button type="submit" class="btn-main" id="registrar-salida"><i class="fa fa-upload"></i> Registrar Salida</button>
+                            <button type="submit" class="btn-main" id="registrar-salida"><i class="fa fa-file-export"></i> Generar Salida</button>
                         </div>
 
                         <section class="entry-items-panel">
@@ -162,7 +177,7 @@ $breadcrumbs = [
                             </div>
                             <div class="inventario-empty entry-items-empty" id="salida-items-empty">
                                 <i class="fa fa-box-open"></i>
-                                <p>Agrega Productos a la Captura para Registrarlos Todos Juntos.</p>
+                                <p>Agrega Productos a la Captura para Dar Salida a la Vez.</p>
                             </div>
                             <div class="entry-items-table-wrapper" id="salida-items-wrapper" hidden>
                                 <table class="entry-items-table">
@@ -171,7 +186,6 @@ $breadcrumbs = [
                                             <th>Producto</th>
                                             <th>Almacén</th>
                                             <th>Cantidad</th>
-                                            <th>Stock Disponible</th>
                                             <th>Observaciones</th>
                                             <th>Acción</th>
                                         </tr>
@@ -189,7 +203,7 @@ $breadcrumbs = [
                     <h2><i class="fa fa-circle-info"></i> Resumen del Producto</h2>
                     <div class="summary-placeholder" id="summary-placeholder">
                         <i class="fa fa-box"></i>
-                        <p>Selecciona un producto para consultar su stock disponible.</p>
+                        <p>Selecciona un Producto para Consultar su Stock Actual y Ubicación.</p>
                     </div>
                     <div class="summary-content" id="summary-content" hidden>
                         <div class="summary-item">
@@ -197,7 +211,7 @@ $breadcrumbs = [
                             <span class="value" id="summary-nombre">-</span>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Stock actual</span>
+                            <span class="label">Stock Actual</span>
                             <span class="value" id="summary-stock">-</span>
                         </div>
                         <div class="summary-item">
@@ -205,11 +219,11 @@ $breadcrumbs = [
                             <span class="value" id="summary-min">-</span>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Unidad</span>
-                            <span class="value" id="summary-unidad">-</span>
+                            <span class="label">Categoría</span>
+                            <span class="value" id="summary-categoria">-</span>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Almacén asignado</span>
+                            <span class="label">Almacén</span>
                             <span class="value" id="summary-almacen">-</span>
                         </div>
                     </div>
@@ -218,13 +232,13 @@ $breadcrumbs = [
 
             <section class="inventario-form-card inventario-recents">
                 <div class="recents-header">
-                    <h2><i class="fa fa-clock"></i> Últimas Salidas Registradas</h2>
+                    <h2><i class="fa fa-clock"></i> Últimos Movimientos Registrados</h2>
                     <span class="recents-sub">Ayuda a Verificar Duplicados o Confirmar Capturas Recientes</span>
                 </div>
                 <?php if (empty($movimientosRecientes)): ?>
                     <div class="inventario-empty">
                         <i class="fa fa-inbox"></i>
-                        <p>Aún no se Registran Salidas de Inventario.</p>
+                        <p>Aún no se Registran Movimientos de Inventario.</p>
                     </div>
                 <?php else: ?>
                     <div class="recents-table-wrapper">
@@ -234,18 +248,18 @@ $breadcrumbs = [
                                     <th>Fecha</th>
                                     <th>Producto</th>
                                     <th>Cantidad</th>
-                                    <th>Almacén origen</th>
-                                    <th>Registrado por</th>
+                                    <th>Almacén</th>
+                                    <th>Registro</th>
                                     <th>Notas</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($movimientosRecientes as $mov): ?>
                                     <tr>
-                                        <td><?= date('d/m/Y H:i', strtotime($mov['fecha'])) ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($mov['created_at'])) ?></td>
                                         <td><?= htmlspecialchars($mov['producto'] ?? '-') ?> <span class="mono">(<?= htmlspecialchars($mov['codigo_producto'] ?? '-') ?>)</span></td>
                                         <td><?= rtrim(rtrim(number_format((float) ($mov['cantidad'] ?? 0), 2), '0'), '.') ?></td>
-                                        <td><?= htmlspecialchars($mov['almacen_origen'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($mov['almacen_destino'] ?? $mov['almacen_origen'] ?? '-') ?></td>
                                         <td><?= htmlspecialchars($mov['usuario'] ?? '-') ?></td>
                                         <td><?= htmlspecialchars($mov['observaciones'] ?? '-') ?></td>
                                     </tr>
@@ -261,7 +275,7 @@ $breadcrumbs = [
 
 
 <script>
-const salidaForm = document.getElementById('inventario-salida-form');
+const salidaForm = document.getElementById('inventario-entry-form');
 const productosSelect = document.getElementById('producto_id');
 const almacenSelect = document.getElementById('almacen_id');
 const cantidadInput = document.getElementById('cantidad');
@@ -278,7 +292,7 @@ const summaryContent = document.getElementById('summary-content');
 const summaryNombre = document.getElementById('summary-nombre');
 const summaryStock = document.getElementById('summary-stock');
 const summaryMin = document.getElementById('summary-min');
-const summaryUnidad = document.getElementById('summary-unidad');
+const summaryCategoria = document.getElementById('summary-categoria');
 const summaryAlmacen = document.getElementById('summary-almacen');
 const filtroTexto = document.getElementById('filtro_texto');
 const filtroTipo = document.getElementById('filtro_tipo');
@@ -296,7 +310,7 @@ const salidaItems = Array.isArray(lineasIniciales) ? lineasIniciales.map((item) 
     producto_id: String(item.producto_id || ''),
     almacen_id: String(item.almacen_id || ''),
     cantidad: String(item.cantidad || ''),
-    observaciones: String(item.observaciones || ''),
+    observaciones: String(item.observaciones || '')
 })) : [];
 
 function obtenerOpcionProducto(productoId) {
@@ -311,27 +325,12 @@ function formatearCantidad(value) {
     return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-function stockDisponibleEnCaptura(productoId, almacenId, excluirIndex = -1) {
-    let disponible = 0;
-    const option = obtenerOpcionProducto(productoId);
-    if (option) {
-        disponible = parseFloat(option.dataset.stock || '0');
-    }
-    salidaItems.forEach((item, index) => {
-        if (index === excluirIndex) return;
-        if (String(item.producto_id) === String(productoId) && String(item.almacen_id) === String(almacenId)) {
-            disponible -= parseFloat(item.cantidad || '0');
-        }
-    });
-    return disponible;
-}
-
 function construirBorradorSalida() {
     const productoId = String(productosSelect.value || '').trim();
     const almacenId = String(almacenSelect.value || '').trim();
     const cantidad = String(cantidadInput.value || '').trim();
     const observaciones = String(observacionesInput.value || '').trim();
-    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== '';
+    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== ''; //
 
     if (!tieneDatos) {
         return { empty: true, valid: false, item: null, message: '' };
@@ -342,17 +341,7 @@ function construirBorradorSalida() {
             empty: false,
             valid: false,
             item: null,
-            message: 'Selecciona producto, almacén y una cantidad mayor a cero antes de continuar.'
-        };
-    }
-
-    const disponible = stockDisponibleEnCaptura(productoId, almacenId);
-    if (Number(cantidad) > disponible) {
-        return {
-            empty: false,
-            valid: false,
-            item: null,
-            message: 'La cantidad solicitada supera el stock disponible para ese producto en el almacén seleccionado.'
+            message: 'Selecciona Producto, Almacén y una Cantidad Mayor a Cero Antes de Continuar.'
         };
     }
 
@@ -363,7 +352,7 @@ function construirBorradorSalida() {
             producto_id: productoId,
             almacen_id: almacenId,
             cantidad: cantidad,
-            observaciones: observaciones,
+            observaciones: observaciones
         },
         message: ''
     };
@@ -395,14 +384,12 @@ function renderSalidaItems() {
         const productoNombre = productoOption ? productoOption.textContent.trim() : `Producto #${item.producto_id}`;
         const unidad = productoOption ? (productoOption.dataset.unidad || '') : '';
         const almacenNombre = almacenesMap.get(Number(item.almacen_id)) || `Almacén #${item.almacen_id}`;
-        const disponible = stockDisponibleEnCaptura(item.producto_id, item.almacen_id, index) + parseFloat(item.cantidad || '0');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${productoNombre}</td>
             <td>${almacenNombre}</td>
             <td>${formatearCantidad(item.cantidad)} ${unidad}</td>
-            <td>${formatearCantidad(disponible)} ${unidad}</td>
             <td>${item.observaciones ? item.observaciones : '-'}</td>
             <td><button type="button" class="btn-inline-remove" data-index="${index}"><i class="fa fa-trash"></i></button></td>
         `;
@@ -412,7 +399,7 @@ function renderSalidaItems() {
             ['lineas_producto_id[]', item.producto_id],
             ['lineas_almacen_id[]', item.almacen_id],
             ['lineas_cantidad[]', item.cantidad],
-            ['lineas_observaciones[]', item.observaciones],
+            ['lineas_observaciones[]', item.observaciones]
         ];
 
         campos.forEach(([name, value]) => {
@@ -506,16 +493,21 @@ function actualizarResumen() {
         return;
     }
 
-    const stock = option.dataset.stock ? parseFloat(option.dataset.stock) : 0;
+    const stock = option.dataset.stock ? parseFloat(option.dataset.stock) : 0; //
     const min = option.dataset.min ? parseFloat(option.dataset.min) : 0;
-    const unidad = option.dataset.unidad || '';
     const almacenId = option.dataset.almacen ? parseInt(option.dataset.almacen, 10) : 0;
+    const apodo = (option.dataset.unidad || '').trim();
+    const categoria = (option.dataset.categoria || '').trim();
 
     summaryNombre.textContent = option.textContent.trim();
-    summaryStock.textContent = `${Number.isNaN(stock) ? '-' : stock.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unidad}`;
-    summaryMin.textContent = Number.isNaN(min) ? '-' : min.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    summaryUnidad.textContent = unidad || '-';
-    summaryAlmacen.textContent = almacenesMap.get(almacenId) || 'Sin asignar';
+    summaryStock.textContent = `${Number.isNaN(stock) ? '-' : stock.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${apodo}`;
+    summaryMin.textContent = `${Number.isNaN(min) ? '-' : min.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${apodo}`;
+    summaryCategoria.textContent = categoria || '-';
+    summaryAlmacen.textContent = almacenesMap.get(almacenId) || 'Sin Asignar';
+
+    if (almacenId && almacenSelect && almacenSelect.value === '') {
+        almacenSelect.value = almacenId.toString();
+    }
 
     summaryPlaceholder.hidden = true;
     summaryContent.hidden = false;
@@ -549,25 +541,50 @@ salidaItemsBody.addEventListener('click', (event) => {
     renderSalidaItems();
 });
 
-salidaForm.addEventListener('submit', (event) => {
+salidaForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
     const draft = construirBorradorSalida();
     if (!draft.empty) {
         if (!draft.valid) {
-            event.preventDefault();
-            window.alert(draft.message);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Datos Incompletos',
+                text: draft.message,
+                confirmButtonColor: '#3085d6'
+            });
             return;
         }
         salidaItems.push(draft.item);
         limpiarBorradorSalida();
+        renderSalidaItems();
     }
 
     if (!salidaItems.length) {
-        event.preventDefault();
-        window.alert('Agrega al menos un producto a la captura antes de registrar la salida.');
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Hay Productos',
+            text: 'Agrega Productos a la Captura para Registrar la Salida.',
+            confirmButtonColor: '#3085d6'
+        });
         return;
     }
 
-    renderSalidaItems();
+    Swal.fire({
+        title: '¿Crear Salida?',
+        text: 'La Solicitud será Guardada hasta que sea Autorizada.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fa fa-save"></i> Sí, Registrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            HTMLFormElement.prototype.submit.call(salidaForm);
+        }
+    });
 });
 
 aplicarFiltroProductos();

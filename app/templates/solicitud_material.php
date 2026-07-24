@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Solicitud de Materiales - TAKAB</title>
+    <title>SOLICITUD DE MATERIALES | TAKAB</title>
     <style>
         * {
             box-sizing: border-box;
@@ -223,6 +223,34 @@
 </head>
 <body>
 
+    <?php
+        $grupos = [
+            'Consumible'  => [],
+            'Herramienta' => [],
+            'Equipo'   => [],
+            'Materiales'   => []
+        ];
+
+        $requiereDevolucion = false;
+
+        if (!empty($solicitud['items']) && is_array($solicitud['items'])) {
+            foreach ($solicitud['items'] as $item) {
+                $tipo = ucfirst(strtolower($item['tipo'] ?? 'Materiales'));
+                if (strpos($tipo, 'Herramienta') !== false) {
+                    $grupos['Herramientas'][] = $item;
+                    $requiereDevolucion = true; 
+                }elseif(strpos($tipo, 'Equipo') !== false) {
+                    $grupos['Equipo'][] = $item;
+                    $requiereDevolucion = true; 
+                }elseif(strpos($tipo, 'Consumible') !== false) {
+                    $grupos['Consumible'][] = $item;
+                }else {
+                    $grupos['Materiales'][] = $item;
+                }
+            }
+        }
+    ?>
+
     <button class="btn-print" onclick="window.print();">🖨️ Imprimir Solicitud</button>
 
     <div class="pdf24_02">
@@ -232,22 +260,19 @@
                 <?php 
                 $ruta_logo = $_SERVER['DOCUMENT_ROOT'] . '/proyectos/Sistema-ERP/public/assets/images/logo.png'; 
                 ?>
-                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo" />
+                <img class="logo-takab" src="/trabajos/Sistema-ERP-New/public/assets/images/logo.png" alt="TAKAB Logo" />
                 
                 <h1 class="doc-title">SOLICITUD DE MATERIALES</h1>
                 
-                <div class="doc-code">SA-TT-03</div>
+                <div class="doc-code"><?= htmlspecialchars($solicitud['folio'] ?? 'Sin Folio') ?></div>
             </div>
             
             <div class="company-name">
                 TAKAB, SISTEMAS TECNOLOGICOS INTELIGENTES & SERVICIOS INTEGRALES, S DE RL DE CV.
             </div>
-            <div class="company-data">
-                RFC: TST190527EBA | Priv. 48 Norte 1239 | Col. Agrícola Resurgimiento | Puebla, pue. C.P. 72370 | Oficina: 222.583.7297
-            </div>
         </div>
 
-        <div class="info-grid">
+        <div class="info-grid <?= $requiereDevolucion ? 'grid-3-cols' : 'grid-2-cols' ?>">
             <div class="info-item">
                 <span class="info-label">Solicitante</span>
                 <span class="info-value"><?= htmlspecialchars($solicitud['solicitante'] ?? 'N/A') ?></span>
@@ -268,6 +293,13 @@
                 <span class="info-value"><?= !empty($solicitud['fecha_entrega']) ? date('d/m/Y', strtotime($solicitud['fecha_entrega'])) : 'N/A' ?></span>
             </div>
 
+            <?php if ($requiereDevolucion): ?>
+                <div class="info-item">
+                    <span class="info-label">Fecha de Devolución</span>
+                    <span class="info-value"><?= !empty($solicitud['fecha_entregado']) ? date('d/m/Y', strtotime($solicitud['fecha_entregado'])) : '________' ?></span>
+                </div>
+            <?php endif; ?>
+
             <div class="info-item full-width">
                 <span class="info-label">Comentarios / Observaciones del Solicitante</span>
                 <div class="comments-box">
@@ -275,27 +307,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- CLASIFICACIÓN Y LISTADO DE MATERIALES -->
-        <?php
-        // Agrupación automática de ítems por categoría
-        $grupos = [
-            'Herramientas' => [],
-            'Consumibles'  => [],
-            'Materiales'   => []
-        ];
-
-        if (!empty($solicitud['items']) && is_array($solicitud['items'])) {
-            foreach ($solicitud['items'] as $item) {
-                $tipo = ucfirst(strtolower($item['tipo'] ?? 'Materiales'));
-                if (array_key_exists($tipo, $grupos)) {
-                    $grupos[$tipo][] = $item;
-                } else {
-                    $grupos['Materiales'][] = $item; // Categoría por defecto
-                }
-            }
-        }
-        ?>
 
         <?php 
         $hayItems = false;
@@ -311,8 +322,8 @@
                             <th class="col-no">No.</th>
                             <th class="col-codigo">Código</th>
                             <th class="col-nombre">Nombre / Descripción del Producto</th>
-                            <th class="col-udm">U. Medida</th>
                             <th class="col-cant">Cantidad</th>
+                            <th class="col-udm">U. Medida</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -324,8 +335,8 @@
                                 <td class="col-no"><?= $num ?></td>
                                 <td class="col-codigo"><?= htmlspecialchars($prod['codigo_fabricante'] ?? 'N/A') ?></td>
                                 <td class="col-nombre"><?= htmlspecialchars($prod['nombre'] ?? '-') ?></td>
-                                <td class="col-udm"><?= htmlspecialchars($prod['unidad_medida'] ?? 'Pza') ?></td>
                                 <td class="col-cant"><?= htmlspecialchars($prod['cantidad'] ?? 1) ?></td>
+                                <td class="col-udm"><?= htmlspecialchars($prod['unidad_medida'] ?? 'Pza') ?></td>
                             </tr>
                         <?php 
                         $num++;
@@ -341,7 +352,7 @@
         if (!$hayItems): 
         ?>
             <div style="text-align: center; padding: 2em; border: 1px dashed #cbd5e1; color: #64748b; font-size: 0.85em;">
-                No se han agregado materiales a esta solicitud.
+                No se Han Agregado Materiales a Esta Solicitud.
             </div>
         <?php endif; ?>
 

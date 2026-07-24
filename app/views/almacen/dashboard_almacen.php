@@ -78,12 +78,12 @@ $alertas = $datos['alertas'] ?? [];
                 <div class="widget-title sky"><i class="fa-solid fa-history"></i> Movimientos Recientes</div>
                 <?php if (!empty($datos['ultimosMovimientos'])): ?>
                     <table class="dashboard-mini-table">
-                        <thead><tr><th>Fecha</th><th>Sku</th><th>Producto</th><th>Tipo</th><th>Cantidad</th></tr></thead>
+                        <thead><tr><th>Fecha</th><th>Código</th><th>Producto</th><th>Tipo</th><th>Cantidad</th></tr></thead>
                         <tbody>
                         <?php foreach ($datos['ultimosMovimientos'] as $mov): ?>
                             <tr>
-                                <td><?= date('d/m H:i', strtotime($mov['fecha'])) ?></td>
-                                <td><span class="mono"><?= htmlspecialchars($mov['codigo'] ?? '-') ?></span></td>
+                                <td><?= date('d/m H:i', strtotime($mov['created_at'])) ?></td>
+                                <td><span class="mono"><?= htmlspecialchars($mov['codigo_fabricante'] ?? '-') ?></span></td>
                                 <td><?= htmlspecialchars($mov['nombre'] ?? '-') ?> </td>
                                 <td><span class="badge badge-tipo <?= strtolower($mov['tipo']) ?>"><?= htmlspecialchars($mov['tipo']) ?></span></td>
                                 <td><?= number_format((float) $mov['cantidad'], 2) ?></td>

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../helpers/Session.php';
 require_once __DIR__ . '/../models/Prestamo.php';
 require_once __DIR__ . '/../models/Producto.php';
+require_once __DIR__ . '/../models/MovimientoInventario.php';
 require_once __DIR__ . '/../models/SolicitudMaterial.php';
 
 class AlmacenController
@@ -15,7 +16,7 @@ class AlmacenController
 
         $role   = $_SESSION['role'] ?? '';
         $nombre = $_SESSION['nombre'] ?? '';
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        $userId = (int) ($_SESSION['id'] ?? 0);
 
        $_SESSION['menu_items'] = [
             ['slug' => 'solicitudes_material', 'label' => 'Solicitudes de Material', 'icon' => 'fa-solid fa-file-signature', 'role' => 'Todos'],
@@ -219,11 +220,100 @@ class AlmacenController
         $almacenes = Almacen::all();
         Session::requireLogin(['Administrador', 'Almacen']);
         
-        include __DIR__ . '/.
-        ./views/almacen/registrar_entrada.php';
+        include __DIR__ . '/../views/almacen/registrar_entrada.php';
     }
 
+    public function registrarEntradaRapida(){
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $entradaItems = $this->normalizarLineasEntrada($_POST);
+
+            if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Seguridad',
+                    'mensaje' => 'Token CSRF inválido.'
+                ];
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } elseif (empty($entradaItems)) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'warning',
+                    'titulo' => 'Captura Vacía',
+                    'mensaje' => 'Agrega al Menos un Producto a la Captura de Entrada.'
+                ];
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } else {
+                $db = Database::getInstance()->getConnection();
+
+                    try {
+                        $db->beginTransaction();
     
+                        foreach ($entradaItems as $indice => $linea) {
+                            $productoId = (int) ($linea['producto_id'] ?? 0);
+                            $almacenId  = (int) ($linea['almacen_id'] ?? 0);
+                            $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+
+                            if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
+                                throw new RuntimeException('La Línea ' . ($indice + 1) . ' Es Invalida.');
+                            }
+
+                            $data = [
+                                'producto_id'        => $productoId,
+                                'tipo'               => 'Entrada',
+                                'cantidad'           => $cantidad,
+                                'responsable_id'     => $_SESSION['user_id'] ?? 0,
+                                'almacen_id' => $almacenId,
+                                'observaciones'        => $linea['observaciones'] ?? null,
+                                'folio_solicitud'                => $linea['folio_solicitud'] ?? null
+                            ];
+
+                            if (! MovimientoInventario::registrar($data)) {
+                                throw new RuntimeException('No Fue Posible Registrar La Línea ' . ($indice + 1) . '.');
+                            }
+
+                            if (! Producto::sumarStock($productoId, $cantidad, $almacenId)) {
+                                throw new RuntimeException('No Fue Posible Actualizar el Stock en la Línea ' . ($indice + 1) . '.');
+                            }
+                        }
+
+                        $db->commit();
+
+                        $totalLineas = count($entradaItems);
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'success',
+                            'titulo' => 'Entrada Registrada',
+                            'mensaje' => $totalLineas === 1 
+                                ? 'Entrada registrada Correctamente.' 
+                                : 'Se registraron ' . $totalLineas . ' Productos Correctamente.'
+                        ];
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
+                    } catch (\Throwable $e) {
+                        if ($db->inTransaction()) {
+                            $db->rollBack();
+                        }
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'error',
+                            'titulo' => 'Error de Registro',
+                            'mensaje' => $e->getMessage() ?: 'No fue posible registrar la entrada. Revisa los datos.'
+                            //'mensaje' => 'No fue posible registrar la entrada. Revisa los datos.'
+                        ];
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
+                    }
+                }
+            }
+
+            $productos            = Producto::all();
+            $almacenes            = Almacen::all();
+            $movimientosRecientes = MovimientoInventario::ultimos('Entrada', 6);
+            $entradaItems         = [];
+
+            include __DIR__ . '/../views/almacen/entrada_rapida.php';
+        }
 
     public function registrarEntrada(){
         $_SESSION['alerta'] = [
@@ -375,7 +465,7 @@ class AlmacenController
                                     m.tipo,
                                     m.fecha,
                                     m.cantidad,
-                                    COALESCE(a.nombre, ad.nombre) AS almacen
+                                    a.nombre_almacen AS almacen
                              FROM movimientos_inventario m
                              LEFT JOIN inventario p ON m.producto_id = p.id
                              LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
@@ -385,18 +475,16 @@ class AlmacenController
         return $stmt->fetchAll();
     }
 
-    private function expuestosMovimientos($db): array
-    {
+    private function expuestosMovimientos($db): array{
         $stmt = $db->query("SELECT p.nombre,
                                     p.codigo_fabricante,
                                     m.tipo,
                                     m.cantidad,
                                     m.created_at,
-                                    COALESCE(a.nombre, ad.nombre) AS almacen
+                                    a.nombre
                              FROM movimientos_inventario m
                              LEFT JOIN inventario p ON m.producto_id = p.id
-                             LEFT JOIN almacenes a ON m.almacen_entrada_id = a.id
-                             LEFT JOIN almacenes ad ON m.almacen_salida_id = ad.id
+                             LEFT JOIN almacenes a ON m.almacen_id = a.id
                              ORDER BY m.created_at DESC
                              LIMIT 8");
         return $stmt->fetchAll();
@@ -539,9 +627,10 @@ class AlmacenController
                                 'producto_id'        => $productoId,
                                 'tipo'               => 'Entrada',
                                 'cantidad'           => $cantidad,
-                                'usuario_id'         => $_SESSION['user_id'],
+                                'usuario_id'         => $_SESSION['id'],
                                 'almacen_destino_id' => $almacenId,
                                 'observaciones'      => trim((string) ($linea['observaciones'] ?? '')),
+                                'folio'              => trim((string) ($linea['folio'] ?? '')),
                             ];
 
                             if (! MovimientoInventario::registrar($data)) {
@@ -549,12 +638,12 @@ class AlmacenController
                             }
 
                             Producto::sumarStock($productoId, $cantidad, $almacenId);
-                            ActivityLogger::log('inventario_entrada', 'Entrada de inventario registrada', [
+                            /*ActivityLogger::log('inventario_entrada', 'Entrada de inventario registrada', [
                                 'producto_id' => $productoId,
                                 'almacen_id'  => $almacenId,
                                 'cantidad'    => $cantidad,
                                 'linea'       => $indice + 1,
-                            ]);
+                            ]);*/
                         }
 
                         $db->commit();
@@ -658,6 +747,61 @@ endobj
 
         return $pdf;
     }
+
+    private function normalizarLineasEntrada(array $post): array
+{
+    $lineas = [];
+    $almacenGeneral = trim((string) ($post['almacen_entrada_id'] ?? ''));
+    $folioGeneral   = trim((string) ($post['folio'] ?? ''));
+
+    if (! empty($post['lineas_producto_id']) && is_array($post['lineas_producto_id'])) {
+        $productos     = $post['lineas_producto_id'];
+        $almacenes     = $post['lineas_almacen_id'] ?? [];
+        $cantidades    = $post['lineas_cantidad'] ?? [];
+        $observaciones = $post['lineas_observaciones'] ?? [];
+        $folios        = $post['lineas_folio_solicitud'] ?? [];   
+
+        foreach ($productos as $indice => $productoId) {
+            $almacenIdItem = trim((string) ($almacenes[$indice] ?? ''));
+            if ($almacenIdItem === '') {
+                $almacenIdItem = $almacenGeneral;
+            }
+
+            $folioItem = trim((string) ($folios[$indice] ?? ''));
+            if ($folioItem === '') {
+                $folioItem = $folioGeneral;
+            }
+
+            $linea = [
+                'producto_id'   => trim((string) $productoId),
+                'almacen_id'    => $almacenIdItem,
+                'cantidad'      => trim((string) ($cantidades[$indice] ?? '')),
+                'observaciones' => trim((string) ($observaciones[$indice] ?? '')),
+                'folio'         => $folioItem
+            ];
+
+            if ($linea['producto_id'] === '' && $linea['almacen_id'] === '' && $linea['cantidad'] === '') {
+                continue;
+            }
+
+            $lineas[] = $linea;
+        }
+    } else {
+        $linea = [
+            'producto_id'   => trim((string) ($post['producto_id'] ?? '')),
+            'almacen_id'    => $almacenGeneral,
+            'cantidad'      => trim((string) ($post['cantidad'] ?? '')),
+            'observaciones' => trim((string) ($post['observaciones'] ?? '')),
+            'folio'         => $folioGeneral
+        ];
+
+        if ($linea['producto_id'] !== '' && $linea['cantidad'] !== '') {
+            $lineas[] = $linea;
+        }
+    }
+
+    return $lineas;
+}
 
     private function renderEtiquetaContent(array $label, float $pageWidth, float $pageHeight): string
     {

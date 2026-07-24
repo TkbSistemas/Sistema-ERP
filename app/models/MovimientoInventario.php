@@ -2,31 +2,31 @@
 require_once __DIR__ . '/../helpers/Database.php';
 
 class MovimientoInventario {
-    public static function registrar($data) {
-        $db = Database::getInstance()->getConnection();
-        $sql = "INSERT INTO movimientos_inventario 
-            (producto_id, tipo, cantidad, fecha, usuario_id, almacen_origen_id, almacen_destino_id, observaciones)
-            VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)";
-        $stmt = $db->prepare($sql);
-        return $stmt->execute([
-            $data['producto_id'],
-            $data['tipo'],
-            $data['cantidad'],
-            $data['usuario_id'],
-            $data['almacen_origen_id'] ?? null,
-            $data['almacen_destino_id'] ?? null,
-            $data['observaciones'] ?? ''
-        ]);
-    }
+
+    public static function registrar(array $data): bool{
+    $db = Database::getInstance()->getConnection();
+    $sql = "INSERT INTO movimientos_inventario 
+            (producto_id, tipo, cantidad, responsable_id, almacen_id, observaciones, folio_solicitud)
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $db->prepare($sql);
+    return $stmt->execute([
+        $data['producto_id']   ?? null,
+        $data['tipo']          ?? 'Entrada',
+        $data['cantidad']      ?? 0,
+        $data['responsable_id'] ?? null,
+        $data['almacen_id']     ?? null,
+        $data['observaciones']  ?? null,
+        $data['folio_solicitud']         ?? null
+    ]);
+}
 
     public static function movimientos($filtros = []) {
         $db = Database::getInstance()->getConnection();
-        $sql = "SELECT m.*, p.nombre AS producto, a.nombre AS almacen_origen, ad.nombre AS almacen_destino, u.nombre_completo AS usuario
+        $sql = "SELECT m.*, p.nombre AS producto, a.nombre AS almacen_origen, ad.nombre AS almacen_destino, u.nombre_completo AS responsable
                 FROM movimientos_inventario m
                 LEFT JOIN productos p ON m.producto_id = p.id
-                LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
-                LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
-                LEFT JOIN usuarios u ON m.usuario_id = u.id
+                LEFT JOIN almacenes a ON m.almacen_entrada_id = a.id
+                LEFT JOIN usuarios u ON m.responsable_id = u.id
                 WHERE 1=1";
         $params = [];
         if (!empty($filtros['tipo'])) {
@@ -49,13 +49,12 @@ class MovimientoInventario {
         $db = Database::getInstance()->getConnection();
         $limit = max(1, (int) $limit);
 
-        $sql = "SELECT m.*, p.nombre AS producto, p.codigo AS codigo_producto, u.nombre_completo AS usuario,"
-             . " ao.nombre AS almacen_origen, ad.nombre AS almacen_destino"
+        $sql = "SELECT m.*, p.nombre AS producto, p.codigo_fabricante AS codigo_producto, u.nombre AS usuario,"
+             . " a.nombre AS almacen_origen"
              . " FROM movimientos_inventario m"
-             . " LEFT JOIN productos p ON m.producto_id = p.id"
-             . " LEFT JOIN usuarios u ON m.usuario_id = u.id"
-             . " LEFT JOIN almacenes ao ON m.almacen_origen_id = ao.id"
-             . " LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id"
+             . " LEFT JOIN inventario p ON m.producto_id = p.id"
+             . " LEFT JOIN usuarios u ON m.responsable_id = u.id"
+             . " LEFT JOIN almacenes a ON m.almacen_id = a.id"
              . " WHERE 1=1";
 
         $params = [];
@@ -64,7 +63,7 @@ class MovimientoInventario {
             $params[] = $tipo;
         }
 
-        $sql .= ' ORDER BY m.fecha DESC LIMIT ' . $limit;
+        $sql .= ' ORDER BY m.created_at DESC LIMIT ' . $limit;
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
