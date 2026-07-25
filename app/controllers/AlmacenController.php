@@ -219,21 +219,35 @@ class AlmacenController
         $almacenes = Almacen::all();
         Session::requireLogin(['Administrador', 'Almacen']);
         
-        include __DIR__ . '/.
-        ./views/almacen/registrar_entrada.php';
+        include __DIR__ . '/../views/almacen/registrar_entrada.php';
     }
 
-    
-
-    public function registrarEntrada(){
-        $_SESSION['alerta'] = [
-            'tipo' => 'warning',
-            'titulo' => 'Folio Inválido',
-            'mensaje' => 'No se Encontró Compra Asociada.'
-        ];
-        header("Location: " . $_SERVER['REQUEST_URI']);
-        exit;
+    public function viewRegistrarSalida(){
+        $productos = Producto::All();
+        $almacenes = Almacen::all();
+        $solicitudesPendientes = SolicitudMaterial::obtenerSalidasPendientes();
+        $historialSolicitudes = SolicitudMaterial::obtenerSalidasHistorial();
+        Session::requireLogin(['Administrador', 'Almacen']);
+        
+        include __DIR__ . '/../views/almacen/registrar_salida.php';
     }
+
+    //Redirige a la vista PDF de la solicitud de salida
+    public function verArchivoSalida(){
+        Session::requireLogin(['Administrador', 'Almacen']);
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            die('Solicitud no encontrada.');
+        }
+
+        $solicitud = SolicitudMaterial::obtenerSolicitudConDetalles($id);
+        if (! $solicitud) {
+            die('Solicitud no encontrada.');
+        }
+
+        include __DIR__ . '/../views/almacen/solicitud_salida_pdf.php';
+    }
+
 
     public function create(): void
     {
