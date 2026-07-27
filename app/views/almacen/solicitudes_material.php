@@ -53,9 +53,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
                     </div>
                 </div>
             </section>
-        <?php 
-            $tab_activa = $_GET['tab'] ?? 'pendientes'; 
-            ?>
+
+            <?php $tab_activa = $_GET['tab'] ?? 'pendientes'; ?>
 
             <div class="tab-container">
                 <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>

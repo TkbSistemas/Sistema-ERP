@@ -86,10 +86,6 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearEntrada();
         break;
-    case 'inventario_salida':
-        require_once __DIR__ . '/../app/controllers/InventarioController.php';
-        (new InventarioController())->crearSalida();
-        break;
     // ===================================== Rutas para el Almacén ======================================================
     case 'dashboard_almacen':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
@@ -133,7 +129,11 @@ switch ($route) {
         break;
     case 'registrar_salida':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
-        (new AlmacenController())->crearSalida();
+        (new AlmacenController())->viewRegistrarSalida();
+        break;
+    case 'crear_solicitud_salida':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        //(new AlmacenController())->();
         break;
     case 'reportes':
         require_once __DIR__ . '/../app/controllers/ReporteController.php';

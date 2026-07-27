@@ -269,6 +269,47 @@ $breadcrumbs = [
                     </div>
                 <?php endif; ?>
             </section>
+
+            <?php 
+                $tab_activa = $_GET['tab'] ?? 'pendientes'; 
+            ?>
+
+            <div class="tab-container">
+                <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
+            </div>
+            <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
+            <table class="takab-table">
+                <thead>
+                    <tr>
+                        <th>Estatus</th>
+                        <th>Folio</th>
+                        <th>Empleado</th>
+                        <th>Fecha Solicitud</th>
+                        <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($solicitudesPendientes)): ?>
+                    <tr>
+                        <td colspan="5" style="text-align:center; padding:20px;">
+                            <i class="fa fa-inbox"></i>
+                            <p>No hay solicitudes pendientes.</p>
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($solicitudesPendientes as $solicitud): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($solicitud['estatus'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($solicitud['folio'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($solicitud['solicitante'] ?? '-') ?></td>
+                            <td><?= date('d/m/Y H:i', strtotime($solicitud['created_at'] ?? '')) ?></td>
+                            <td><a href="" class="btn-inline"><i class="fa fa-eye"></i> Ver Detalle</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
+                
         </main>
     </div>
 </div>

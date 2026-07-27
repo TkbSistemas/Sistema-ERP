@@ -77,6 +77,33 @@ class SolicitudMaterial {
         return $stmt->fetchAll();
     }
 
+    //Obtiene las solicitudes de baja de materiales para listar
+    public static function obtenerSalidasHistorial() {
+        $db = Database::getInstance()->getConnection();
+        $sql = "SELECT s.*, u.nombre AS solicitante
+                FROM solicitudes_baja s
+                LEFT JOIN usuarios u ON s.solicitante_id = u.id
+                WHERE s.estatus = 'Rechazada' OR s.estatus = 'Aprobada'
+                ORDER BY s.created_at DESC";
+        $stmt = $db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    //Obtiene las solicitudes de baja de materiales con estatus pendiente para listar
+    public static function obtenerSalidasPendientes() {
+        $db = Database::getInstance()->getConnection();
+        $sql = "SELECT s.*, u.nombre AS solicitante
+                FROM solicitudes_baja s
+                LEFT JOIN usuarios u ON s.solicitante_id = u.id
+                WHERE s.estatus = 'Pendiente'
+                ORDER BY s.created_at DESC";
+        $stmt = $db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    //Obtiene la solicitud de material con sus detalles (productos) para mostrar la lista de materiales
     public static function obtenerSolicitudConDetalles($solicitudId) {
     $db = Database::getInstance()->getConnection();
 

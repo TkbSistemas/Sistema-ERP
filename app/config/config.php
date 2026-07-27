@@ -32,14 +32,14 @@ define('DB_PASS', 'mau');
 
 
 //CONFIGURACION LOCAL PARA DESARROLLO - NUEVA
-define('DB_HOST', 'localhost:3308');    //servidor local para desarrollo
+define('DB_HOST', 'localhost:3306');    //servidor local para desarrollo
 
 define('DB_NAME', 'erp_takab');
 define('DB_USER', 'root');
 define('DB_PASS', '');           //Cambia esto a la contraseña real
 
 // Opcional: Puerto (para XAMPP/WAMP suele ser 3306)
-define('DB_PORT', 3308);
+define('DB_PORT', 3306);
 
 // Opciones extra
 define('APP_NAME', 'Sistema de Inventario TAKAB');
