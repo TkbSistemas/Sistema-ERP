@@ -2,6 +2,19 @@
 require_once __DIR__ . '/../../helpers/Session.php';
 Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$tab_activa = $_GET['tab'] ?? 'pendientes';
+$limite = 5;
+
+$totalPaginasPendientes = ceil($totalPendientes / $limite); //ceil redondea hacia arriba
+$desdePendientes = $totalPendientes > 0 ? (($page - 1) * $limite) + 1 : 0;
+$hastaPendientes = min($page * $limite, $totalPendientes);
+
+$totalPaginasHistorial = ceil($totalHistorial / $limite);
+$desdeHistorial = $totalHistorial > 0 ? (($page - 1) * $limite) + 1 : 0;
+$hastaHistorial = min($page * $limite, $totalHistorial);
+
+
 $role = $_SESSION['role'] ?? 'Administrador';
 $nombre = $_SESSION['nombre'] ?? '';
 $selectedProducto = $_POST['producto_id'] ?? '';
@@ -29,6 +42,7 @@ $breadcrumbs = [
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario_form.css">
+    <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
@@ -85,8 +99,139 @@ $breadcrumbs = [
                 <div class="alert alert-danger"><i class="fa fa-circle-exclamation"></i> <?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <div class="inventario-form-grid">
-                
+            <section class="inventario-form-card inventario-solicitudes">
+                <div class="recents-header">
+                    <h2><i class="fa fa-file-lines"></i> Solicitudes de Salida de Material</h2>
+                    <span class="recents-sub">Revisa las Solicitudes Pendientes y el Historial de Salidas.</span>
+                </div>
+
+            <?php $tab_activa = $_GET['tab'] ?? 'pendientes'; ?>
+
+            <div class="tab-container" style="margin-top: 20px;">
+                <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
+            </div>
+            <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
+            <table class="takab-table">
+                <thead>
+                    <tr>
+                        <th>Estatus</th>
+                        <th>Folio</th>
+                        <th>Empleado</th>
+                        <th>Fecha Solicitud</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($solicitudesPendientes)): ?>
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding:20px;">
+                                <p>No Hay Solicitudes Pendientes.</p>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($solicitudesPendientes as $solicitud): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($solicitud['estatus'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($solicitud['folio'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($solicitud['solicitante'] ?? '-') ?></td>
+                                <td><?= date('d/m/Y H:i', strtotime($solicitud['created_at'] ?? '')) ?></td>
+                                <td>
+                                    <a class="btn-table" title="Ver" href="ver_solicitud_baja?id=<?= $solicitud['id'] ?>"><i class="fa fa-eye"></i></a>
+                                    <a class="btn-table btn-confirmar" 
+                                    title="Aprobar" 
+                                    href="javascript:void(0)" 
+                                    data-id="<?= $solicitud['id'] ?>" 
+                                    data-accion="aprobar" 
+                                    data-folio="<?= htmlspecialchars($solicitud['folio'] ?? '') ?>">
+                                        <i class="fa fa-circle-check"></i>
+                                    </a>
+                                    <a class="btn-table btn-confirmar" 
+                                    title="Rechazar" 
+                                    href="javascript:void(0)" 
+                                    data-id="<?= $solicitud['id'] ?>" 
+                                    data-accion="rechazar" 
+                                    data-folio="<?= htmlspecialchars($solicitud['folio'] ?? '') ?>">
+                                        <i class="fa fa-circle-xmark"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <div class="inventario-pagination">
+                <div class="inventario-pagination-info">
+                    <?= $totalPendientes > 0
+                        ? "Mostrando $desdePendientes - $hastaPendientes de " . number_format($totalPendientes) . " registros"
+                        : "Sin registros disponibles" ?>
+                </div>
+                <div class="inventario-pagination-controls">
+                    <?php if ($page > 1): ?>
+                        <a class="btn-ghost" href="<?= $buildQuery(['page' => $page - 1]) ?>"><i class="fa fa-chevron-left"></i> Anterior</a>
+                    <?php endif; ?>
+                    <span class="inventario-pagination-page">Página <?= number_format($page) ?> de <?= number_format($totalPaginasPendientes ?: 1) ?></span>
+                    <?php if ($page < $totalPaginasPendientes): ?>
+                        <a class="btn-ghost" href="<?= $buildQuery(['page' => $page + 1]) ?>">Siguiente <i class="fa fa-chevron-right"></i></a>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            </div>
+
+            <div id="wrapper-historial" <?= $tab_activa !== 'historial' ? 'hidden' : '' ?>>
+            <table class="takab-table">
+                <thead>
+                    <tr>
+                        <th>Estatus</th>
+                        <th>Folio</th>
+                        <th>Empleado</th>
+                        <th>Fecha Solicitud</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($solicitudesHistorial)): ?>
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding:20px;">
+                                <p>No Hay Solicitudes en el Historial.</p>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($solicitudesHistorial as $solicitud): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($solicitud['estatus'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($solicitud['folio'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($solicitud['solicitante'] ?? '-') ?></td>  
+                                <td><?= date('d/m/Y H:i', strtotime($solicitud['created_at'] ?? '')) ?></td>
+                                <td><a href="ver_solicitud_baja?id=<?= $solicitud['id'] ?>" class="btn-table" title="Ver"><i class="fa fa-eye"></i></a></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <div class="inventario-pagination">
+                <div class="inventario-pagination-info">
+                    <?= $totalHistorial > 0
+                        ? "Mostrando $desdeHistorial - $hastaHistorial de " . number_format($totalHistorial) . " registros"
+                        : "Sin registros disponibles" ?>
+                </div>
+                <div class="inventario-pagination-controls">
+                    <?php if ($page > 1): ?>
+                        <a class="btn-ghost" href="<?= $buildQuery(['page' => $page - 1]) ?>"><i class="fa fa-chevron-left"></i> Anterior</a>
+                    <?php endif; ?>
+                    <span class="inventario-pagination-page">Página <?= number_format($page) ?> de <?= number_format($totalPaginasHistorial ?: 1) ?></span>
+                    <?php if ($page < $totalPaginasHistorial): ?>
+                        <a class="btn-ghost" href="<?= $buildQuery(['page' => $page + 1]) ?>">Siguiente <i class="fa fa-chevron-right"></i></a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        </section>
+
+            <div class="inventario-form-grid" style="margin-top: 30px;">
                 <section class="inventario-form-card">
                     <h2><i class="fa fa-clipboard"></i> Detalles de la Salida</h2>
                     <form  action="registrar_baja_inventario" method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-entry-form">
@@ -269,47 +414,6 @@ $breadcrumbs = [
                     </div>
                 <?php endif; ?>
             </section>
-
-            <?php 
-                $tab_activa = $_GET['tab'] ?? 'pendientes'; 
-            ?>
-
-            <div class="tab-container">
-                <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
-                <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
-            </div>
-            <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
-            <table class="takab-table">
-                <thead>
-                    <tr>
-                        <th>Estatus</th>
-                        <th>Folio</th>
-                        <th>Empleado</th>
-                        <th>Fecha Solicitud</th>
-                        <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($solicitudesPendientes)): ?>
-                    <tr>
-                        <td colspan="5" style="text-align:center; padding:20px;">
-                            <i class="fa fa-inbox"></i>
-                            <p>No hay solicitudes pendientes.</p>
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($solicitudesPendientes as $solicitud): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($solicitud['estatus'] ?? '-') ?></td>
-                            <td><?= htmlspecialchars($solicitud['folio'] ?? '-') ?></td>
-                            <td><?= htmlspecialchars($solicitud['solicitante'] ?? '-') ?></td>
-                            <td><?= date('d/m/Y H:i', strtotime($solicitud['created_at'] ?? '')) ?></td>
-                            <td><a href="" class="btn-inline"><i class="fa fa-eye"></i> Ver Detalle</a></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-
-                
         </main>
     </div>
 </div>
@@ -633,6 +737,52 @@ renderSalidaItems();
 if (productosSelect.value) {
     actualizarResumen();
 }
+
+ //Alerta de confirmación para aprobar o rechazar solicitudes
+   document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.btn-confirmar').forEach(boton => {
+        boton.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const id = this.dataset.id;
+            const accion = this.dataset.accion;
+            const folio = this.dataset.folio ? `folio ${this.dataset.folio}` : 'esta solicitud';
+            const esAprobar = accion === 'aprobar';
+
+            Swal.fire({
+                title: esAprobar ? 'Aprobar Solicitud' : 'Rechazar Solicitud',
+                text: esAprobar 
+                    ? `¿Aprobar Solicitud con ${folio}?` 
+                    : `¿Rechazar Solicitud con ${folio}? `,
+                icon: esAprobar ? 'question' : 'warning',
+                
+                showCancelButton: true,
+                confirmButtonColor: esAprobar ? '#28a745' : '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: esAprobar ? 'Sí, Aprobar' : 'Sí, Rechazar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `${accion}_solicitud_baja`;
+
+                    const inputId = document.createElement('input');
+                    inputId.type = 'hidden';
+                    inputId.name = 'id';
+                    inputId.value = id;
+                    form.appendChild(inputId);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+    });
 
 document.addEventListener("DOMContentLoaded", function () {
         const toggleBtn = document.getElementById('toggleSidebar');

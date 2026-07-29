@@ -199,7 +199,7 @@
                 
                 <h1 class="doc-title">BAJA DE INVENTARIO</h1>
                 
-                <div class="doc-code"><?= htmlspecialchars($baja['folio'] ?? 'N/A') ?></div>
+                <div class="doc-code"><?= htmlspecialchars($solicitud['folio'] ?? 'N/A') ?></div>
             </div>
             
             <div class="company-name">
@@ -210,12 +210,12 @@
         <div class="info-grid">
             <div class="info-item">
                 <span class="info-label">Responsable de Almacén</span>
-                <span class="info-value"><?= htmlspecialchars($baja['responsable'] ?? 'N/A') ?></span>
+                <span class="info-value"><?= htmlspecialchars($solicitud['solicitante'] ?? 'N/A') ?></span>
             </div>
             
             <div class="info-item">
                 <span class="info-label">Fecha de Emisión</span>
-                <span class="info-value"><?= !empty($baja['fecha']) ? date('d/m/Y H:i', strtotime($baja['fecha'])) : date('d/m/Y H:i') ?></span>
+                <span class="info-value"><?= !empty($solicitud['fecha']) ? date('d/m/Y', strtotime($solicitud['fecha'])) : date('d/m/Y') ?></span>
             </div>
         </div>
 
@@ -231,9 +231,9 @@
             </thead>
             <tbody>
                 <?php 
-                if (!empty($baja['items']) && is_array($baja['items'])): 
+                if (!empty($solicitud['items']) && is_array($solicitud['items'])): 
                     $num = 1;
-                    foreach ($baja['items'] as $item): 
+                    foreach ($solicitud['items'] as $item): 
                 ?>
                         <tr>
                             <td class="col-no"><?= $num ?></td>
@@ -260,7 +260,7 @@
             <div class="signature-box">
                 <div class="signature-line"></div>
                 <strong>ENTREGÓ / RESPONSABLE</strong><br>
-                <span><?= htmlspecialchars($baja['responsable'] ?? 'Nombre y Firma') ?></span>
+                <span><?= htmlspecialchars($solicitud['solicitante'] ?? 'Nombre y Firma') ?></span>
             </div>
             
             <div class="signature-box">

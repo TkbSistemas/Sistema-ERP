@@ -73,7 +73,7 @@ $breadcrumbs = [
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1><i class="fa fa-arrow-down"></i> Registro de Entrada de Inventario</h1>
+                    <h1><i class="fa fa-arrow-down"></i> REGISTRO DE ENTRADA DE INVENTARIO</h1>
                     <p class="form-desc">Captura Recepción de Productos que Cuenten con Orden de Compra Asociada.</p>
                 </div>
                 <a class="btn-main" href="entrada_rapida"><i class="fa-solid fa-truck-fast"></i> Entrada Rápida</a>

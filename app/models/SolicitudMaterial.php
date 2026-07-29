@@ -78,73 +78,162 @@ class SolicitudMaterial {
     }
 
     //Obtiene las solicitudes de baja de materiales para listar
-    public static function obtenerSalidasHistorial() {
+    public static function obtenerSalidasHistorial(int $pagina = 1, int $limite = 5) {
         $db = Database::getInstance()->getConnection();
+
+        $limite = min(max(1, $limite), 5);
+        $pagina = max(1, $pagina);
+        $offset = ($pagina - 1) * $limite;
+
         $sql = "SELECT s.*, u.nombre AS solicitante
-                FROM solicitudes_baja s
+                FROM solicitudes_bajas s
                 LEFT JOIN usuarios u ON s.solicitante_id = u.id
-                WHERE s.estatus = 'Rechazada' OR s.estatus = 'Aprobada'
-                ORDER BY s.created_at DESC";
+                WHERE s.estatus IN ('Rechazada', 'Aprobada')
+                ORDER BY s.created_at DESC
+                LIMIT :limite OFFSET :offset";
+
         $stmt = $db->prepare($sql);
+        
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll();
     }
 
     //Obtiene las solicitudes de baja de materiales con estatus pendiente para listar
-    public static function obtenerSalidasPendientes() {
+    public static function obtenerSalidasPendientes(int $pagina = 1, int $limite = 5) {
         $db = Database::getInstance()->getConnection();
+
+        $limite = min(max(1, $limite), 5);
+        $pagina = max(1, $pagina);
+        $offset = ($pagina - 1) * $limite;
+
+
         $sql = "SELECT s.*, u.nombre AS solicitante
-                FROM solicitudes_baja s
+                FROM solicitudes_bajas s
                 LEFT JOIN usuarios u ON s.solicitante_id = u.id
                 WHERE s.estatus = 'Pendiente'
-                ORDER BY s.created_at DESC";
+                ORDER BY s.created_at DESC
+                LIMIT :limite OFFSET :offset";
+
         $stmt = $db->prepare($sql);
+
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    //Obtiene la solicitud de material con sus detalles (productos) para mostrar la lista de materiales
-    public static function obtenerSolicitudConDetalles($solicitudId) {
-    $db = Database::getInstance()->getConnection();
+    public static function contarBajasHistorial(): int{
+        $db = Database::getInstance()->getConnection();
 
-    $sqlCabecera = "SELECT 
-                        s.id, 
-                        s.folio,
-                        s.solicitante_id,
-                        s.fecha_solicitud, 
-                        s.fecha_entregado, 
-                        s.comentario_solicitante, 
-                        u.nombre AS solicitante
-                    FROM solicitudes_material s
-                    LEFT JOIN usuarios u ON s.solicitante_id = u.id
-                    WHERE s.id = ?";
-    
-    $stmt = $db->prepare($sqlCabecera);
-    $stmt->execute([$solicitudId]);
-    $solicitud = $stmt->fetch();
+        $sql = "SELECT COUNT(*) 
+                FROM solicitudes_bajas 
+                WHERE estatus IN ('Rechazada', 'Aprobada')";
 
-    if (!$solicitud) {
-        return null;
+        $stmt = $db->query($sql);
+
+        return (int) $stmt->fetchColumn();
     }
 
-    $sqlDetalles = "SELECT 
-                        p.codigo_fabricante,
-                        p.nombre,
-                        p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
-                        um.apodo AS unidad_medida,
-                        d.cantidad
-                    FROM solicitudes_material_detalles d
-                    INNER JOIN inventario p ON d.producto_id = p.id
-                    LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
-                    WHERE d.solicitud_id = ?
-                    ORDER BY p.tipo ASC, p.nombre ASC";
+    public static function contarBajasPendientes(): int{
+        $db = Database::getInstance()->getConnection();
 
-    $stmtDetalles = $db->prepare($sqlDetalles);
-    $stmtDetalles->execute([$solicitudId]);
-    $solicitud['items'] = $stmtDetalles->fetchAll();
+        $sql = "SELECT COUNT(*) 
+                FROM solicitudes_bajas 
+                WHERE estatus = 'Pendiente'";
 
-    return $solicitud;
-}
+        $stmt = $db->query($sql);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    //Obtiene la solicitud de material con sus detalles (productos) para mostrar la lista de materiales
+    public static function obtenerSolicitudConDetalles($solicitudId) {
+        $db = Database::getInstance()->getConnection();
+
+        $sqlCabecera = "SELECT 
+                            s.id, 
+                            s.folio,
+                            s.solicitante_id,
+                            s.fecha_solicitud, 
+                            s.fecha_entregado, 
+                            s.comentario_solicitante, 
+                            u.nombre AS solicitante
+                        FROM solicitudes_material s
+                        LEFT JOIN usuarios u ON s.solicitante_id = u.id
+                        WHERE s.id = ?";
+        
+        $stmt = $db->prepare($sqlCabecera);
+        $stmt->execute([$solicitudId]);
+        $solicitud = $stmt->fetch();
+
+        if (!$solicitud) {
+            return null;
+        }
+
+        $sqlDetalles = "SELECT 
+                            p.codigo_fabricante,
+                            p.nombre,
+                            p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
+                            um.apodo AS unidad_medida,
+                            d.cantidad
+                        FROM solicitudes_material_detalles d
+                        INNER JOIN inventario p ON d.producto_id = p.id
+                        LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
+                        WHERE d.solicitud_id = ?
+                        ORDER BY p.tipo ASC, p.nombre ASC";
+
+        $stmtDetalles = $db->prepare($sqlDetalles);
+        $stmtDetalles->execute([$solicitudId]);
+        $solicitud['items'] = $stmtDetalles->fetchAll();
+
+        return $solicitud;
+    }
+
+    public static function obtenerBajaConDetalles($solicitudId) {
+        $db = Database::getInstance()->getConnection();
+
+        $sqlCabecera = "SELECT 
+                            s.id, 
+                            s.folio,
+                            s.solicitante_id,
+                            s.created_at AS fecha, 
+                            u.nombre AS solicitante
+                        FROM solicitudes_bajas s
+                        LEFT JOIN usuarios u ON s.solicitante_id = u.id
+                        WHERE s.id = ?";
+        
+        $stmt = $db->prepare($sqlCabecera);
+        $stmt->execute([$solicitudId]);
+        $solicitud = $stmt->fetch();
+
+        if (!$solicitud) {
+            return null;
+        }
+
+        $sqlDetalles = "SELECT 
+                            p.codigo_fabricante,
+                            p.nombre,
+                            p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
+                            um.apodo AS unidad_medida,
+                            d.cantidad,
+                            d.motivos AS notas
+                        FROM solicitudes_bajas_detalles d
+                        INNER JOIN inventario p ON d.producto_id = p.id
+                        LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
+                        WHERE d.solicitud_id = ?
+                        ORDER BY p.tipo ASC, p.nombre ASC";
+
+        $stmtDetalles = $db->prepare($sqlDetalles);
+        $stmtDetalles->execute([$solicitudId]);
+        $solicitud['items'] = $stmtDetalles->fetchAll();
+
+        return $solicitud;
+    }
+
 
     public static function find($id, $usuario_id = null) {
         $db = Database::getInstance()->getConnection();

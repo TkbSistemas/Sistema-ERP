@@ -140,9 +140,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
                     <td><?= htmlspecialchars($s['comentario_responsable']) ?></td>
-                    <td>
-                        <a class="btn-table" title="Ver" href="ver_solicitud_material?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
-                    </td>
+                    <td><a class="btn-table" title="Ver" href="ver_solicitud_material?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a></td>
                 </tr>
         <?php endforeach; ?>
             </tbody>
@@ -166,7 +164,6 @@ if (!isset($total_paginas)) $total_paginas = 1;
                     <?php endif;
                 endfor;
                 
-                // Botón Siguiente
                 if ($pagina < $total_paginas): ?>
                     <a href="?pagina=<?= $pagina + 1 ?>&tab=<?= $tab_activa ?>" class="pagination-btn">Siguiente &raquo;</a>
                 <?php endif; ?>

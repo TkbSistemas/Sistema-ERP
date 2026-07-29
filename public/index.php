@@ -131,9 +131,21 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->viewRegistrarSalida();
         break;
-    case 'crear_solicitud_salida':
+    case 'crear_solicitud_baja':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         //(new AlmacenController())->();
+        break;
+    case 'ver_solicitud_baja':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->verArchivoSalida();
+        break;
+    case 'aprobar_solicitud_baja':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->aprobarSolicitudBaja();
+        break;
+    case 'rechazar_solicitud_baja':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->rechazarSolicitudBaja();
         break;
     case 'reportes':
         require_once __DIR__ . '/../app/controllers/ReporteController.php';

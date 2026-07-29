@@ -313,20 +313,20 @@ class AlmacenController
             $entradaItems         = [];
 
             include __DIR__ . '/../views/almacen/entrada_rapida.php';
-        }
-
+    }
     
     public function viewRegistrarSalida(){
-        $productos = Producto::All();
-        $almacenes = Almacen::all();
-        $solicitudesPendientes = SolicitudMaterial::obtenerSalidasPendientes();
-        $historialSolicitudes = SolicitudMaterial::obtenerSalidasHistorial();
-        Session::requireLogin(['Administrador', 'Almacen']);
-        
-        include __DIR__ . '/../views/almacen/registrar_salida.php';
+            Session::requireLogin(['Administrador', 'Almacen']);
+            $productos = Producto::All();
+            $almacenes = Almacen::all();
+            $solicitudesPendientes = SolicitudMaterial::obtenerSalidasPendientes();
+            $solicitudesHistorial = SolicitudMaterial::obtenerSalidasHistorial();
+            $totalPendientes = SolicitudMaterial::contarBajasPendientes();
+            $totalHistorial = SolicitudMaterial::contarBajasHistorial();
+            
+            include __DIR__ . '/../views/almacen/registrar_salida.php';
     }
 
-    //Redirige a la vista PDF de la solicitud de salida
     public function verArchivoSalida(){
         Session::requireLogin(['Administrador', 'Almacen']);
         $id = (int) ($_GET['id'] ?? 0);
@@ -334,12 +334,64 @@ class AlmacenController
             die('Solicitud no encontrada.');
         }
 
-        $solicitud = SolicitudMaterial::obtenerSolicitudConDetalles($id);
+        $solicitud = SolicitudMaterial::obtenerBajaConDetalles($id);
         if (! $solicitud) {
             die('Solicitud no encontrada.');
         }
 
-        include __DIR__ . '/../views/almacen/solicitud_salida_pdf.php';
+        include __DIR__ . '/../templates/baja_material.php';
+    }
+
+    public function aprobarSolicitudBaja(){
+        Session::requireLogin(['Administrador', 'Almacen']);
+        $id = (int) ($_POST['id'] ?? 0);
+
+        if ($id <= 0) {
+            die('Solicitud No Encontrada.');
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("
+            UPDATE solicitudes_bajas 
+            SET estatus = 'Aprobada'  
+            WHERE id = ?");
+
+        $stmt->execute([$id]);
+
+        $_SESSION['alerta'] = [
+            'tipo' => 'success',
+            'titulo' => 'Solicitud Aprobada',
+            'mensaje' => 'Solicitud de Baja Aprobada Exitosamente.'
+        ];
+
+        header('Location: registrar_salida');
+        exit();
+    }
+
+    public function rechazarSolicitudBaja(){
+        Session::requireLogin(['Administrador', 'Almacen']);
+        $id = (int) ($_POST['id'] ?? 0);
+
+        if ($id <= 0) {
+            die('Solicitud No Encontrada.');
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("
+            UPDATE solicitudes_bajas 
+            SET estatus = 'Rechazada' 
+            WHERE id = ?");
+
+        $stmt->execute([$id]);
+
+        $_SESSION['alerta'] = [
+            'tipo' => 'success',
+            'titulo' => 'Solicitud Rechazada',
+            'mensaje' => 'Solicitud de Baja Rechazada Exitosamente.'
+        ];
+
+        header('Location: registrar_salida');
+        exit();
     }
 
 
