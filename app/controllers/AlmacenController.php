@@ -316,15 +316,126 @@ class AlmacenController
     }
     
     public function viewRegistrarSalida(){
-            Session::requireLogin(['Administrador', 'Almacen']);
+            Session::requireLogin(['Administrador', 'Almacen']); 
+            $limite = 5;
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
             $productos = Producto::All();
             $almacenes = Almacen::all();
-            $solicitudesPendientes = SolicitudMaterial::obtenerSalidasPendientes();
-            $solicitudesHistorial = SolicitudMaterial::obtenerSalidasHistorial();
+            $movimientosRecientes = MovimientoInventario::ultimos('Salida', 6);
+            $solicitudesPendientes = SolicitudMaterial::obtenerSalidasPendientes($page, $limite);
+            $solicitudesHistorial  = SolicitudMaterial::obtenerSalidasHistorial($page, $limite);
             $totalPendientes = SolicitudMaterial::contarBajasPendientes();
             $totalHistorial = SolicitudMaterial::contarBajasHistorial();
             
             include __DIR__ . '/../views/almacen/registrar_salida.php';
+    }
+
+    public function crearSolicitudBaja(){
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $entradaItems = $this->normalizarLineasEntrada($_POST);
+            $user = Session::user();
+
+            if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Seguridad',
+                    'mensaje' => 'Token CSRF inválido.'
+                ];
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } elseif (empty($entradaItems)) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'warning',
+                    'titulo' => 'Captura Vacía',
+                    'mensaje' => 'Agrega al Menos un Producto a la Captura de Entrada.'
+                ];
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } else {
+                $db = Database::getInstance()->getConnection();
+
+                    try {
+                        $db->beginTransaction();
+                        $almacen_id = $_POST['almacen_id'] ?? $_POST['almacen_id_hidden'] ?? null;
+                        if ($almacen_id <= 0) {
+                            throw new RuntimeException('Debes Seleccionar un Almacén Válido.');
+                        }
+                        
+                        $data = [
+                            'folio'        => $this->generarFolioBaja(),
+                            'solicitante_id'  => $user['id'],
+                            'almacen_id'    => $almacen_id
+                        ];
+
+                        $sql = "INSERT INTO solicitudes_bajas (folio, solicitante_id, almacen_id) VALUES (?, ?, ?)";
+                        $stmt = $db->prepare($sql);
+                        $stmt->execute([
+                            $data['folio']   ?? null,
+                            $data['solicitante_id']          ?? 0,
+                            $data['almacen_id']      ?? 0
+                        ]);
+
+                        $solicitudId = $db->lastInsertId();
+
+                        $sqlDetalle = "INSERT INTO solicitudes_bajas_detalles (solicitud_id, producto_id, cantidad, motivos) VALUES (?, ?, ?, ?)";
+                        $stmtDetalle = $db->prepare($sqlDetalle);
+    
+                        foreach ($entradaItems as $indice => $linea) {
+                            $productoId = (int) ($linea['producto_id'] ?? 0);
+                            $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+                            $motivo     = trim($linea['observaciones'] ?? '');
+
+                            if ($productoId <= 0 || $cantidad <= 0) {
+                                throw new RuntimeException('La Línea ' . ($indice + 1) . ' Es Inválida.');
+                            }
+
+                            $stmtDetalle->execute([
+                                $solicitudId,
+                                $productoId,
+                                $cantidad,
+                                $motivo
+                            ]);
+                        }
+
+                        $db->commit();
+
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'success',
+                            'titulo' => 'Solicitud Registrada',
+                            'mensaje' => 'En Espera de Aprobación.'
+                        ];
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
+                    } catch (\Throwable $e) {
+                        if ($db->inTransaction()) {
+                            $db->rollBack();
+                        }
+                        $_SESSION['alerta'] = [
+                            'tipo' => 'error',
+                            'titulo' => 'Error de Registro',
+                            'mensaje' => $e->getMessage() ?: 'Fallo al Crear la Solicitud.'
+                        ];
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
+                    }
+                }
+            }
+
+        $this->viewRegistrarSalida();
+    }
+
+    public function generarFolioBaja(): string {
+        $db = Database::getInstance()->getConnection();
+        $sql = "SELECT MAX(id) AS ultimo_id FROM solicitudes_bajas";
+        $stmt = $db->query($sql);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $siguienteNumero = ($row && $row['ultimo_id']) ? ((int)$row['ultimo_id'] + 1) : 1;
+
+        $numeroFormateado = str_pad($siguienteNumero, 5, '0', STR_PAD_LEFT);
+        $anioActual = date('Y');
+        return "TAKAB-SB-{$anioActual}-{$numeroFormateado}";
     }
 
     public function verArchivoSalida(){
@@ -350,22 +461,82 @@ class AlmacenController
             die('Solicitud No Encontrada.');
         }
 
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("
-            UPDATE solicitudes_bajas 
-            SET estatus = 'Aprobada'  
-            WHERE id = ?");
+        try {
+            $db = Database::getInstance()->getConnection();
+            $db->beginTransaction();
 
-        $stmt->execute([$id]);
+            $stmtSolicitud = $db->prepare("SELECT folio, almacen_id FROM solicitudes_bajas WHERE id = ?");
+            $stmtSolicitud->execute([$id]);
+            $solicitud = $stmtSolicitud->fetch(PDO::FETCH_ASSOC);
 
-        $_SESSION['alerta'] = [
-            'tipo' => 'success',
-            'titulo' => 'Solicitud Aprobada',
-            'mensaje' => 'Solicitud de Baja Aprobada Exitosamente.'
-        ];
+            if (!$solicitud) {
+                throw new RuntimeException('La Solicitud de Baja Especificada no Existe.');
+            }
+            $folioSolicitud = $solicitud['folio'];
 
-        header('Location: registrar_salida');
-        exit();
+            $almacen_id = $solicitud['almacen_id'];
+            if ($almacen_id <= 0) {
+                throw new RuntimeException('Debes Seleccionar un Almacén Válido.');
+            }
+                
+                $stmt = $db->prepare("UPDATE solicitudes_bajas SET estatus = 'Aprobada' WHERE id = ?");
+                $stmt->execute([$id]);
+
+                $stmtItems = $db->prepare("SELECT * FROM solicitudes_bajas_detalles WHERE solicitud_id = ?");
+                $stmtItems->execute([$id]);
+                $salidaItems = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($salidaItems as $indice => $linea) {
+                    $productoId = (int) ($linea['producto_id'] ?? 0);
+                    $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+
+                    if ($productoId <= 0 || $cantidad <= 0) {
+                        throw new RuntimeException('La Línea ' . ($indice + 1) . ' Es Invalida.');
+                    }
+
+                    $data = [
+                        'producto_id'        => $productoId,
+                        'tipo'               => 'Salida',
+                        'cantidad'           => $cantidad,
+                        'responsable_id'     => $_SESSION['user_id'] ?? 0,
+                        'almacen_id'        =>  $almacen_id,
+                        'observaciones'       => $linea['motivos'] ?? null,
+                        'folio_solicitud'     => $folioSolicitud
+                    ];
+
+                    if (! MovimientoInventario::registrar($data)) {
+                        throw new RuntimeException('No Fue Posible Registrar La Línea ' . ($indice + 1) . '.');
+                    }
+
+                    if (! Producto::restarStock($productoId, $cantidad, $almacen_id)) {
+                        throw new RuntimeException('No Fue Posible Actualizar el Stock en la Línea ' . ($indice + 1) . '.');
+                    }
+                }
+
+                $db->commit();
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'mensaje' => 'Solicitud de Baja Aprobada Exitosamente. El Stock Ha Sido Actualizado',
+                    'titulo' => 'Solicitud Aprobada'
+                ];
+                header("Location: registrar_salida");
+                exit;
+            } catch (\Throwable $e) {
+                if (isset($db) && $db->inTransaction()) {
+                    $db->rollBack();
+                }
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'mensaje' => $e->getMessage() ?: 'No fue Posible Registrar la Solicitud. Revisa los datos.',
+                    'titulo' => 'Error de Registro',
+                    //'mensaje' => 'No fue posible registrar la entrada. Revisa los datos.'
+                ];
+                header("Location: registrar_salida");
+                exit;
+            }
+
+        $this->viewRegistrarSalida();
     }
 
     public function rechazarSolicitudBaja(){

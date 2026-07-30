@@ -89,7 +89,7 @@ class SolicitudMaterial {
                 FROM solicitudes_bajas s
                 LEFT JOIN usuarios u ON s.solicitante_id = u.id
                 WHERE s.estatus IN ('Rechazada', 'Aprobada')
-                ORDER BY s.created_at DESC
+                ORDER BY s.created_at DESC, s.id DESC
                 LIMIT :limite OFFSET :offset";
 
         $stmt = $db->prepare($sql);
@@ -98,7 +98,7 @@ class SolicitudMaterial {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     //Obtiene las solicitudes de baja de materiales con estatus pendiente para listar
@@ -114,7 +114,7 @@ class SolicitudMaterial {
                 FROM solicitudes_bajas s
                 LEFT JOIN usuarios u ON s.solicitante_id = u.id
                 WHERE s.estatus = 'Pendiente'
-                ORDER BY s.created_at DESC
+                ORDER BY s.created_at DESC, s.id DESC
                 LIMIT :limite OFFSET :offset";
 
         $stmt = $db->prepare($sql);
@@ -123,7 +123,7 @@ class SolicitudMaterial {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function contarBajasHistorial(): int{

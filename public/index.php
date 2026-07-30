@@ -133,7 +133,7 @@ switch ($route) {
         break;
     case 'crear_solicitud_baja':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
-        //(new AlmacenController())->();
+        (new AlmacenController())->crearSolicitudBaja();
         break;
     case 'ver_solicitud_baja':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';

@@ -269,10 +269,11 @@
 }
 
 .inventario-pagination {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: flex !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
     align-items: center;
+    width: 100;
     gap: 14px;
     margin-top: 24px;
     color: #55648f;
@@ -282,11 +283,28 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
+}
+
+.inventario-pagination-info {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .inventario-pagination-page {
-    font-weight: 600;
+   font-weight: 600;
     color: #1a2c51;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .inventario-pagination {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
 }
 
 @media (max-width: 1024px) {

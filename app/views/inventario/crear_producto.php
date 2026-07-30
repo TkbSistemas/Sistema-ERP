@@ -46,7 +46,7 @@ $breadcrumbs = [
 
             <div class="productos-header">
                 <div>
-                    <h1>Nuevo Producto</h1>
+                    <h1>NUEVO PRODUCTO</h1>
                     <p class="productos-header-desc">Registra un Nuevo Artículo en el Catálogo.</p>
                 </div>
                 <div class="productos-header-actions">

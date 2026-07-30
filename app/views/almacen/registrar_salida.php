@@ -2,15 +2,18 @@
 require_once __DIR__ . '/../../helpers/Session.php';
 Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
-$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $tab_activa = $_GET['tab'] ?? 'pendientes';
-$limite = 5;
 
-$totalPaginasPendientes = ceil($totalPendientes / $limite); //ceil redondea hacia arriba
+$buildQuery = function(array $params) use ($tab_activa) {
+    $queryParams = array_merge($_GET, ['tab' => $tab_activa], $params);
+    return '?' . http_build_query($queryParams);
+};
+
+$totalPaginasPendientes = (int) ceil($totalPendientes / $limite);
 $desdePendientes = $totalPendientes > 0 ? (($page - 1) * $limite) + 1 : 0;
 $hastaPendientes = min($page * $limite, $totalPendientes);
 
-$totalPaginasHistorial = ceil($totalHistorial / $limite);
+$totalPaginasHistorial = (int) ceil($totalHistorial / $limite);
 $desdeHistorial = $totalHistorial > 0 ? (($page - 1) * $limite) + 1 : 0;
 $hastaHistorial = min($page * $limite, $totalHistorial);
 
@@ -38,7 +41,7 @@ $breadcrumbs = [
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SALIDA RÁPIDA | TAKAB</title>
+    <title>BAJA INVENTARIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario_form.css">
@@ -111,7 +114,7 @@ $breadcrumbs = [
                 <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
                 <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
             </div>
-            <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
+            <div id="wrapper-pendientes" style="width: 100%;" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
             <table class="takab-table">
                 <thead>
                     <tr>
@@ -139,7 +142,7 @@ $breadcrumbs = [
                                 <td>
                                     <a class="btn-table" title="Ver" href="ver_solicitud_baja?id=<?= $solicitud['id'] ?>"><i class="fa fa-eye"></i></a>
                                     <a class="btn-table btn-confirmar" 
-                                    title="Aprobar" 
+                                    title="aprobar" 
                                     href="javascript:void(0)" 
                                     data-id="<?= $solicitud['id'] ?>" 
                                     data-accion="aprobar" 
@@ -147,7 +150,7 @@ $breadcrumbs = [
                                         <i class="fa fa-circle-check"></i>
                                     </a>
                                     <a class="btn-table btn-confirmar" 
-                                    title="Rechazar" 
+                                    title="rechazar" 
                                     href="javascript:void(0)" 
                                     data-id="<?= $solicitud['id'] ?>" 
                                     data-accion="rechazar" 
@@ -180,7 +183,7 @@ $breadcrumbs = [
 
             </div>
 
-            <div id="wrapper-historial" <?= $tab_activa !== 'historial' ? 'hidden' : '' ?>>
+            <div id="wrapper-historial" style="width: 100%;" <?= $tab_activa !== 'historial' ? 'hidden' : '' ?>>
             <table class="takab-table">
                 <thead>
                     <tr>
@@ -234,8 +237,21 @@ $breadcrumbs = [
             <div class="inventario-form-grid" style="margin-top: 30px;">
                 <section class="inventario-form-card">
                     <h2><i class="fa fa-clipboard"></i> Detalles de la Salida</h2>
-                    <form  action="registrar_baja_inventario" method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-entry-form">
+                    <form  action="crear_solicitud_baja" method="post" enctype="application/x-www-form-urlencoded" autocomplete="off" class="inventario-entry-form" id="inventario-entry-form">
                         <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
+
+                        <div class="form-field">
+                            <label for="almacen_id">Almacén *</label>
+                            <select id="almacen_id" name="almacen_id">
+                                <option value="">Selecciona un Almacén...</option>
+                                <?php foreach ($almacenes as $almacen): ?>
+                                    <option value="<?= $almacen['id'] ?>" <?= $selectedAlmacen == $almacen['id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($almacen['nombre']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="hidden" id="almacen_id_hidden" name="almacen_id_hidden" value="<?= $selectedAlmacen ?>">
+                        </div>
 
                         <div class="form-field" style="margin-bottom:14px;">
                             <label>Buscador Avanzado</label>
@@ -285,16 +301,6 @@ $breadcrumbs = [
                                         <?= $selectedProducto == $producto['id'] ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($producto['nombre']) ?> (<?= htmlspecialchars($producto['codigo_fabricante']) ?>)
                                     </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="almacen_id">Almacén *</label>
-                            <select id="almacen_id" name="almacen_id">
-                                <option value="">Selecciona un Almacén...</option>
-                                <?php foreach ($almacenes as $almacen): ?>
-                                    <option value="<?= $almacen['id'] ?>" <?= $selectedAlmacen == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -386,6 +392,7 @@ $breadcrumbs = [
                         <p>Aún no se Registran Movimientos de Inventario.</p>
                     </div>
                 <?php else: ?>
+                    
                     <div class="recents-table-wrapper">
                         <table class="recents-table">
                             <thead>
@@ -446,11 +453,11 @@ const filtroAlmacen = document.getElementById('filtro_almacen');
 const filtroStock = document.getElementById('filtro_stock');
 const filtroResultados = document.getElementById('filtro_resultados');
 const lineasIniciales = <?= json_encode(array_values($salidaItems), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-const almacenesMap = new Map([
-    <?php foreach ($almacenes as $almacen): ?>
-    [<?= (int) $almacen['id'] ?>, "<?= addslashes($almacen['nombre']) ?>"],
-    <?php endforeach; ?>
-]);
+const almacenesData = <?= json_encode(array_map(function($a) {
+    return [(int)$a['id'], (string)$a['nombre']];
+}, $almacenes ?? []), JSON_UNESCAPED_UNICODE) ?>;
+const almacenesMap = new Map(almacenesData);
+
 const salidaItems = Array.isArray(lineasIniciales) ? lineasIniciales.map((item) => ({
     producto_id: String(item.producto_id || ''),
     almacen_id: String(item.almacen_id || ''),
@@ -475,7 +482,7 @@ function construirBorradorSalida() {
     const almacenId = String(almacenSelect.value || '').trim();
     const cantidad = String(cantidadInput.value || '').trim();
     const observaciones = String(observacionesInput.value || '').trim();
-    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== ''; //
+    const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== '';
 
     if (!tieneDatos) {
         return { empty: true, valid: false, item: null, message: '' };
@@ -487,6 +494,18 @@ function construirBorradorSalida() {
             valid: false,
             item: null,
             message: 'Selecciona Producto, Almacén y una Cantidad Mayor a Cero Antes de Continuar.'
+        };
+    }
+
+    const option = productosSelect.options[productosSelect.selectedIndex];
+    const stockDisponible = option && option.dataset.stock ? parseFloat(option.dataset.stock) : 0;
+
+    if (Number(cantidad) > stockDisponible) {
+        return {
+            empty: false,
+            valid: false,
+            item: null,
+            message: `La Cantidad Ingresada  es Superior al Stock.`
         };
     }
 
@@ -508,6 +527,22 @@ function limpiarBorradorSalida() {
     cantidadInput.value = '';
     observacionesInput.value = '';
     actualizarResumen();
+}
+
+function actualizarEstadoAlmacen() {
+    const selectAlmacen = document.getElementById('almacen_id');
+    const hiddenAlmacen = document.getElementById('almacen_id_hidden');
+    
+    const hayProductos = typeof salidaItems !== 'undefined' && salidaItems.length > 0;
+
+    if (hayProductos) {
+        selectAlmacen.disabled = true;
+        
+        hiddenAlmacen.value = selectAlmacen.value;
+    } else {
+        selectAlmacen.disabled = false;
+        hiddenAlmacen.value = '';
+    }
 }
 
 function renderSalidaItems() {
@@ -568,8 +603,10 @@ function agregarProductoALaCaptura() {
 
     salidaItems.push(draft.item);
     renderSalidaItems();
+    actualizarEstadoAlmacen();
     limpiarBorradorSalida();
 }
+
 
 function aplicarFiltroProductos() {
     const texto = (filtroTexto.value || '').trim().toLowerCase();
@@ -669,6 +706,7 @@ limpiarCapturaBtn.addEventListener('click', () => {
     salidaItems.length = 0;
     limpiarBorradorSalida();
     renderSalidaItems();
+    actualizarEstadoAlmacen();
 });
 
 salidaItemsBody.addEventListener('click', (event) => {
@@ -716,13 +754,13 @@ salidaForm.addEventListener('submit', function (event) {
     }
 
     Swal.fire({
-        title: '¿Crear Salida?',
+        title: '¿Solicitar Salida?',
         text: 'La Solicitud será Guardada hasta que sea Autorizada.',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#10b981',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: '<i class="fa fa-save"></i> Sí, Registrar',
+        confirmButtonText: '<i class="fa fa-save"></i> Sí, Solicitar',
         cancelButtonText: 'Cancelar',
         reverseButtons: true
     }).then((result) => {
@@ -752,8 +790,8 @@ if (productosSelect.value) {
             Swal.fire({
                 title: esAprobar ? 'Aprobar Solicitud' : 'Rechazar Solicitud',
                 text: esAprobar 
-                    ? `¿Aprobar Solicitud con ${folio}?` 
-                    : `¿Rechazar Solicitud con ${folio}? `,
+                    ? `¿Aprobar Solicitud con ${folio}? El Stock Disminuirá Según la Solicitud.` 
+                    : `¿Rechazar Solicitud con ${folio}?`,
                 icon: esAprobar ? 'question' : 'warning',
                 
                 showCancelButton: true,
@@ -783,6 +821,7 @@ if (productosSelect.value) {
         });
     });
     });
+
 
 document.addEventListener("DOMContentLoaded", function () {
         const toggleBtn = document.getElementById('toggleSidebar');
