@@ -153,8 +153,7 @@ class Producto
         ]);
     }
 
-    public static function find($id)
-    {
+    public static function find($id){
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("SELECT p.*,
                                      c.nombre AS categoria,
@@ -168,14 +167,6 @@ class Producto
                               WHERE p.id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch();
-        if ($row && (empty($row['last_request_date']) || empty($row['last_requested_by_user_id']))) {
-            $fallback = self::ultimaSolicitudPorProducto($db, (int) $id);
-            if ($fallback) {
-                $row['last_requested_by_user_id'] = $fallback['usuario_id'] ?? $row['last_requested_by_user_id'];
-                $row['last_request_date'] = $fallback['fecha_solicitud'] ?? $row['last_request_date'];
-                $row['last_user'] = $fallback['nombre_completo'] ?? $row['last_user'];
-            }
-        }
         return $row;
     }
 
@@ -367,25 +358,38 @@ class Producto
         return true;
     }
 
-    public static function restarStock($id, $cantidad, ?int $almacenId = null)
-    {
+    public static function restarStock($id, $cantidad, ?int $almacenId = null){
         $db = Database::getInstance()->getConnection();
-        // Stock global
+        $cantidadFloat = (float) $cantidad;
+
+        if ($almacenId) {
+            $stockAlmacen = (float) self::stockEnAlmacen($id, $almacenId);
+
+            if ($cantidadFloat > $stockAlmacen) {
+                return false;
+            }
+        } else {
+            $stmtCheck = $db->prepare("SELECT stock_actual FROM inventario WHERE id = ?");
+            $stmtCheck->execute([$id]);
+            $stockGlobal = (float) $stmtCheck->fetchColumn();
+
+            if ($cantidadFloat > $stockGlobal) {
+                return false;
+            }
+        }
+
         $stmt = $db->prepare("UPDATE inventario SET stock_actual = GREATEST(stock_actual - ?, 0) WHERE id = ?");
-        $ok = $stmt->execute([$cantidad, $id]);
+        $ok = $stmt->execute([$cantidadFloat, $id]);
         if (!$ok) return false;
 
-        // Stock por almacén
         if ($almacenId) {
-            self::ensureStockTable($db);
-            // Asegurar no bajar de 0
-            $current = self::stockEnAlmacen($id, $almacenId);
-            $nuevo = max(0.0, (float)$current - (float)$cantidad);
+            $nuevo = max(0.0, $stockAlmacen - $cantidadFloat);
             $up = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock)
                                 VALUES (?, ?, ?)
                                 ON DUPLICATE KEY UPDATE stock = VALUES(stock)");
             return $up->execute([(int)$id, (int)$almacenId, $nuevo]);
         }
+
         return true;
     }
 

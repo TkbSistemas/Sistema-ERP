@@ -479,9 +479,6 @@ class AlmacenController
                 throw new RuntimeException('Debes Seleccionar un Almacén Válido.');
             }
                 
-                $stmt = $db->prepare("UPDATE solicitudes_bajas SET estatus = 'Aprobada' WHERE id = ?");
-                $stmt->execute([$id]);
-
                 $stmtItems = $db->prepare("SELECT * FROM solicitudes_bajas_detalles WHERE solicitud_id = ?");
                 $stmtItems->execute([$id]);
                 $salidaItems = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
@@ -494,26 +491,31 @@ class AlmacenController
                         throw new RuntimeException('La Línea ' . ($indice + 1) . ' Es Invalida.');
                     }
 
+                    if (! Producto::restarStock($productoId, $cantidad, $almacen_id)) {
+                        throw new RuntimeException('Stock Insuficiente o Error al Actualizar el Stock del Producto en la Línea ' . ($indice + 1) . '.');
+                    }
+
                     $data = [
                         'producto_id'        => $productoId,
                         'tipo'               => 'Salida',
                         'cantidad'           => $cantidad,
                         'responsable_id'     => $_SESSION['user_id'] ?? 0,
                         'almacen_id'        =>  $almacen_id,
-                        'observaciones'       => $linea['motivos'] ?? null,
-                        'folio_solicitud'     => $folioSolicitud
+                        'observaciones'   => $linea['motivo'] ?? $linea['motivos'] ?? '', 
+                        'folio_solicitud' => $folioSolicitud
                     ];
 
                     if (! MovimientoInventario::registrar($data)) {
                         throw new RuntimeException('No Fue Posible Registrar La Línea ' . ($indice + 1) . '.');
                     }
-
-                    if (! Producto::restarStock($productoId, $cantidad, $almacen_id)) {
-                        throw new RuntimeException('No Fue Posible Actualizar el Stock en la Línea ' . ($indice + 1) . '.');
-                    }
                 }
 
-                $db->commit();
+                $stmt = $db->prepare("UPDATE solicitudes_bajas SET estatus = 'Aprobada' WHERE id = ?");
+                $stmt->execute([$id]);
+
+                if ($db->inTransaction()) {
+                    $db->commit();
+                }
 
                 $_SESSION['alerta'] = [
                     'tipo' => 'success',
@@ -523,9 +525,11 @@ class AlmacenController
                 header("Location: registrar_salida");
                 exit;
             } catch (\Throwable $e) {
-                if (isset($db) && $db->inTransaction()) {
-                    $db->rollBack();
-                }
+                try {
+                    if (isset($db) && $db instanceof PDO && $db->inTransaction()) {
+                        $db->rollBack();
+                    }
+                } catch (\Throwable $rollbackEx) {}
                 $_SESSION['alerta'] = [
                     'tipo' => 'error',
                     'mensaje' => $e->getMessage() ?: 'No fue Posible Registrar la Solicitud. Revisa los datos.',

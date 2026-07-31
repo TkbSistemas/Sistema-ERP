@@ -190,7 +190,7 @@ $breadcrumbs = [
                         <th>Estatus</th>
                         <th>Folio</th>
                         <th>Empleado</th>
-                        <th>Fecha Solicitud</th>
+                        <th>Fecha Respuesta</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -207,7 +207,7 @@ $breadcrumbs = [
                                 <td><?= htmlspecialchars($solicitud['estatus'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($solicitud['folio'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($solicitud['solicitante'] ?? '-') ?></td>  
-                                <td><?= date('d/m/Y H:i', strtotime($solicitud['created_at'] ?? '')) ?></td>
+                                <td><?= date('d/m/Y H:i', strtotime($solicitud['updated_at'] ?? '')) ?></td>
                                 <td><a href="ver_solicitud_baja?id=<?= $solicitud['id'] ?>" class="btn-table" title="Ver"><i class="fa fa-eye"></i></a></td>
                             </tr>
                         <?php endforeach; ?>

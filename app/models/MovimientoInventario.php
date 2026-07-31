@@ -4,20 +4,27 @@ require_once __DIR__ . '/../helpers/Database.php';
 class MovimientoInventario {
 
     public static function registrar(array $data): bool{
-    $db = Database::getInstance()->getConnection();
-    $sql = "INSERT INTO movimientos_inventario 
-            (producto_id, tipo, cantidad, responsable_id, almacen_id, observaciones, folio_solicitud)
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $db->prepare($sql);
-    return $stmt->execute([
-        $data['producto_id']   ?? null,
-        $data['tipo']          ?? 'Entrada',
-        $data['cantidad']      ?? 0,
-        $data['responsable_id'] ?? null,
-        $data['almacen_id']     ?? null,
-        $data['observaciones']  ?? null,
-        $data['folio_solicitud']         ?? null
-    ]);
+    try {
+        $db = Database::getInstance()->getConnection();
+        
+        $sql = "INSERT INTO movimientos_inventario 
+                (producto_id, tipo, cantidad, responsable_id, almacen_id, observaciones, folio_solicitud)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                
+        $stmt = $db->prepare($sql);
+        
+        return $stmt->execute([
+            $data['producto_id']     ?? null,
+            $data['tipo']            ?? 'Salida',
+            $data['cantidad']        ?? 0,
+            $data['responsable_id']  ?? null,
+            $data['almacen_id']      ?? null,
+            $data['observaciones']   ?? null,
+            $data['folio_solicitud'] ?? null
+        ]);
+    } catch (\PDOException $e) {
+        return false;
+    }
 }
 
     public static function movimientos($filtros = []) {
