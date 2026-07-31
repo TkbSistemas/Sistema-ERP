@@ -156,18 +156,19 @@ class Producto
     public static function find($id){
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("SELECT p.*,
-                                     c.nombre AS categoria,
-                                     a.nombre AS almacen,
-                                     um.nombre AS unidad_medida_nombre,
-                                     um.apodo AS unidad_apodo,
-                              FROM inventario p
-                              LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
-                              LEFT JOIN almacenes a ON p.almacen_id = a.id
-                              LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
-                              WHERE p.id = ?");
-        $stmt->execute([$id]);
-        $row = $stmt->fetch();
-        return $row;
+                                    c.nombre AS categoria,
+                                    a.nombre AS almacen,
+                                    um.nombre AS unidad_medida_nombre,
+                                    um.apodo AS unidad_apodo
+                            FROM inventario p
+                            LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
+                            LEFT JOIN almacenes a ON p.almacen_id = a.id
+                            LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
+                            WHERE p.id = ?");
+        $stmt->execute([(int) $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $row ?: null;
     }
 
     private static function ultimaSolicitudPorProducto(\PDO $db, int $productoId): ?array

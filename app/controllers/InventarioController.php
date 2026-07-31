@@ -1060,9 +1060,17 @@
 
     public function ver_producto($id){
         Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+        
+        $id = (int) $id;
         $producto = Producto::find($id);
         if (! $producto) {
-            die('Producto No Encontrado.');
+            $_SESSION['alerta'] = [
+                'tipo'    => 'error',
+                'titulo'  => 'No Encontrado',
+                'mensaje' => 'El Producto Solicitado No Existe o Fue Eliminado.'
+            ];
+            header('Location: inventario');
+            exit;
         }
         include __DIR__ . '/../views/inventario/ver_producto.php';
     }
