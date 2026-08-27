@@ -390,32 +390,67 @@ class Producto
         return true;
     }
 
-    public static function restarStock($id, $cantidad, ?int $almacenId = null)
-    {
-        $db = Database::getInstance()->getConnection();
-        // Stock global
-        $stmt = $db->prepare("UPDATE productos SET stock_actual = GREATEST(stock_actual - ?, 0) WHERE id = ?");
-        $ok = $stmt->execute([$cantidad, $id]);
-        if (!$ok) return false;
+   public static function restarStock($id, $cantidad, ?int $almacenId = null): bool
+{
+    $db = Database::getInstance()->getConnection();
+    // Verifica si la función fue llamada dentro de una transacción externa
+    $transaccionPropia = !$db->inTransaction();
 
-        // Stock por almacén
-        if ($almacenId) {
-            self::ensureStockTable($db);
-            // Asegurar no bajar de 0
-            $current = self::stockEnAlmacen($id, $almacenId);
-            $nuevo = max(0.0, (float)$current - (float)$cantidad);
-            $up = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock)
-                                VALUES (?, ?, ?)
-                                ON DUPLICATE KEY UPDATE stock = VALUES(stock)");
-            return $up->execute([(int)$id, (int)$almacenId, $nuevo]);
+    try {
+        if ($transaccionPropia) {
+            $db->beginTransaction();
         }
+
+        // 1. Descontar del stock global (sin bajar de 0)
+        $stmt = $db->prepare("UPDATE productos SET stock_actual = GREATEST(stock_actual - ?, 0) WHERE id = ?");
+        $okGlobal = $stmt->execute([(float)$cantidad, (int)$id]);
+
+        if (!$okGlobal) {
+            if ($transaccionPropia && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            return false;
+        }
+
+        // 2. Descontar del stock por almacén (si se especificó)
+        if ($almacenId !== null) {
+            $up = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock)
+                                VALUES (?, ?, 0)
+                                ON DUPLICATE KEY UPDATE stock = GREATEST(stock - ?, 0)");
+            
+            $okAlmacen = $up->execute([
+                (int)$id, 
+                (int)$almacenId, 
+                (float)$cantidad
+            ]);
+
+            if (!$okAlmacen) {
+                if ($transaccionPropia && $db->inTransaction()) {
+                    $db->rollBack();
+                }
+                return false;
+            }
+        }
+
+        // 3. Confirmar solo si este método inició la transacción
+        if ($transaccionPropia && $db->inTransaction()) {
+            $db->commit();
+        }
+
         return true;
+
+    } catch (\Throwable $e) {
+        if ($transaccionPropia && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log("Error en restarStock: " . $e->getMessage());
+        return false;
     }
+}
 
     public static function stockEnAlmacen(int $productoId, int $almacenId): float
     {
         $db = Database::getInstance()->getConnection();
-        self::ensureStockTable($db);
         $stmt = $db->prepare("SELECT stock FROM stock_almacen WHERE producto_id = ? AND almacen_id = ?");
         $stmt->execute([$productoId, $almacenId]);
         $row = $stmt->fetch();

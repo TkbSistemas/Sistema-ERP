@@ -49,9 +49,9 @@ $buildQuery = function(array $overrides = []) {
 <head>
     <meta charset="UTF-8">
     <title>Gestión de Inventario | TAKAB</title>
-    <link rel="stylesheet" href="/assets/css/dashboard.css">
-    <link rel="stylesheet" href="/assets/css/productos.css">
-    <link rel="stylesheet" href="/assets/css/inventario.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/productos.css">
+    <link rel="stylesheet" href="assets/css/inventario.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -112,6 +112,7 @@ $buildQuery = function(array $overrides = []) {
                         <a class="btn-main" href="inventario_entradas.php"><i class="fa fa-plus"></i> Registrar entrada</a>
                         <a class="btn-secondary" href="inventario_salidas.php"><i class="fa fa-minus"></i> Registrar salida</a>
                         <a class="btn-secondary" href="inventario_transferencias.php"><i class="fa fa-right-left"></i> Transferir</a>
+                        <a class="btn-main" href="print_inventario.php"><i class="fa fa-file"></i>Imprimir Seleccionados</a>
                     </div>
                 <?php endif; ?>
             </div>

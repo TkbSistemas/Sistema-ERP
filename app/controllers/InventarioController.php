@@ -8,6 +8,8 @@
 
     class InventarioController
     {
+
+
         public function entrada()
         {
             Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
@@ -125,93 +127,107 @@
             return $lineas;
         }
 
-        public function salida()
-        {
-            Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+        public function imprimirReporte() {
+        
+        $listado = $this->actual(true);
+        require_once '../plantillas/Inventario.php';
+    }
 
-            $productos    = Producto::all();
-            $almacenes    = Almacen::all();
-            $msg          = '';
-            $error        = '';
-            $salidaItems  = [];
+public function salida(){
+    Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $salidaItems = $this->normalizarLineasSalida($_POST);
+    $productos   = Producto::all();
+    $almacenes   = Almacen::all();
+    $msg         = '';
+    $error       = '';
+    $salidaItems = [];
 
-                if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
-                    $error = 'Token CSRF invalido.';
-                } elseif (empty($salidaItems)) {
-                    $error = 'Agrega al menos un producto a la captura de salida.';
-                } else {
-                    $db = Database::getInstance()->getConnection();
-                    $consumoAcumulado = [];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $salidaItems = $this->normalizarLineasSalida($_POST);
 
-                    try {
-                        $db->beginTransaction();
+        if (!Session::checkCsrf($_POST['csrf'] ?? '')) {
+            $error = 'Token CSRF inválido.';
+        } elseif (empty($salidaItems)) {
+            $error = 'Agrega al menos un producto a la captura de salida.';
+        } else {
+            $db = Database::getInstance()->getConnection();
+            $consumoAcumulado = [];
 
-                        foreach ($salidaItems as $indice => $linea) {
-                            $productoId = (int) ($linea['producto_id'] ?? 0);
-                            $almacenId  = (int) ($linea['almacen_id'] ?? 0);
-                            $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
+            try {
+                $db->beginTransaction();
 
-                            if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
-                                throw new RuntimeException('La linea ' . ($indice + 1) . ' es invalida.');
-                            }
+                foreach ($salidaItems as $indice => $linea) {
+                    $productoId = (int) ($linea['producto_id'] ?? 0);
+                    $almacenId  = (int) ($linea['almacen_id'] ?? 0);
+                    $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0.0;
 
-                            $clave = $productoId . ':' . $almacenId;
-                            $consumoPrevio = (float) ($consumoAcumulado[$clave] ?? 0);
-                            $disponible = Producto::stockEnAlmacen($productoId, $almacenId) - $consumoPrevio;
-
-                            if ($cantidad > $disponible) {
-                                throw new RuntimeException('La linea ' . ($indice + 1) . ' supera el stock disponible en el almacen seleccionado.');
-                            }
-
-                            $data = [
-                                'producto_id'       => $productoId,
-                                'tipo'              => 'Salida',
-                                'cantidad'          => $cantidad,
-                                'usuario_id'        => $_SESSION['user_id'],
-                                'almacen_origen_id' => $almacenId,
-                                'observaciones'     => trim((string) ($linea['observaciones'] ?? '')),
-                            ];
-
-                            if (! MovimientoInventario::registrar($data)) {
-                                throw new RuntimeException('No fue posible registrar la linea ' . ($indice + 1) . '.');
-                            }
-
-                            Producto::restarStock($productoId, $cantidad, $almacenId);
-                            $consumoAcumulado[$clave] = $consumoPrevio + $cantidad;
-
-                            ActivityLogger::log('inventario_salida', 'Salida de inventario registrada', [
-                                'producto_id' => $productoId,
-                                'almacen_id'  => $almacenId,
-                                'cantidad'    => $cantidad,
-                                'linea'       => $indice + 1,
-                            ]);
-                        }
-
-                        $db->commit();
-
-                        $totalLineas = count($salidaItems);
-                        $msg = $totalLineas === 1
-                            ? 'Salida registrada correctamente.'
-                            : 'Se registraron ' . $totalLineas . ' productos en la salida correctamente.';
-
-                        $salidaItems = [];
-                        $_POST = [];
-                    } catch (\Throwable $e) {
-                        if ($db->inTransaction()) {
-                            $db->rollBack();
-                        }
-                        $error = $e->getMessage() ?: 'No fue posible registrar la salida. Revisa los datos e intenta nuevamente.';
+                    if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
+                        throw new RuntimeException('La línea ' . ($indice + 1) . ' contiene datos inválidos.');
                     }
+
+                    // 1. Validar stock restando lo acumulado en este mismo envío
+                    $clave = $productoId . ':' . $almacenId;
+                    $consumoPrevio = (float) ($consumoAcumulado[$clave] ?? 0.0);
+                    $stockReal = (float) Producto::stockEnAlmacen($productoId, $almacenId);
+                    $disponibleRestante = $stockReal - $consumoPrevio;
+
+                    if ($cantidad > $disponibleRestante) {
+                        throw new RuntimeException("La línea " . ($indice + 1) . " solicita {$cantidad}, pero solo quedan {$disponibleRestante} disponibles en el almacén.");
+                    }
+
+                    // 2. Registrar movimiento en historial
+                    $data = [
+                        'producto_id'       => $productoId,
+                        'tipo'              => 'Salida',
+                        'cantidad'          => $cantidad,
+                        'usuario_id'        => $_SESSION['user_id'] ?? null,
+                        'almacen_origen_id' => $almacenId,
+                        'observaciones'     => trim((string) ($linea['observaciones'] ?? '')),
+                    ];
+
+                    if (!MovimientoInventario::registrar($data)) {
+                        throw new RuntimeException('No fue posible registrar el movimiento de la línea ' . ($indice + 1) . '.');
+                    }
+
+                    // 3. Descontar stock (asegúrate de que restarStock no abra una transacción duplicada)
+                    $okRestar = Producto::restarStock($productoId, $cantidad, $almacenId);
+                    if (!$okRestar) {
+                        throw new RuntimeException('Error al actualizar el stock para la línea ' . ($indice + 1) . '.');
+                    }
+
+                    // 4. Actualizar consumo acumulado y loggear
+                    $consumoAcumulado[$clave] = $consumoPrevio + $cantidad;
+
+                    ActivityLogger::log('inventario_salida', 'Salida de inventario registrada', [
+                        'producto_id' => $productoId,
+                        'almacen_id'  => $almacenId,
+                        'cantidad'    => $cantidad,
+                        'linea'       => $indice + 1,
+                    ]);
                 }
+
+                $db->commit();
+
+                $totalLineas = count($salidaItems);
+                $msg = $totalLineas === 1
+                    ? 'Salida registrada correctamente.'
+                    : "Se registraron {$totalLineas} productos en la salida correctamente.";
+
+                $salidaItems = [];
+                $_POST = [];
+            } catch (\Throwable $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                $error = $e->getMessage() ?: 'No fue posible registrar la salida. Revisa los datos e intenta nuevamente.';
             }
-
-            $movimientosRecientes = MovimientoInventario::ultimos('Salida', 6);
-
-            include __DIR__ . '/../views/inventario/salida.php';
         }
+    }
+
+    $movimientosRecientes = MovimientoInventario::ultimos('Salida', 6);
+
+    include __DIR__ . '/../views/inventario/salida.php';
+}
 
         private function normalizarLineasSalida(array $post): array
         {
@@ -320,7 +336,7 @@
             include __DIR__ . '/../views/inventario/transferencia.php';
         }
 
-        public function actual()
+        public function actual($print = false)
         {
             Session::requireLogin();
 
@@ -386,6 +402,10 @@
                     break;
                 }
             }
+
+            if ($print) {
+                return $productos;
+            } 
 
             include __DIR__ . '/../views/inventario/actual.php';
         }

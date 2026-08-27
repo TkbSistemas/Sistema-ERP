@@ -11,8 +11,6 @@ class ActivityLogger
     {
         try {
             $db = Database::getInstance()->getConnection();
-            self::ensureTable($db);
-
             Session::start();
             $usuarioId = $_SESSION['user_id'] ?? null;
             $ip = $_SERVER['REMOTE_ADDR'] ?? null;

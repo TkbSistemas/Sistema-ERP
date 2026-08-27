@@ -418,7 +418,7 @@ function renderSalidaItems() {
         const productoNombre = productoOption ? productoOption.textContent.trim() : `Producto #${item.producto_id}`;
         const unidad = productoOption ? (productoOption.dataset.unidad || '') : '';
         const almacenNombre = almacenesMap.get(Number(item.almacen_id)) || `Almacén #${item.almacen_id}`;
-        const disponible = stockDisponibleEnCaptura(item.producto_id, item.almacen_id, index) + parseFloat(item.cantidad || '0');
+        const disponible = stockDisponibleEnCaptura(item.producto_id, item.almacen_id, index);
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -599,7 +599,6 @@ if (productosSelect.value) {
     actualizarResumen();
 }
 </script>
-<?php include __DIR__ . '/../partials/scripts.php'; ?>
 </body>
 </html>
 
