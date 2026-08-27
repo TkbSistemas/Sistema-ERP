@@ -535,8 +535,15 @@ class Producto
         $params = [];
 
         if (!empty($filtros['buscar'])) {
-            $buscar = '%' . trim($filtros['buscar']) . '%';
-            $condiciones[] = '(p.nombre LIKE ? OR p.codigo LIKE ? OR p.codigo_barras LIKE ? OR IFNULL(p.descripcion, "") LIKE ? OR IFNULL(p.tags, "") LIKE ? OR IFNULL(pr.nombre, "") LIKE ?)';
+            $busquedaLimpia = mb_strtolower(trim($filtros['buscar']), 'UTF-8');
+            
+            if (mb_strlen($busquedaLimpia) <= 3) {
+                $buscar = $busquedaLimpia . '%';
+            } else {
+                $buscar = '%' . $busquedaLimpia . '%';
+            }
+            
+            $condiciones[] = '(LOWER(p.nombre) LIKE ? OR LOWER(p.codigo) LIKE ? OR LOWER(p.codigo_barras) LIKE ? OR LOWER(IFNULL(p.descripcion, "")) LIKE ? OR LOWER(IFNULL(p.tags, "")) LIKE ? OR LOWER(IFNULL(pr.nombre, "")) LIKE ?)';
             array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
         }
 
@@ -661,12 +668,12 @@ class Producto
         $stmtTotales->execute($params);
         $totales = $stmtTotales->fetch() ?: [];
 
-        $selectSql = "SELECT p.id, p.codigo, p.nombre, p.descripcion, p.tipo, p.estado, p.stock_actual, p.stock_minimo,"
+        $selectSql = "SELECT p.id, p.codigo, p.nombre, p.descripcion, p.tipo, p.estado, p.stock_actual, p.stock_minimo, p.marca,"
                     . " p.costo_compra, p.precio_venta, p.almacen_id, p.proveedor_id, p.activo_id, p.created_at,"
                     . " c.nombre AS categoria, a.nombre AS almacen, pr.nombre AS proveedor, um.nombre AS unidad_medida_nombre,"
                     . " um.abreviacion AS unidad_abreviacion, epa.nombre AS estado_activo, u.nombre_completo AS last_user,"
                     . " p.last_requested_by_user_id, p.last_request_date, p.tags,"
-                    . " (p.costo_compra * p.stock_actual) AS valor_total,"
+                    . " (p.costo_compra) AS valor_total,"
                     . " (SELECT MAX(m.fecha) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento"
                     . " FROM productos p" . $joins . $whereSql . " ORDER BY p.nombre ASC";
 

@@ -336,10 +336,8 @@ public function salida(){
             include __DIR__ . '/../views/inventario/transferencia.php';
         }
 
-        public function actual($print = false)
-        {
+        public function actual($print = false){
             Session::requireLogin();
-
             $role = $_SESSION['role'] ?? 'Empleado';
 
             $filtros = [
@@ -363,13 +361,19 @@ public function salida(){
                 $filtros['categoria'] = $_GET['cat'];
             }
 
-            $page           = max(1, (int) ($_GET['page'] ?? 1));
-            $perPageOptions = [10, 15, 25, 50, 100];
-            $perPage        = (int) ($_GET['per_page'] ?? 15);
-            if (! in_array($perPage, $perPageOptions, true)) {
-                $perPage = 15;
+            $page = 0;
+            if ($print) {
+                $perPage = 999999; 
+                $offset  = 0;     
+            } else {
+                $page           = max(1, (int) ($_GET['page'] ?? 1));
+                $perPageOptions = [10, 15, 25, 50, 100];
+                $perPage        = (int) ($_GET['per_page'] ?? 15);
+                if (! in_array($perPage, $perPageOptions, true)) {
+                    $perPage = 15;
+                }
+                $offset = ($page - 1) * $perPage;
             }
-            $offset = ($page - 1) * $perPage;
 
             $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
             $productos      = $resultado['items'];
@@ -377,7 +381,7 @@ public function salida(){
             $totalRegistros = $resultado['total'];
             $totalPaginas   = max(1, (int) ceil($totalRegistros / $perPage));
 
-            if ($page > $totalPaginas) {
+            if (!$print && $page > $totalPaginas) {
                 $page      = $totalPaginas;
                 $offset    = ($page - 1) * $perPage;
                 $resultado = Producto::inventarioListado($filtros, $perPage, $offset);

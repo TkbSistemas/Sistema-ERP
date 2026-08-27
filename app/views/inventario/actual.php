@@ -43,6 +43,9 @@ $buildQuery = function(array $overrides = []) {
     }
     return $params ? ('?' . http_build_query($params)) : '?';
 };
+
+$filtrosActivos = $_GET;
+$urlImpresion = 'print_inventario.php?' . http_build_query($filtrosActivos);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -112,7 +115,7 @@ $buildQuery = function(array $overrides = []) {
                         <a class="btn-main" href="inventario_entradas.php"><i class="fa fa-plus"></i> Registrar entrada</a>
                         <a class="btn-secondary" href="inventario_salidas.php"><i class="fa fa-minus"></i> Registrar salida</a>
                         <a class="btn-secondary" href="inventario_transferencias.php"><i class="fa fa-right-left"></i> Transferir</a>
-                        <a class="btn-main" href="print_inventario.php"><i class="fa fa-file"></i>Imprimir Seleccionados</a>
+                        <a class="btn-main" href="<?php echo $urlImpresion; ?>"><i class="fa fa-file"></i>Imprimir Selección</a>
                     </div>
                 <?php endif; ?>
             </div>
