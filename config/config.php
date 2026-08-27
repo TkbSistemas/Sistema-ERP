@@ -1,17 +1,35 @@
 <?php
 // Archivo: /config/config.php
+define('DB_CHARSET', 'utf8mb4'); 
 
-//define('DB_HOST', '192.168.56.3');    //servidor virtual 
-define('DB_HOST', 'localhost:3306');
-//define('DB_NAME', 'takab_inventario');
-//define('DB_USER', 'mau');
-//define('DB_PASS', 'mau');           //Cambia esto a la contraseña real
+ 
 
-//define('DB_HOST', '192.168.1.253');       //servidor local
+//CONFIGURACION PARA SUBIR A PRODUCCION
+
+define('DB_HOST', 'localhost:3306');    //servidor local para desarrollo
+
+//define('DB_HOST', '192.168.1.253');       //servidor local donde esta la base de datos de produccion, solo como dato, no se usará en desarrollo
 define('DB_NAME', 'takab_inventario');
 define('DB_USER', 'inventario_user');
 define('DB_PASS', 'AdminTakab123');           //Cambia esto a la contraseña real
-define('DB_CHARSET', 'utf8mb4'); 
+
+
+/*
+//CONFIGURACION LOCAL PARA DESARROLLO
+define('DB_HOST', 'localhost:3306');    //servidor local para desarrollo
+
+define('DB_NAME', 'takab_inventario');
+define('DB_USER', 'root');
+define('DB_PASS', '');           //Cambia esto a la contraseña real
+*/
+/* CONFIGURACION ANTIGUA PREGUNTAR DE SER NECESARIO
+//define('DB_HOST', '192.168.56.3');    //servidor virtual
+
+define('DB_NAME', 'takab_inventario');
+define('DB_USER', 'mau');
+define('DB_PASS', 'mau');        
+
+*/ 
 
 // Opcional: Puerto (para XAMPP/WAMP suele ser 3306)
 define('DB_PORT', 3306);
