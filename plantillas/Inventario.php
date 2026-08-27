@@ -214,7 +214,7 @@
             <tbody>
                 <?php
                 $numero = 1;
-                foreach ($productos as $fila) {
+                foreach ($listado as $fila) {
                     echo '<tr>';
                     echo '<td class="col-no">' . $numero . '</td>';
                     echo '<td class="col-codigo">' . htmlspecialchars($fila['codigo']) . '</td>';
