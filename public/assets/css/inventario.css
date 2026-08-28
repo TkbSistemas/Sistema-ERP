@@ -352,12 +352,10 @@
     background-color: #f8fafc;
 }
 
-/* --- EFECTO VISUAL DE ESCANEO EXITOSO --- */
 .tabla-recepcion tbody tr {
     transition: background-color 0.5s ease;
 }
 
-/* --- ESTILO PARA EL MENSAJE PREVENTIVO VACÍO --- */
 .placeholder-vacio {
     padding: 30px;
     background-color: #fffbeb;
@@ -367,4 +365,11 @@
     text-align: center;
     margin: 15px 0;
     font-size: 0.95rem;
+}
+
+.producto-imagen {
+    width: 150px;         
+    height: 150px;         
+    object-fit: cover;    
+    border-radius: 8px;
 }

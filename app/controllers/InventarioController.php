@@ -9,6 +9,87 @@
 
     class InventarioController
     {
+
+        public function actual(){
+            Session::requireLogin();
+
+            $_SESSION['menu_items'] = [
+                ['slug' => 'inventario', 'label' => 'Inventario General', 'icon' => 'fa-solid fa-outdent', 'role' => 'Todos'],
+                ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
+                ['slug' => 'construccion', 'label' => 'Inventario de Merma', 'icon' => 'fa-solid fa-recycle', 'role' => 'Todos'],
+                ['slug' => 'construccion', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
+                ['slug' => 'construccion', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
+                ['slug' => 'construccion', 'label' => 'Auditar Inventario', 'icon' => 'fa-solid fa-house-circle-exclamation', 'role' => 'Todos'],
+                ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
+                ['slug' => 'construccion', 'label' => 'Ir a Dashboard', 'icon' => 'fa-solid fa-grip', 'role' => 'Administrador'],
+                ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
+            ];
+
+            $role = $_SESSION['role'] ?? 'Empleado';
+
+            $filtros = [
+                'buscar'           => trim($_GET['buscar'] ?? ($_GET['q'] ?? '')),
+                'categoria_id'     => $_GET['categoria_id'] ?? '',
+                'almacen_id'       => $_GET['almacen_id'] ?? '',
+                'proveedor_id'     => $_GET['proveedor_id'] ?? '',
+                'tipo'             => $_GET['tipo'] ?? '',
+                'estado'           => $_GET['estado'] ?? '',
+                'activo_id'        => $_GET['activo_id'] ?? '',
+                'stock_flag'       => $_GET['stock_flag'] ?? '',
+                'valor_min'        => $_GET['valor_min'] ?? '',
+                'valor_max'        => $_GET['valor_max'] ?? '',
+                'fecha_desde'      => $_GET['fecha_desde'] ?? '',
+                'fecha_hasta'      => $_GET['fecha_hasta'] ?? '',
+                'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
+                'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
+            ];
+
+            if (! empty($_GET['cat']) && empty($filtros['categoria_id'])) {
+                $filtros['categoria'] = $_GET['cat'];
+            }
+
+            $page           = max(1, (int) ($_GET['page'] ?? 1));
+            $perPageOptions = [10, 15, 25, 50, 100];
+            $perPage        = (int) ($_GET['per_page'] ?? 15);
+            if (! in_array($perPage, $perPageOptions, true)) {
+                $perPage = 15;
+            }
+            $offset = ($page - 1) * $perPage;
+
+            $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
+            $productos      = $resultado['items'];
+            $stats          = $resultado['stats'];
+            $totalRegistros = $resultado['total'];
+            $totalPaginas   = max(1, (int) ceil($totalRegistros / $perPage));
+
+            if ($page > $totalPaginas) {
+                $page      = $totalPaginas;
+                $offset    = ($page - 1) * $perPage;
+                $resultado = Producto::inventarioListado($filtros, $perPage, $offset);
+                $productos = $resultado['items'];
+                $stats     = $resultado['stats'];
+            }
+
+            $db          = Database::getInstance()->getConnection();
+            $categorias  = $db->query("SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC")->fetchAll();
+            $almacenes   = $db->query("SELECT id, nombre FROM almacenes ORDER BY nombre ASC")->fetchAll();
+            //$proveedores = $db->query("SELECT id, nombre FROM proveedores ORDER BY nombre ASC")->fetchAll();
+            $unidades    = $db->query("SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC")->fetchAll();
+
+            $tiposProducto   = Producto::tiposDisponibles();
+            $estadosProducto = Producto::estadosDisponibles();
+
+            $hayFiltros = false;
+            foreach ($filtros as $valor) {
+                if ($valor !== '' && $valor !== null) {
+                    $hayFiltros = true;
+                    break;
+                }
+            }
+
+            include __DIR__ . '/../views/inventario/dashboard_inventario.php';
+    }
+
         public function obtenerVistaInventario()
         {
             include __DIR__ . '/../views/inventario/main/actual.php';
@@ -340,85 +421,7 @@
             include __DIR__ . '/../views/inventario/transferencia.php';
         }
 
-        public function actual()
-        {
-            Session::requireLogin();
-
-            $_SESSION['menu_items'] = [
-                ['slug' => 'dashboard_inventario', 'label' => 'Inventario General', 'icon' => 'fa-solid fa-outdent', 'role' => 'Todos'],
-                ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
-                ['slug' => 'rotacion_inventario', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
-                ['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
-                ['slug' => '', 'label' => 'Auditar Inventario', 'icon' => 'fa-solid fa-house-circle-exclamation', 'role' => 'Todos'],
-                ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
-                ['slug' => '', 'label' => 'Ir a Dashboard', 'icon' => 'fa-solid fa-grip', 'role' => 'Administrador'],
-                ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
-            ];
-
-            $role = $_SESSION['role'] ?? 'Empleado';
-
-            $filtros = [
-                'buscar'           => trim($_GET['buscar'] ?? ($_GET['q'] ?? '')),
-                'categoria_id'     => $_GET['categoria_id'] ?? '',
-                'almacen_id'       => $_GET['almacen_id'] ?? '',
-                'proveedor_id'     => $_GET['proveedor_id'] ?? '',
-                'tipo'             => $_GET['tipo'] ?? '',
-                'estado'           => $_GET['estado'] ?? '',
-                'activo_id'        => $_GET['activo_id'] ?? '',
-                'stock_flag'       => $_GET['stock_flag'] ?? '',
-                'valor_min'        => $_GET['valor_min'] ?? '',
-                'valor_max'        => $_GET['valor_max'] ?? '',
-                'fecha_desde'      => $_GET['fecha_desde'] ?? '',
-                'fecha_hasta'      => $_GET['fecha_hasta'] ?? '',
-                'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
-                'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
-            ];
-
-            if (! empty($_GET['cat']) && empty($filtros['categoria_id'])) {
-                $filtros['categoria'] = $_GET['cat'];
-            }
-
-            $page           = max(1, (int) ($_GET['page'] ?? 1));
-            $perPageOptions = [10, 15, 25, 50, 100];
-            $perPage        = (int) ($_GET['per_page'] ?? 15);
-            if (! in_array($perPage, $perPageOptions, true)) {
-                $perPage = 15;
-            }
-            $offset = ($page - 1) * $perPage;
-
-            $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
-            $productos      = $resultado['items'];
-            $stats          = $resultado['stats'];
-            $totalRegistros = $resultado['total'];
-            $totalPaginas   = max(1, (int) ceil($totalRegistros / $perPage));
-
-            if ($page > $totalPaginas) {
-                $page      = $totalPaginas;
-                $offset    = ($page - 1) * $perPage;
-                $resultado = Producto::inventarioListado($filtros, $perPage, $offset);
-                $productos = $resultado['items'];
-                $stats     = $resultado['stats'];
-            }
-
-            $db          = Database::getInstance()->getConnection();
-            $categorias  = $db->query("SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC")->fetchAll();
-            $almacenes   = $db->query("SELECT id, nombre FROM almacenes ORDER BY nombre ASC")->fetchAll();
-            //$proveedores = $db->query("SELECT id, nombre FROM proveedores ORDER BY nombre ASC")->fetchAll();
-            $unidades    = $db->query("SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC")->fetchAll();
-
-            $tiposProducto   = Producto::tiposDisponibles();
-            $estadosProducto = Producto::estadosDisponibles();
-
-            $hayFiltros = false;
-            foreach ($filtros as $valor) {
-                if ($valor !== '' && $valor !== null) {
-                    $hayFiltros = true;
-                    break;
-                }
-            }
-
-            include __DIR__ . '/../views/inventario/dashboard_inventario.php';
-        }
+        
 
     public function obtenerCatalogo()
     {
@@ -426,14 +429,12 @@
 
         $filtros = [
             'buscar'           => trim($_GET['buscar'] ?? ''),
-            'nombre'           => trim($_GET['nombre'] ?? ''),
+            'marca'           => trim($_GET['marca'] ?? ''),
             'codigo'           => trim($_GET['codigo'] ?? ''),
             'tipo'             => $_GET['tipo'] ?? '',
             'categoria_id'     => $_GET['categoria_id'] ?? '',
             'almacen_id'       => $_GET['almacen_id'] ?? '',
             'proveedor_id'     => $_GET['proveedor_id'] ?? '',
-            'estatus'           => $_GET['estatus'] ?? '',
-            'activo_id'        => $_GET['activo_id'] ?? '',
             'stock_flag'       => $_GET['stock_flag'] ?? '',
             'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
             'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
@@ -496,8 +497,7 @@
         include __DIR__ . '/../views/inventario/catalogo_productos.php';
     }
 
-    public function crearProducto()
-    {
+    public function crearProducto(){
         Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
 
         $db              = Database::getInstance()->getConnection();

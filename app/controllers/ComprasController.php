@@ -6,6 +6,34 @@ require_once __DIR__ . '/../models/OrdenCompra.php';
 
 class ComprasController
 {
+
+    public function obtenerDashboardCompras(): void{
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        $role   = $_SESSION['role'] ?? '';
+        $nombre = $_SESSION['nombre'] ?? '';
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+
+       $_SESSION['menu_items'] = [
+            ['slug' => 'construccion', 'label' => 'Cotizaciones', 'icon' => 'fa-solid fa-file-invoice-dollar', 'role' => 'Todos'],
+            ['slug' => 'construccion', 'label' => 'Ordenes de Compra', 'icon' => 'fa-solid fa-list-check', 'role' => 'Todos'],
+            ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
+            ['slug' => 'construccion', 'label' => 'Catálogo de Proveedores', 'icon' => 'fa-solid fa-building-user', 'role' => 'Todos'],
+            ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
+        ];
+
+        $db = Database::getInstance()->getConnection();
+
+        $datos = [
+            'nombre'      => $nombre,
+            'role'        => $role,
+            'last_update' => date('d/m/Y, h:i:s a'),
+            'alertas'     => [],
+        ];
+
+
+        include __DIR__ . '/../views/compras/dashboard_compras.php';
+    }
     public function historial(): void
     {
         Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
@@ -53,34 +81,5 @@ class ComprasController
         }
 
         include __DIR__ . '/../views/compras/historial.php';
-    }
-
-    public function obtenerDashboardCompras(): void{
-        Session::requireLogin(['Administrador', 'Compras']);
-
-        $role   = $_SESSION['role'] ?? '';
-        $nombre = $_SESSION['nombre'] ?? '';
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
-
-       $_SESSION['menu_items'] = [
-            ['slug' => '', 'label' => 'Nueva Cotización', 'icon' => 'fa-solid fa-file-invoice-dollar', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Ordenes de Compra', 'icon' => 'fa-solid fa-list-check', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Crear Orden de Compra','icon' => 'fa-solid fa-cart-arrow-down', 'role' => 'Todos'],
-            ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
-            ['slug' => '', 'label' => 'Catálogo de Proveedores', 'icon' => 'fa-solid fa-building-user', 'role' => 'Todos'],
-            ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
-        ];
-
-        $db = Database::getInstance()->getConnection();
-
-        $datos = [
-            'nombre'      => $nombre,
-            'role'        => $role,
-            'last_update' => date('d/m/Y, h:i:s a'),
-            'alertas'     => [],
-        ];
-
-
-        include __DIR__ . '/../views/compras/dashboard_compras.php';
     }
 }
