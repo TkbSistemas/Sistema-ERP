@@ -69,7 +69,7 @@ function format_stock($value) {
 		<main class="dashboard-main productos-main">
 			<div class="productos-header">
 				<div>
-					<h1>Detalles del Producto</h1>
+					<h1>DETALLES DEL PRODUCTO</h1>
 					<p class="productos-header-desc">Visualiza Toda la Información del Artículo Seleccionado.</p>
 				</div>
 				<div class="productos-header-actions">
@@ -82,10 +82,7 @@ function format_stock($value) {
 				<div>
 					<h1><?= htmlspecialchars($producto['nombre'] ?? '') ?></h1>
 					<div class="hero-meta">
-						<span class="badge badge-tipo <?= safe_css_class($producto['tipo'] ?? '') ?>"><?= htmlspecialchars($producto['tipo'] ?? '') ?></span>
-						<span class="badge badge-stock <?= $stockActual <= 0 ? 'sin' : ($stockActual < $stockMinimo ? 'bajo' : 'ok') ?>">
-							Código: <?= htmlspecialchars($producto['codigo'] ?? '') ?>
-						</span>
+						<span class="badge badge-tipo <?= safe_css_class($producto['tipo'] ?? '') ?>">Tipo: <?= htmlspecialchars($producto['tipo'] ?? '') ?></span>
 						<?php if (!empty($producto['categoria'])): ?>
 							<span class="badge" style="background:#eef1ff;color:#3546a5;">Categoría: <?= htmlspecialchars($producto['categoria']) ?></span>
 						<?php endif; ?>
@@ -103,11 +100,11 @@ function format_stock($value) {
 						<div class="hero-stat">
 							<span class="label">Stock Mínimo: </span>
 							<!--span class="value"><//?= format_stock($stockActual) ?> <?= htmlspecialchars($unidad) ?></span-->
-							<span class="stat-foot"><?= format_stock($stockMinimo) ?></span>
+							<span class="value"><?= format_stock($stockMinimo) ?></span>
 						</div>
 						<div class="hero-stat">
 							<span class="label">Costo Referencia: </span>
-							<span class="value">$<?= number_format((float)($producto['costo_compra'] ?? 0), 2) ?></span>
+							<span class="value">$<?= number_format((float)($producto['precio_unitario'] ?? 0), 2) ?></span>
 							<!--span class="stat-foot">Precio venta: $<//?= number_format((float)($producto['precio_venta'] ?? 0), 2) ?></span-->
 						</div>
 						<!--div class="hero-stat">
@@ -122,98 +119,85 @@ function format_stock($value) {
 					</div>
 				</div>
 				<div class="hero-image">
-					<?php
-                        $imgPath = $producto['imagen_url'] ?? '';
-                        $src     = $imgPath ? '/' . ltrim(str_replace('\\', '/', $imgPath), '/') : 'assets/images/placeholder.png';
-                    ?>
-					<img src="<?= htmlspecialchars($src) ?>" alt="Imagen del Producto" onerror="this.onerror=null;this.src='assets/images/placeholder.png';">
+					<?php if (!empty($producto['imagen_url'])): ?>
+                                            <img src="<?= BASE_URL . htmlspecialchars($producto['imagen_url']) ?>" alt="Imagen de <?= htmlspecialchars($producto['nombre']) ?>" class="producto-imagen" style="max-width: 100px; max-height: 100px; object-fit: cover; border-radius: 8px;">
+                                        <?php else: ?>
+                                            <span class="sin-imagen">Sin Imagen</span>
+                                        <?php endif; ?>
 				</div>
 			</section>
 			<section class="productos-detail-card">
 				<h2><i class="fa fa-list"></i> Información General</h2>
 				<div class="detail-grid">
 					<div class="detail-item">
-						<span class="label">Código Interno</span>
-						<span class="value mono"><?= htmlspecialchars($producto['codigo'] ?? '') ?></span>
+						<span class="label">Nomenclatura</span>
+						<span class="value"><?= htmlspecialchars($producto['nomenclatura'] ?? '-') ?></span>
+					</div>
+					<div class="detail-item">
+						<span class="label">Código Fabricante</span>
+						<span class="value mono"><?= htmlspecialchars($producto['codigo_fabricante'] ?? '') ?></span>
 					</div>
                     <div class="detail-item">
                     	<span class="label">Código de Barras</span>
-                    	<span class="value mono"><?= htmlspecialchars($producto['codigo_barras'] ?? '-') ?></span>
+                    	<span class="value mono"><?= htmlspecialchars($producto['codigos_barras'] ?? '-') ?></span>
+                    </div>
+                    <div class="detail-item">
+                    	<span class="label">Número de Serie</span>
+                    	<span class="value mono"><?= htmlspecialchars($producto['num_serie'] ?? '-') ?></span>
                     </div>
 					<div class="detail-item">
-						<span class="label">Categoría</span>
-						<span class="value"><?= htmlspecialchars($producto['categoria'] ?? '-') ?></span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Proveedor</span>
-						<span class="value"><?= htmlspecialchars($producto['proveedor'] ?? '-') ?></span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Ubicación Física</span>
-						<span class="value"><?= htmlspecialchars($producto['ubicacion_fisica'] ?? '-') ?></span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Clase Interna</span>
-						<span class="value"><?= htmlspecialchars($producto['clase_categoria'] ?? '-') ?></span>
+						<span class="label">País de Origen</span>
+						<span class="value"><?= htmlspecialchars($producto['pais_origen'] ?? '-') ?></span>
 					</div>
 					<div class="detail-item">
 						<span class="label">Marca</span>
 						<span class="value"><?= htmlspecialchars($producto['marca'] ?? '-') ?></span>
 					</div>
 					<div class="detail-item">
+						<span class="label">Modelo</span>
+						<span class="value"><?= htmlspecialchars($producto['modelo'] ?? '-') ?></span>
+					</div>
+					<div class="detail-item">
+						<span class="label">Unidad de Medida</span>
+						<span class="value"><?= htmlspecialchars($producto['unidad_medida_nombre'] ?? '-') ?></span>
+					</div>
+					<div class="detail-item">
 						<span class="label">Color</span>
 						<span class="value"><?= htmlspecialchars($producto['color'] ?? '-') ?></span>
 					</div>
-					<div class="detail-item">
-						<span class="label">Forma</span>
-						<span class="value"><?= htmlspecialchars($producto['forma'] ?? '-') ?></span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Origen</span>
-						<span class="value"><?= htmlspecialchars($producto['origen'] ?? '-') ?></span>
-					</div>
 				</div>
 			</section>
-			<section class="productos-detail-card">
+			<!--section class="productos-detail-card">
 				<h2><i class="fa fa-ruler"></i> Dimensiones y Unidades</h2>
 				<div class="detail-grid">
 					<div class="detail-item">
 						<span class="label">Peso</span>
-						<span class="value"><?= htmlspecialchars($producto['peso'] ?? '0') ?> kg</span>
+						<span class="value"><//?= htmlspecialchars($producto['peso'] ?? '0') ?> kg</span>
 					</div>
 					<div class="detail-item">
 						<span class="label">Ancho</span>
-						<span class="value"><?= htmlspecialchars($producto['ancho'] ?? '0') ?> cm</span>
+						<span class="value"><//?= htmlspecialchars($producto['ancho'] ?? '0') ?> cm</span>
 					</div>
 					<div class="detail-item">
 						<span class="label">Alto</span>
-						<span class="value"><?= htmlspecialchars($producto['alto'] ?? '0') ?> cm</span>
+						<span class="value"><//?= htmlspecialchars($producto['alto'] ?? '0') ?> cm</span>
 					</div>
 					<div class="detail-item">
 						<span class="label">Profundidad</span>
-						<span class="value"><?= htmlspecialchars($producto['profundidad'] ?? '0') ?> cm</span>
+						<span class="value"><//?= htmlspecialchars($producto['profundidad'] ?? '0') ?> cm</span>
 					</div>
 					<div class="detail-item">
 						<span class="label">Unidad de medida</span>
-						<span class="value"><?= htmlspecialchars($producto['unidad_medida_nombre'] ?? '-') ?></span>
+						<span class="value"></?= htmlspecialchars($producto['unidad_medida_nombre'] ?? '-') ?></span>
 					</div>
 				</div>
-			</section>
+			</section-->
 			<section class="productos-detail-card">
 				<h2><i class="fa fa-clock"></i> Historial Interno</h2>
 				<div class="detail-grid">
 					<div class="detail-item">
-						<span class="label">Último Solicitante</span>
-						<span class="value">
-							<?= htmlspecialchars($producto['last_user'] ?? 'Sin registros') ?>
-							<?php if (!empty($producto['last_requested_by_user_id'])): ?>
-								<small>ID: <?= (int)$producto['last_requested_by_user_id'] ?></small>
-							<?php endif; ?>
-						</span>
-					</div>
-					<div class="detail-item">
 						<span class="label">Última Solicitud</span>
-						<span class="value"><?= !empty($producto['last_request_date']) ? date('d/m/Y H:i', strtotime($producto['last_request_date'])) : 'Sin registros' ?></span>
+						<span class="value"><?= !empty($producto['last_request_date']) ? date('d/m/Y H:i', strtotime($producto['last_request_date'])) : 'Sin Registros' ?></span>
 					</div>
 					<div class="detail-item">
 						<span class="label">Fecha de Registro</span>

@@ -2,7 +2,7 @@
 // Archivo: /config/config.php
 define('DB_CHARSET', 'utf8mb4'); 
 
- 
+define('BASE_URL', 'http://localhost:8032/trabajos/Sistema-ERP/public/');
 
 //CONFIGURACION PARA SUBIR A PRODUCCION
 /*

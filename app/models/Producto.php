@@ -159,11 +159,13 @@ class Producto
                                     c.nombre AS categoria,
                                     a.nombre AS almacen,
                                     um.nombre AS unidad_medida_nombre,
-                                    um.apodo AS unidad_apodo
+                                    um.apodo AS unidad_apodo,
+                                    fs.folio AS folio_solicitud
                             FROM inventario p
                             LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                             LEFT JOIN almacenes a ON p.almacen_id = a.id
                             LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
+                            LEFT JOIN solicitudes_material fs ON p.last_request_id = fs.folio
                             WHERE p.id = ?");
         $stmt->execute([(int) $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -605,7 +607,7 @@ class Producto
         $selectSql = "SELECT p.id, p.codigo_fabricante, p.nombre, p.descripcion, p.tipo, p.estado, p.stock_actual, p.stock_minimo,"
                     . " p.precio_unitario, p.precio_beneficio, p.almacen_id, p.activo, p.created_at,"
                     . " c.nombre AS categoria, a.nombre AS almacen, um.nombre AS unidad_medida_nombre,"
-                    . " um.apodo AS unidad_abreviacion, p.tags,"
+                    . " um.apodo AS unidad_abreviacion, p.tags, p.imagen_url, p.marca,"
                     . " (p.precio_unitario * p.stock_actual) AS valor_total,"
                     . " (SELECT MAX(m.created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento"
                     . " FROM inventario p" . $joins . $whereSql . " ORDER BY p.nombre ASC";

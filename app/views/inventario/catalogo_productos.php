@@ -128,13 +128,13 @@ $buildQuery = function(array $overrides = []) {
 
             <div class="productos-header">
                 <div>
-                    <h1>Catálogo de Productos</h1>
+                    <h1>CATÁLOGO DE PRODUCTOS</h1>
                     <p class="productos-header-desc">Administra el Catálogo de Materiales y Herramientas.</p>
                     <!-- ESTO DEBER SER UNA SWEET ALERT
                     <p class="productos-import-note desktop-only">Usa la plantilla para cargar múltiples productos. Los valores deben corresponder con los IDs de catálogos ya registrados (categorías, proveedores, almacenes, unidades).</p-->
                 </div>
                 <div class="productos-header-actions">
-                    <a class="btn-secondary" href="descargar_plantilla"><i class="fa-solid fa-download"></i> Descargar Plantilla</a>
+                    <a class="btn-secondary" href=""><i class="fa-solid fa-download"></i> Descargar Plantilla</a>
                     <form class="productos-import-form" id="importForm" action="importar_catalogo" method="post" enctype="multipart/form-data">
                         <input type="file" id="csvFileInput" name="productos_archivo" accept=".csv,text/csv" style="display: none;" required>
                         
@@ -150,42 +150,14 @@ $buildQuery = function(array $overrides = []) {
 
             <section class="inventario-filters-card">
                 <form method="get" class="productos-filters-form">
+
                     <div class="filter-row">
                         <div class="filter-field">
                             <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, código, descripción o tags" value="<?= htmlspecialchars($filtros['buscar']) ?>">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción o Tags" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
                             </div>
-                        </div>
-                        <div class="filter-field">
-                            <label for="codigo">Código Interno</label>
-                            <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. H001">
-                        </div>
-                        <div class="filter-field">
-                            <label for="nombre">Nombre</label>
-                            <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($filtros['nombre']) ?>" placeholder="Buscar por nombre exacto">
-                        </div>
-                        <div class="filter-field">
-                            <label for="tipo">Tipo</label>
-                            <select id="tipo" name="tipo">
-                                <option value="">Todos</option>
-                                <?php foreach ($tiposProducto as $tipo): ?>
-                                    <option value="<?= $tipo ?>" <?= $filtros['tipo'] === $tipo ? 'selected' : '' ?>><?= $tipo ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="filter-row">
-                        <div class="filter-field">
-                            <label for="categoria_id">Categoría</label>
-                            <select id="categoria_id" name="categoria_id">
-                                <option value="">Todas</option>
-                                <?php foreach ($categorias as $categoria): ?>
-                                    <option value="<?= $categoria['id'] ?>" <?= $filtros['categoria_id'] == $categoria['id'] ? 'selected' : '' ?>><?= htmlspecialchars($categoria['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
                         </div>
                         <div class="filter-field">
                             <label for="almacen_id">Almacén</label>
@@ -197,46 +169,41 @@ $buildQuery = function(array $overrides = []) {
                             </select>
                         </div>
                         <div class="filter-field">
-                            <label for="proveedor_id">Proveedor</label>
-                            <select id="proveedor_id" name="proveedor_id">
+                            <label for="codigo">Código Fabricante:</label>
+                            <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. H001">
+                        </div>
+                        <div class="filter-field">
+                            <label for="codigo">Código Barras:</label>
+                            <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. 1156161">
+                        </div>
+                        <div class="filter-field">
+                            <label for="marca">Marca:</label>
+                            <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($filtros['marca']) ?>" placeholder="Buscar por Marca">
+                        </div>
+                        
+                    </div>
+
+                    <div class="filter-row">
+                        
+                        <div class="filter-field">
+                            <label for="tipo">Tipo:</label>
+                            <select id="tipo" name="tipo">
                                 <option value="">Todos</option>
-                                <?php foreach ($proveedores as $proveedor): ?>
-                                    <option value="<?= $proveedor['id'] ?>" <?= $filtros['proveedor_id'] == $proveedor['id'] ? 'selected' : '' ?>><?= htmlspecialchars($proveedor['nombre']) ?></option>
+                                <?php foreach ($tiposProducto as $tipo): ?>
+                                    <option value="<?= $tipo ?>" <?= $filtros['tipo'] === $tipo ? 'selected' : '' ?>><?= $tipo ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="filter-field">
-                            <label for="estado">Estado Físico</label>
-                            <select id="estado" name="estado">
-                                <option value="">Todos</option>
-                                <?php foreach ($estadosProducto as $estado): ?>
-                                    <option value="<?= $estado ?>" <?= $filtros['estado'] === $estado ? 'selected' : '' ?>><?= $estado ?></option>
+                            <label for="categoria_id">Categoría</label>
+                            <select id="categoria_id" name="categoria_id">
+                                <option value="">Todas</option>
+                                <?php foreach ($categorias as $categoria): ?>
+                                    <option value="<?= $categoria['id'] ?>" <?= $filtros['categoria_id'] == $categoria['id'] ? 'selected' : '' ?>><?= htmlspecialchars($categoria['nombre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="filter-row">
-                        <div class="filter-field">
-                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
-                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
-                        </div>
-                        <div class="filter-field">
-                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
-                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
-                        </div>
-                        <div class="filter-field">
-                            <label for="valor_min">Valor Inventario mínimo</label>
-                            <input type="number" step="0.01" id="valor_min" name="valor_min" value="<?= htmlspecialchars($filtros['valor_min']) ?>" placeholder="Ej. 1000">
-                        </div>
-                        <div class="filter-field">
-                            <label for="valor_max">Valor Inventario máximo</label>
-                            <input type="number" step="0.01" id="valor_max" name="valor_max" value="<?= htmlspecialchars($filtros['valor_max']) ?>" placeholder="Ej. 5000">
-                        </div>
-                    </div>
-
-                    <div class="filter-row">
-                        <div class="filter-field">
+                         <div class="filter-field">
                             <label for="stock_flag">Estado de Stock</label>
                             <select id="stock_flag" name="stock_flag">
                                 <option value="">Todos</option>
@@ -246,17 +213,29 @@ $buildQuery = function(array $overrides = []) {
                             </select>
                         </div>
                         <div class="filter-field">
-                            <label for="unidad_medida_id">Unidad</label>
-                            <select id="unidad_medida_id" name="unidad_medida_id">
+                            <label for="tags">Tags</label>
+                            <input type="text" id="tags" name="tags" value="<?= htmlspecialchars($filtros['tags']) ?>" placeholder="Palabras clave">
+                        </div>
+                        <div class="inv-filter-field">
+                            <label for="unidad_medida">Unidad de Medida</label>
+                            <select id="unidad_medida" name="unidad_medida">
                                 <option value="">Todas</option>
                                 <?php foreach ($unidades as $unidad): ?>
                                     <option value="<?= $unidad['id'] ?>" <?= $filtros['unidad_medida_id'] == $unidad['id'] ? 'selected' : '' ?>><?= htmlspecialchars($unidad['nombre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                    </div>
+
+                    <div class="filter-row">
+    
                         <div class="filter-field">
-                            <label for="tags">Tags</label>
-                            <input type="text" id="tags" name="tags" value="<?= htmlspecialchars($filtros['tags']) ?>" placeholder="Palabras clave">
+                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
+                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
+                        </div>
+                        <div class="filter-field">
+                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
+                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
                         </div>
                         <div class="filter-field">
                             <label for="per_page">Resultados por Página</label>
@@ -295,16 +274,10 @@ $buildQuery = function(array $overrides = []) {
                             <thead>
                             <tr>
                                 <th>Código</th>
-                                <!--th>Código de barras</th-->
                                 <th>Producto</th>
                                 <th>Tipo</th>
                                 <th>Categoría</th>
                                 <th class="col-stock">Stock</th>
-                                <!--th>Estado</th-->
-                                <!--th>Disponibilidad</th-->
-                                <!--th>Almacén</th-->
-                                <!--th>Proveedor</th-->
-                                <!--th>Valor</th-->
                                 <th >Acciones</th>
                                 <th >Imagen</th>
                             </tr>
@@ -324,7 +297,6 @@ $buildQuery = function(array $overrides = []) {
                                 ?>
                                 <tr>
                                     <td><span class="mono"><?= htmlspecialchars($producto['codigo_fabricante']) ?></span></td>
-                                    <!--td><span class="mono"><//?= htmlspecialchars($producto['codigo_barras'] ?? '') ?></span></td-->
                                     <td>
                                         <strong><?= htmlspecialchars($producto['nombre']) ?></strong>
                                         <?php if (!empty($producto['tags'])): ?>
@@ -339,16 +311,8 @@ $buildQuery = function(array $overrides = []) {
                                         </span>
                                         <small>Mín: <?= format_stock($stockMinimo) ?></small>
                                     </td>
-                                    <!--td><//?= htmlspecialchars($producto['estado'] ?? '-') ?></td-->
-                                    <!--td>
-                                        <span class="badge badge-activo <//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'activo' : 'inactivo' ?>">
-                                            <//?= htmlspecialchars($producto['estado_activo'] ?? 'Activo') ?>
-                                        </span>
-                                    </td-->
-                                    <!--td><//?= htmlspecialchars($producto['almacen'] ?? '-') ?></td-->
-                                    <!--td><//?= htmlspecialchars($producto['proveedor'] ?? '-') ?></td-->
-                                    <!--td>$<//?= number_format($valorInventario, 2) ?></td-->
-                                    <td class="col-actions">
+                                    <td>
+                                        <div class="acciones-celda">
                                         <a class="btn-table" title="Ver Detalles" href="ver_producto?id=<?= $producto['id'] ?>"><i class="fa fa-eye"></i></a>
                                         <form method="post" action="eliminar_producto" class="inline-form form-eliminar" style="display:inline-block">
                                             <input type="hidden" name="csrf" value="<?= Session::csrfToken() ?>">
@@ -362,33 +326,11 @@ $buildQuery = function(array $overrides = []) {
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
-                                        <!--a class="btn-table" title="Editar" href="productos_edit.php?id=<//?= $producto['id'] ?>"><i class="fa fa-pen"></i></a-->
-                                        <!--a class="btn-table" title="Imprimir etiqueta" href="productos_etiqueta.php?id=<//?= $producto['id'] ?>"><i class="fa fa-barcode"></i></a-->
-                                        <!--form method="post" action="eliminar_producto" class="inline-form" style="display:inline-block">
-                                            <input type="hidden" name="csrf" value="<//?= Session::csrfToken() ?>">
-                                            <input type="hidden" name="id" value="<//?= (int) $producto['id'] ?>">
-                                            <input type="hidden" name="active" value="<//?= (int)($producto['activo_id'] ?? 1) === 1 ? 0 : 1 ?>">
-                                            <button type="submit" class="btn-table btn-danger" title="Eliminar">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                            <button type="submit"
-                                                    class="btn-table"
-                                                    title="<//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'Desactivar' : 'Activar' ?>"
-                                                    data-confirm-click="<//?= (int)($producto['activo_id'] ?? 1) === 1 ? '?Desactivar este producto?' : '?Activar este producto?' ?>">
-                                                <i class="fa <//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'fa-toggle-off' : 'fa-toggle-on' ?>"></i>
-                                            </button>
-                                        </form>
-                                        <form method="post" action="productos_delete.php" class="inline-form" style="display:inline-block" data-confirm="?Eliminar el producto seleccionado? Esta acci?n no se puede deshacer.">
-                                            <input type="hidden" name="csrf" value="<//?= Session::csrfToken() ?>">
-                                            <input type="hidden" name="id" value="<//?= (int) $producto['id'] ?>">
-                                            <button type="submit" class="btn-table btn-danger" title="Eliminar">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </form-->
+                                        </div>
                                     </td>
                                     <td>
-                                        <?php if (!empty($producto['imagen'])): ?>
-                                            <img src="<?= htmlspecialchars($producto['imagen']) ?>" alt="Imagen de <?= htmlspecialchars($producto['nombre']) ?>" class="producto-imagen">
+                                        <?php if (!empty($producto['imagen_url'])): ?>
+                                            <img src="<?= BASE_URL . htmlspecialchars($producto['imagen_url']) ?>" alt="Imagen de <?= htmlspecialchars($producto['nombre']) ?>" class="producto-imagen" style="max-width: 100px; max-height: 100px; object-fit: cover; border-radius: 8px;">
                                         <?php else: ?>
                                             <span class="sin-imagen">Sin Imagen</span>
                                         <?php endif; ?>
