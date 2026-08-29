@@ -175,7 +175,7 @@ class SolicitudMaterial {
         }
 
         $sqlDetalles = "SELECT 
-                            p.codigo_fabricante,
+                            p.nomenclatura,
                             p.nombre,
                             p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
                             um.apodo AS unidad_medida,
@@ -215,7 +215,7 @@ class SolicitudMaterial {
         }
 
         $sqlDetalles = "SELECT 
-                            p.codigo_fabricante,
+                            p.nomenclatura,
                             p.nombre,
                             p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
                             um.apodo AS unidad_medida,

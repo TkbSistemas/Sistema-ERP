@@ -362,12 +362,10 @@ class OrdenCompraController
             'forma'                     => null,
             'especificaciones_tecnicas' => null,
             'origen'                    => null,
-            'stock_actual'              => 0,
-            'estado'                    => 'Nuevo',
+            'stock_inicial'             => 0,
             'imagen_url'                => null,
             'last_requested_by_user_id' => null,
             'last_request_date'         => null,
-            'tags'                      => null,
         ], $data);
 
         Producto::create($payload);

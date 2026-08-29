@@ -10,6 +10,12 @@ class PrestamoController
     {
         Session::requireLogin(['Administrador', 'Almacen']);
         $prestamos = Prestamo::pendientes();
+        $porPagina = 10;
+        $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+        $total = count($prestamos);
+        $total_paginas = max(1, (int) ceil($total / $porPagina));
+        $pagina = min($pagina, $total_paginas);
+        $prestamos = array_slice($prestamos, ($pagina - 1) * $porPagina, $porPagina);
         include __DIR__ . '/../views/inventario/prestamos/pendientes.php';
     }
 
@@ -49,7 +55,7 @@ class PrestamoController
         $desde     = trim($_GET['desde'] ?? '');
         $hasta     = trim($_GET['hasta'] ?? '');
         $page      = max(1, (int) ($_GET['page'] ?? 1));
-        $porPagina = 9;
+        $porPagina = 10;
 
         $filtros = [
             'estado' => $estado,

@@ -56,7 +56,7 @@ class MovimientoInventario {
         $db = Database::getInstance()->getConnection();
         $limit = max(1, (int) $limit);
 
-        $sql = "SELECT m.*, p.nombre AS producto, p.codigo_fabricante AS codigo_producto, u.nombre AS usuario,"
+        $sql = "SELECT m.*, p.nombre AS producto, p.nomenclatura AS codigo_producto, u.nombre AS usuario,"
              . " a.nombre AS almacen_origen"
              . " FROM movimientos_inventario m"
              . " LEFT JOIN inventario p ON m.producto_id = p.id"

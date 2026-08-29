@@ -237,7 +237,7 @@
                 ?>
                         <tr>
                             <td class="col-no"><?= $num ?></td>
-                            <td class="col-cod-fab"><?= htmlspecialchars($item['codigo_fabricante'] ?? ($item['codigo'] ?? 'N/A')) ?></td>
+                            <td class="col-cod-fab"><?= htmlspecialchars($item['nomenclatura'] ?? ($item['codigo'] ?? 'N/A')) ?></td>
                             <td class="col-nombre"><?= htmlspecialchars($item['nombre'] ?? '-') ?></td>
                             <td class="col-cant"><?= htmlspecialchars($item['cantidad'] ?? 1) ?></td>
                             <td class="col-notas"><?= htmlspecialchars($item['notas'] ?? ($item['motivo'] ?? '-')) ?></td>

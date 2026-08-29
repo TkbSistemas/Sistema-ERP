@@ -35,12 +35,13 @@ $buildQuery = function(array $overrides = []) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Reportes | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="/assets/css/reportes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <div class="main-layout">
      <aside class="sidebar">
         <div class="sidebar-header">
@@ -683,40 +684,6 @@ $buildQuery = function(array $overrides = []) {
                 <?php endif; ?>
             </section>
 
-            <section class="reportes-section">
-                <div class="section-header">
-                    <div>
-                        <h2><i class="fa fa-layer-group"></i> Estado de inventario</h2>
-                        <span class="section-sub">Distribución de productos por estado físico.</span>
-                    </div>
-                    <div class="section-actions">
-                        <a class="btn-ghost" href="<?= $buildQuery(['export' => 'csv', 'section' => 'estado_inventario']) ?>"><i class="fa-solid fa-file-csv"></i> CSV</a>
-                        <a class="btn-ghost" href="<?= $buildQuery(['export' => 'pdf', 'section' => 'estado_inventario']) ?>"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                    </div>
-                </div>
-                <div class="reportes-table-wrapper">
-                    <table class="reportes-table">
-                        <thead>
-                            <tr>
-                                <th>Estado</th>
-                                <th>Productos</th>
-                                <th>Unidades</th>
-                                <?php if ($mostrarCostos): ?><th>Valor estimado (MXN)</th><?php endif; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($estadoInventario as $row): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($row['estado']) ?></td>
-                                    <td><?= number_format((int) $row['cantidad']) ?></td>
-                                    <td><?= number_format((float) $row['unidades'], 2) ?></td>
-                                    <?php if ($mostrarCostos): ?><td>$<?= number_format((float) $row['valor'], 2) ?></td><?php endif; ?>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
         </main>
     </div>
 </div>

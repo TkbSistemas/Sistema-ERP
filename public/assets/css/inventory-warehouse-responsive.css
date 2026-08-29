@@ -1,0 +1,448 @@
+/* Responsive shell scoped to the Inventory and Warehouse modules. */
+body.module-inventory-warehouse {
+    --module-sidebar-width: clamp(220px, 16vw, 250px);
+    --module-page-gutter: clamp(16px, 2.2vw, 36px);
+    --module-card-gap: clamp(12px, 1.4vw, 22px);
+    min-width: 0;
+}
+
+body.module-inventory-warehouse,
+body.module-inventory-warehouse * { box-sizing: border-box; }
+
+body.module-inventory-warehouse .main-layout {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    margin-left: 0;
+    overflow: visible;
+}
+
+body.module-inventory-warehouse :is(.sidebar, .main_sidebar) {
+    width: var(--module-sidebar-width);
+    min-width: var(--module-sidebar-width);
+    max-width: var(--module-sidebar-width);
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+body.module-inventory-warehouse .content-area {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 100dvh;
+    height: auto;
+    margin-left: var(--module-sidebar-width);
+    overflow: visible;
+    transition: margin-left .3s ease;
+}
+
+body.module-inventory-warehouse .content-area.collapsed {
+    width: auto;
+    margin-left: 0;
+}
+
+body.module-inventory-warehouse .dashboard-main,
+body.module-inventory-warehouse :is(.inventario-main, .inventario-form-main, .productos-main, .prestamos-main, .historial-main, .rotacion-main, .reportes-main) {
+    width: min(100%, 1680px);
+    max-width: 1680px;
+    min-width: 0;
+    padding: var(--module-page-gutter);
+}
+
+body.module-inventory-warehouse :is(.dashboard-header-row, .inventario-header, .inventario-form-header, .productos-header, .rotacion-header, .reportes-header, .main-table-header-row) {
+    gap: var(--module-card-gap);
+}
+
+body.module-inventory-warehouse :is(.dashboard-cards-row, .inventario-stats-grid, .productos-stats-grid, .reportes-summary-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: var(--module-card-gap);
+}
+
+body.module-inventory-warehouse :is(.inv-filter-row, .filter-row, .productos-form-grid, .double-field, .form-grid, .rotacion-filters form, .reportes-filter-form) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+body.module-inventory-warehouse :is(input, select, textarea, button, img, svg, canvas) { max-width: 100%; }
+
+body.module-inventory-warehouse :is(.inventario-table-card, .productos-table-card, .productos-form-card, .inventario-form-card, .productos-detail-card, .reportes-card, .dashboard-widget, .main-table-card) {
+    min-width: 0;
+}
+
+body.module-inventory-warehouse :is(.inventario-table-wrapper, .productos-table-wrapper, .reportes-table-wrapper, .entry-items-table-wrapper, .recents-table-wrapper, .table-responsive) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.module-inventory-warehouse :is(.inventario-table, .productos-table, .rotacion-table, .reportes-table, .entry-items-table, .recents-table, .dashboard-mini-table) {
+    max-width: none;
+}
+
+body.module-inventory-warehouse .filter-input-icon input {
+    width: 100%;
+    max-width: none;
+}
+
+body.module-inventory-warehouse :is(.inventario-actions, .productos-header-actions, .reportes-actions, .filter-actions, .inv-filter-actions, .form-actions, .entry-batch-actions, .productos-pagination-controls, .inventario-pagination-controls, .prestamos-tabs) {
+    flex-wrap: wrap;
+}
+
+body.module-inventory-warehouse :is(.inventario-pagination, .productos-pagination) {
+    width: 100%;
+    flex-wrap: wrap !important;
+}
+
+/* One pagination language for inventory and warehouse data tables. */
+body.module-inventory-warehouse :is(.module-pagination, .inventario-pagination, .productos-pagination, .takab-pagination, .pagination) {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px 16px;
+    border: 1px solid #e0e6f3;
+    border-radius: 12px;
+    background: #fff;
+    color: #58678f;
+}
+
+body.module-inventory-warehouse :is(.module-pagination-controls, .inventario-pagination-controls, .productos-pagination-controls) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+body.module-inventory-warehouse :is(.module-pagination-button, .pagination-btn, .pagination a) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 7px 11px;
+    border: 1px solid #d5ddef;
+    border-radius: 8px;
+    background: #f8faff;
+    color: #294982;
+    font-size: .88rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+body.module-inventory-warehouse :is(.module-pagination-button, .pagination-btn, .pagination a):hover {
+    border-color: #b8c8ec;
+    background: #eaf0ff;
+    color: #163b85;
+}
+
+body.module-inventory-warehouse :is(.module-pagination-status, .inventario-pagination-page, .productos-pagination-page, .pagination-current) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 11px;
+    border-radius: 8px;
+    background: #173d84;
+    color: #fff;
+    font-size: .88rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+body.module-inventory-warehouse :is(.module-pagination-info, .inventario-pagination-info, .productos-pagination-info) {
+    font-size: .9rem;
+}
+
+/* Table actions: consistent hit area, stable columns, and no loose inline forms. */
+body.module-inventory-warehouse :is(.productos-table, .takab-table) .col-actions {
+    width: 132px;
+    min-width: 132px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+body.module-inventory-warehouse .acciones-celda {
+    display: grid;
+    grid-template-columns: repeat(3, 36px);
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    min-width: 114px;
+}
+
+body.module-inventory-warehouse .acciones-celda > :is(a, form) {
+    min-width: 0;
+    margin: 0 !important;
+}
+
+body.module-inventory-warehouse .acciones-celda > form {
+    display: flex !important;
+    padding: 0 !important;
+}
+
+body.module-inventory-warehouse .acciones-celda .btn-table {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    margin: 0 !important;
+    padding: 0;
+    border: 1px solid #d9deef;
+    border-radius: 9px;
+}
+
+body.module-inventory-warehouse .acciones-celda > form .btn-table {
+    width: 100%;
+}
+
+body.module-inventory-warehouse .table-actions {
+    width: 220px;
+    min-width: 190px;
+    vertical-align: middle;
+}
+
+body.module-inventory-warehouse .table-actions .acciones-celda {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: none;
+    justify-content: stretch;
+}
+
+body.module-inventory-warehouse .table-actions .acciones-celda > a {
+    display: inline-flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid #d9deef;
+    border-radius: 9px;
+    background: #f8faff;
+    color: #294982;
+    font-size: .86rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+body.module-inventory-warehouse .table-actions .acciones-celda > a:hover {
+    border-color: #b9c9ee;
+    background: #eaf0ff;
+    color: #163b85;
+}
+
+body.module-inventory-warehouse .table-actions .acciones-celda > .btn-danger {
+    border-color: #f5c2c0;
+    background: #fff5f4;
+    color: #b42318;
+}
+
+body.module-inventory-warehouse .table-actions .acciones-celda > .btn-danger:hover {
+    border-color: #efaaa5;
+    background: #fdeaea;
+    color: #9f1d14;
+}
+
+/* Legacy action cells without the wrapper remain aligned while they are migrated. */
+body.module-inventory-warehouse .takab-table td:has(> .btn-table) {
+    min-width: 126px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+body.module-inventory-warehouse .takab-table td:has(> .btn-table) > :is(.btn-table, form) {
+    display: inline-flex;
+    vertical-align: middle;
+    margin: 3px 2px;
+}
+
+body.module-inventory-warehouse .takab-table td:has(> .btn-table) > form {
+    padding: 0;
+}
+
+@media (min-width: 1920px) {
+    body.module-inventory-warehouse .dashboard-main,
+    body.module-inventory-warehouse :is(.inventario-main, .inventario-form-main, .productos-main, .prestamos-main, .historial-main, .rotacion-main, .reportes-main) {
+        max-width: 1840px;
+    }
+}
+
+@media (max-width: 1100px) {
+    body.module-inventory-warehouse { --module-sidebar-width: 220px; }
+    body.module-inventory-warehouse .inventario-form-grid { grid-template-columns: 1fr; }
+    body.module-inventory-warehouse :is(.top-header, .dashboard-main) {
+        padding-left: var(--module-page-gutter);
+        padding-right: var(--module-page-gutter);
+    }
+}
+
+@media (max-width: 900px) {
+    body.module-inventory-warehouse { --module-sidebar-width: min(82vw, 280px); }
+    body.module-inventory-warehouse .main-layout {
+        height: auto;
+        margin-left: 0;
+        overflow: visible;
+    }
+    body.module-inventory-warehouse :is(.sidebar, .main_sidebar) {
+        box-shadow: 12px 0 30px rgba(10, 25, 58, .2);
+    }
+    body.module-inventory-warehouse .content-area {
+        width: 100%;
+        margin-left: 0;
+    }
+    body.module-inventory-warehouse .btn-toggle-sidebar {
+        left: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        background: rgba(20, 41, 94, .96);
+    }
+    body.module-inventory-warehouse .top-header {
+        min-height: 64px;
+        padding-left: 62px;
+    }
+    body.module-inventory-warehouse .sidebar-header {
+        padding: 24px 18px 14px;
+        margin-right: 0;
+    }
+    body.module-inventory-warehouse .sidebar-nav {
+        flex-direction: column;
+        gap: 5px;
+        margin-top: 18px;
+    }
+    body.module-inventory-warehouse .sidebar-nav a {
+        padding: 12px 20px;
+        border-radius: 0 8px 8px 0;
+    }
+
+    /* Older screens still embed a .sidebar and do not have a drawer button. */
+    body.module-inventory-warehouse .main-layout:has(> .sidebar) {
+        flex-direction: column;
+    }
+
+    body.module-inventory-warehouse .main-layout > .sidebar {
+        position: relative;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    body.module-inventory-warehouse .sidebar .sidebar-header {
+        min-height: 72px;
+    }
+
+    body.module-inventory-warehouse .sidebar .sidebar-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0;
+        padding: 0 16px 16px;
+    }
+
+    body.module-inventory-warehouse .sidebar .sidebar-nav a {
+        flex: 1 1 190px;
+        justify-content: center;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 700px) {
+    body.module-inventory-warehouse { --module-page-gutter: 16px; }
+    body.module-inventory-warehouse :is(.dashboard-header-row, .inventario-header, .inventario-form-header, .productos-header, .rotacion-header, .reportes-header, .main-table-header-row) {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    body.module-inventory-warehouse :is(.inventario-actions, .productos-header-actions, .reportes-actions, .filter-actions, .inv-filter-actions, .form-actions, .entry-batch-actions) {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    body.module-inventory-warehouse :is(.inventario-actions, .productos-header-actions, .reportes-actions, .filter-actions, .inv-filter-actions, .form-actions, .entry-batch-actions) > :is(a, button, form, label) {
+        width: 100%;
+    }
+    body.module-inventory-warehouse :is(.inventario-actions, .productos-header-actions, .reportes-actions, .filter-actions, .inv-filter-actions, .form-actions, .entry-batch-actions) :is(.btn-main, .btn-secondary, .btn-ghost, button) {
+        justify-content: center;
+        width: 100%;
+    }
+    body.module-inventory-warehouse :is(.inventario-filters-card, .productos-filters-card, .inventario-form-card, .productos-form-card, .productos-detail-card, .reportes-filter-card, .rotacion-filters) {
+        padding: 18px 16px;
+    }
+    body.module-inventory-warehouse :is(.inventario-table-wrapper, .productos-table-wrapper) {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    body.module-inventory-warehouse :is(.inventario-table-header, .productos-table-header) {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+    body.module-inventory-warehouse :is(.inventario-pagination, .productos-pagination) {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    body.module-inventory-warehouse :is(.module-pagination, .takab-pagination, .pagination) {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    body.module-inventory-warehouse :is(.inventario-pagination-info, .productos-pagination-info) { white-space: normal; }
+    body.module-inventory-warehouse :is(.inventario-pagination-controls, .productos-pagination-controls) { justify-content: center; }
+    body.module-inventory-warehouse .module-pagination-controls { justify-content: center; }
+    body.module-inventory-warehouse .form-field-line {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    body.module-inventory-warehouse .top-header-user > span {
+        max-width: 38vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 480px) {
+    body.module-inventory-warehouse :is(h1, .productos-header h1, .inventario-header h1) {
+        font-size: clamp(1.45rem, 7vw, 1.8rem);
+    }
+    body.module-inventory-warehouse .top-header-user {
+        margin-left: auto;
+        gap: 6px;
+        font-size: .86rem;
+    }
+    body.module-inventory-warehouse .top-header-user > i { display: none; }
+    body.module-inventory-warehouse :is(.dashboard-card, .inventario-stat-card, .productos-stat-card) { padding: 18px; }
+    body.module-inventory-warehouse :is(.summary-item, .entry-items-header) {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    body.module-inventory-warehouse .sidebar .sidebar-nav a {
+        flex-basis: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.module-inventory-warehouse *,
+    body.module-inventory-warehouse *::before,
+    body.module-inventory-warehouse *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

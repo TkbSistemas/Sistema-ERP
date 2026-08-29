@@ -3,28 +3,35 @@ require_once __DIR__ . '/../helpers/Database.php';
 
 class Producto
 {
-    private const ESTADOS = ['Nuevo', 'Usado', 'Dañado', 'En reparación'];
     private const TIPOS = ['Consumible', 'Herramienta', 'Equipo'];
 
     public static function all($filtros = [])
     {
         $db = Database::getInstance()->getConnection();
-        $sql = "SELECT p.*,
+        $almacenSeleccionado = !empty($filtros['almacen_id']) ? (int) $filtros['almacen_id'] : null;
+        $stockJoin = $almacenSeleccionado
+            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+        $almacenJoin = $almacenSeleccionado
+            ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
+            : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
+        $sql = "SELECT p.*, COALESCE(si.stock_actual, 0) AS stock_actual,
                        c.nombre AS categoria,
                        a.nombre AS almacen,
                        um.nombre AS unidad_medida_nombre,
                        um.apodo AS unidad_abreviacion
                 FROM inventario p
+                {$stockJoin}
                 LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
-                LEFT JOIN almacenes a ON p.almacen_id = a.id
+                {$almacenJoin}
                 LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                 WHERE 1=1";
         $params = [];
 
         if (!empty($filtros['buscar'])) {
             $buscar = '%' . trim($filtros['buscar']) . '%';
-            $sql .= " AND (p.nombre LIKE ? OR p.codigo LIKE ? OR p.codigo_barras LIKE ? OR p.descripcion LIKE ? OR p.tags LIKE ?)";
-            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar);
+            $sql .= " AND (p.nombre LIKE ? OR p.nomenclatura LIKE ? OR p.codigo_fabricante LIKE ? OR p.codigos_barras LIKE ? OR p.descripcion LIKE ? OR p.marca LIKE ? OR p.modelo LIKE ?)";
+            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
         }
 
         if (!empty($filtros['nombre'])) {
@@ -33,12 +40,13 @@ class Producto
         }
 
         if (!empty($filtros['codigo'])) {
-            $sql .= " AND p.codigo LIKE ?";
-            $params[] = '%' . trim($filtros['codigo']) . '%';
+            $sql .= " AND (p.nomenclatura LIKE ? OR p.codigo_fabricante LIKE ? OR p.codigos_barras LIKE ?)";
+            $codigo = '%' . trim($filtros['codigo']) . '%';
+            array_push($params, $codigo, $codigo, $codigo);
         }
 
         if (!empty($filtros['codigo_barras'])) {
-            $sql .= " AND p.codigo_barras = ?";
+            $sql .= " AND p.codigos_barras = ?";
             $params[] = trim($filtros['codigo_barras']);
         }
 
@@ -52,31 +60,16 @@ class Producto
             $params[] = (int) $filtros['categoria_id'];
         }
 
-        if (!empty($filtros['almacen_id'])) {
-            $sql .= " AND p.almacen_id = ?";
-            $params[] = (int) $filtros['almacen_id'];
-        }
-
-        if (!empty($filtros['estado']) && in_array($filtros['estado'], self::ESTADOS, true)) {
-            $sql .= " AND p.estado = ?";
-            $params[] = $filtros['estado'];
-        }
-
-        if (!empty($filtros['activo_id'])) {
-            $sql .= " AND p.activo_id = ?";
-            $params[] = (int) $filtros['activo_id'];
-        }
-
         if (!empty($filtros['stock_flag'])) {
             switch ($filtros['stock_flag']) {
                 case 'bajo':
-                    $sql .= " AND p.stock_actual < p.stock_minimo";
+                    $sql .= " AND COALESCE(si.stock_actual, 0) < p.stock_minimo";
                     break;
                 case 'sin':
-                    $sql .= " AND p.stock_actual <= 0";
+                    $sql .= " AND COALESCE(si.stock_actual, 0) <= 0";
                     break;
                 case 'suficiente':
-                    $sql .= " AND p.stock_actual >= p.stock_minimo";
+                    $sql .= " AND COALESCE(si.stock_actual, 0) >= p.stock_minimo";
                     break;
             }
         }
@@ -84,11 +77,6 @@ class Producto
         if (!empty($filtros['unidad_medida_id'])) {
             $sql .= " AND p.unidad_medida_id = ?";
             $params[] = (int) $filtros['unidad_medida_id'];
-        }
-
-        if (!empty($filtros['tags'])) {
-            $sql .= " AND p.tags LIKE ?";
-            $params[] = '%' . trim($filtros['tags']) . '%';
         }
 
         if (!empty($filtros['fecha_desde'])) {
@@ -108,12 +96,12 @@ class Producto
         }
 
         if (!empty($filtros['valor_min']) && is_numeric($filtros['valor_min'])) {
-            $sql .= " AND (p.costo_compra * p.stock_actual) >= ?";
+            $sql .= " AND p.precio_unitario >= ?";
             $params[] = (float) $filtros['valor_min'];
         }
 
         if (!empty($filtros['valor_max']) && is_numeric($filtros['valor_max'])) {
-            $sql .= " AND (p.costo_compra * p.stock_actual) <= ?";
+            $sql .= " AND p.precio_unitario <= ?";
             $params[] = (float) $filtros['valor_max'];
         }
 
@@ -140,30 +128,55 @@ class Producto
             ? strtoupper(trim((string) $data['codigos_barras']))
             : null;
         $db = Database::getInstance()->getConnection();
+        self::ensureStockTable($db);
         $sql = "INSERT INTO inventario (
             sku, codigo_fabricante, num_serie, codigo_sat, codigos_barras, nombre, descripcion, tipo, categoria_id, 
-            marca, modelo, unidad_medida_id, precio_unitario, precio_iva, precio_beneficio, pais_origen, stock_minimo, stock_actual, 
-            color, almacen_id, ubicacion_fisica, estado, imagen_url, tags
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            marca, modelo, unidad_medida_id, precio_unitario, precio_iva, precio_beneficio, pais_origen, stock_minimo,
+            color, almacen_id, imagen_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
-        return $stmt->execute([ //Regresa true o false dependiendo si se pudo ejecutar la consulta
+        $db->beginTransaction();
+        try {
+        $stmt->execute([ //Regresa true o false dependiendo si se pudo ejecutar la consulta
             $data['sku'], $data['codigo_fabricante'], $data['num_serie'], $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
-            $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.508, $data['pais_origen'], $data['stock_minimo'], $data['stock_actual'],
-            $data['color'], $data['almacen_id'], $data['ubicacion_fisica'], $data['estado'], $data['imagen_url'], $data['tags']
+            $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.508, $data['pais_origen'], $data['stock_minimo'],
+            $data['color'], $data['almacen_id'], $data['imagen_url'] ?? null
         ]);
+        $productoId = (int) $db->lastInsertId();
+        $stockInicial = max(0, (float) ($data['stock_inicial'] ?? ($data['stock_actual'] ?? 0)));
+        if ($productoId && !empty($data['almacen_id'])) {
+            $stmtStock = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock, ubicacion_fisica)
+                                       VALUES (?, ?, ?, ?)
+                                       ON DUPLICATE KEY UPDATE stock = VALUES(stock), ubicacion_fisica = VALUES(ubicacion_fisica)");
+            $stmtStock->execute([
+                $productoId,
+                (int) $data['almacen_id'],
+                $stockInicial,
+                ($data['ubicacion_fisica'] ?? '') !== '' ? $data['ubicacion_fisica'] : null,
+            ]);
+        }
+        $db->commit();
+        return true;
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $e;
+        }
     }
 
     public static function find($id){
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT p.*,
+        $stmt = $db->prepare("SELECT p.*, p.codigos_barras AS codigo_barras, COALESCE(si.stock_actual, 0) AS stock_actual,
                                     c.nombre AS categoria,
                                     a.nombre AS almacen,
                                     um.nombre AS unidad_medida_nombre,
                                     um.apodo AS unidad_apodo,
+                                    sa.ubicacion_fisica,
                                     fs.folio AS folio_solicitud
                             FROM inventario p
+                            LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
                             LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                             LEFT JOIN almacenes a ON p.almacen_id = a.id
+                            LEFT JOIN stock_almacen sa ON sa.producto_id = p.id AND sa.almacen_id = p.almacen_id
                             LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                             LEFT JOIN solicitudes_material fs ON p.last_request_id = fs.folio
                             WHERE p.id = ?");
@@ -207,7 +220,7 @@ class Producto
             return false;
         }
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT * FROM inventario WHERE codigo_barras = ?");
+        $stmt = $db->prepare("SELECT * FROM inventario WHERE codigos_barras = ?");
         $stmt->execute([$codigoBarras]);
         return $stmt->fetch();
     }
@@ -220,10 +233,10 @@ class Producto
         }
         $db = Database::getInstance()->getConnection();
         if ($exceptId) {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM inventario WHERE codigo_barras = ? AND id <> ?");
+            $stmt = $db->prepare("SELECT COUNT(*) FROM inventario WHERE codigos_barras = ? AND id <> ?");
             $stmt->execute([$codigoBarras, $exceptId]);
         } else {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM inventario WHERE codigo_barras = ?");
+            $stmt = $db->prepare("SELECT COUNT(*) FROM inventario WHERE codigos_barras = ?");
             $stmt->execute([$codigoBarras]);
         }
         return (int) $stmt->fetchColumn() > 0;
@@ -233,7 +246,7 @@ class Producto
     {
         $codigo = strtoupper(trim($codigo));
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("UPDATE inventario SET codigo_barras = ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE inventario SET codigos_barras = ? WHERE id = ?");
         return $stmt->execute([$codigo, $id]);
     }
 
@@ -252,26 +265,58 @@ class Producto
     public static function update($id, $data)
     {
         $db = Database::getInstance()->getConnection();
+        self::ensureStockTable($db);
         $sql = "UPDATE inventario SET
-            codigo=?, codigo_barras=?, nombre=?, descripcion=?, proveedor_id=?, categoria_id=?,
-            peso=?, ancho=?, alto=?, profundidad=?, unidad_medida_id=?, clase_categoria=?,
-            marca=?, color=?, forma=?, especificaciones_tecnicas=?, origen=?,
-            costo_compra=?, precio_venta=?, stock_minimo=?, stock_actual=?, almacen_id=?,
-            ubicacion_fisica=?, estado=?, tipo=?, imagen_url=?, last_requested_by_user_id=?, last_request_date=?, tags=?
-            WHERE id=?";
-        $stmt = $db->prepare($sql);
-        $data['codigo'] = strtoupper(trim((string) ($data['codigo'] ?? '')));
-        $data['codigo_barras'] = isset($data['codigo_barras']) && $data['codigo_barras'] !== ''
-            ? strtoupper(trim((string) $data['codigo_barras']))
-            : null;
-        return $stmt->execute([
-            $data['codigo'], $data['codigo_barras'], $data['nombre'], $data['descripcion'], $data['proveedor_id'], $data['categoria_id'],
-            $data['peso'], $data['ancho'], $data['alto'], $data['profundidad'], $data['unidad_medida_id'],
-            $data['clase_categoria'], $data['marca'], $data['color'], $data['forma'], $data['especificaciones_tecnicas'],
-            $data['origen'], $data['costo_compra'], $data['precio_venta'], $data['stock_minimo'], $data['stock_actual'],
-            $data['almacen_id'], $data['ubicacion_fisica'], $data['estado'], $data['tipo'], $data['imagen_url'],
-            $data['last_requested_by_user_id'], $data['last_request_date'], $data['tags'], $id
-        ]);
+                    codigo_fabricante = ?, codigos_barras = ?, nombre = ?, descripcion = ?, tipo = ?,
+                    categoria_id = ?, marca = ?, modelo = ?, unidad_medida_id = ?, precio_unitario = ?,
+                    precio_iva = ?, precio_beneficio = ?, pais_origen = ?, stock_minimo = ?, color = ?,
+                    almacen_id = ?, imagen_url = ?
+                WHERE id = ?";
+        $codigoFabricante = strtoupper(trim((string) ($data['codigo_fabricante'] ?? '')));
+        $codigoBarras = trim((string) ($data['codigos_barras'] ?? ''));
+        $codigoBarras = $codigoBarras !== '' ? strtoupper($codigoBarras) : null;
+        $precioUnitario = (float) ($data['precio_unitario'] ?? 0);
+
+        $db->beginTransaction();
+        try {
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                $codigoFabricante,
+                $codigoBarras,
+                $data['nombre'],
+                $data['descripcion'] ?? null,
+                $data['tipo'],
+                $data['categoria_id'],
+                $data['marca'],
+                $data['modelo'] ?? null,
+                $data['unidad_medida_id'],
+                $precioUnitario,
+                $precioUnitario * 1.16,
+                $precioUnitario * 1.508,
+                $data['pais_origen'] ?? null,
+                (float) ($data['stock_minimo'] ?? 0),
+                $data['color'] ?? null,
+                $data['almacen_id'],
+                $data['imagen_url'] ?? null,
+                (int) $id,
+            ]);
+
+            $stmtStock = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock, ubicacion_fisica)
+                                       VALUES (?, ?, 0, ?)
+                                       ON DUPLICATE KEY UPDATE ubicacion_fisica = VALUES(ubicacion_fisica)");
+            $stmtStock->execute([
+                (int) $id,
+                (int) $data['almacen_id'],
+                ($data['ubicacion_fisica'] ?? '') !== '' ? $data['ubicacion_fisica'] : null,
+            ]);
+            $db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function delete($id)
@@ -303,7 +348,7 @@ class Producto
             'movimientos_inventario' => 'producto_id',
             'prestamos'              => 'producto_id',
             'solicitudes'            => 'producto_id',
-            'stock_almacen'          => 'producto_id',
+            'stock_almacen'       => 'producto_id',
         ];
 
         foreach ($relations as $table => $column) {
@@ -315,9 +360,9 @@ class Producto
     public static function setActive($id, $active)
     {
         $db = Database::getInstance()->getConnection();
-        $estado = $active ? 1 : 2;
-        $stmt = $db->prepare("UPDATE inventario SET activo_id=? WHERE id=?");
-        return $stmt->execute([$estado, $id]);
+        $activo = $active ? 1 : 0;
+        $stmt = $db->prepare("UPDATE inventario SET activo=? WHERE id=?");
+        return $stmt->execute([$activo, $id]);
     }
 
     private static bool $stockTableChecked = false;
@@ -335,9 +380,10 @@ class Producto
                     producto_id INT NOT NULL,
                     almacen_id INT NOT NULL,
                     stock DECIMAL(10,2) NOT NULL DEFAULT 0,
+                    ubicacion_fisica VARCHAR(150) NULL,
                     PRIMARY KEY (producto_id, almacen_id),
-                    KEY idx_stock_almacen_prod (producto_id),
-                    KEY idx_stock_almacen_alm (almacen_id)
+                    KEY idx_stock_almacen_producto (producto_id),
+                    KEY idx_stock_almacen_almacen (almacen_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         $db->exec($sql);
         self::$stockTableChecked = true;
@@ -346,54 +392,28 @@ class Producto
     public static function sumarStock($id, $cantidad, ?int $almacenId = null)
     {
         $db = Database::getInstance()->getConnection();
-        // Stock global
-        $stmt = $db->prepare("UPDATE inventario SET stock_actual = stock_actual + ? WHERE id = ?");
-        $ok = $stmt->execute([$cantidad, $id]);
-        if (!$ok) return false;
-
-        // Stock por almacén
         if ($almacenId) {
+            self::ensureStockTable($db);
             $up = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock)
                                 VALUES (?, ?, ?)
                                 ON DUPLICATE KEY UPDATE stock = stock + VALUES(stock)");
             return $up->execute([(int)$id, (int)$almacenId, (float)$cantidad]);
         }
-        return true;
+        return false;
     }
 
     public static function restarStock($id, $cantidad, ?int $almacenId = null){
         $db = Database::getInstance()->getConnection();
         $cantidadFloat = (float) $cantidad;
 
-        if ($almacenId) {
-            $stockAlmacen = (float) self::stockEnAlmacen($id, $almacenId);
-
-            if ($cantidadFloat > $stockAlmacen) {
-                return false;
-            }
-        } else {
-            $stmtCheck = $db->prepare("SELECT stock_actual FROM inventario WHERE id = ?");
-            $stmtCheck->execute([$id]);
-            $stockGlobal = (float) $stmtCheck->fetchColumn();
-
-            if ($cantidadFloat > $stockGlobal) {
-                return false;
-            }
-        }
-
-        $stmt = $db->prepare("UPDATE inventario SET stock_actual = GREATEST(stock_actual - ?, 0) WHERE id = ?");
-        $ok = $stmt->execute([$cantidadFloat, $id]);
-        if (!$ok) return false;
-
-        if ($almacenId) {
-            $nuevo = max(0.0, $stockAlmacen - $cantidadFloat);
-            $up = $db->prepare("INSERT INTO stock_almacen (producto_id, almacen_id, stock)
-                                VALUES (?, ?, ?)
-                                ON DUPLICATE KEY UPDATE stock = VALUES(stock)");
-            return $up->execute([(int)$id, (int)$almacenId, $nuevo]);
-        }
-
-        return true;
+        if (!$almacenId || $cantidadFloat <= 0) return false;
+        self::ensureStockTable($db);
+        // La condición evita stock negativo incluso ante solicitudes concurrentes.
+        $stmt = $db->prepare("UPDATE stock_almacen
+                              SET stock = stock - ?
+                              WHERE producto_id = ? AND almacen_id = ? AND stock >= ?");
+        $stmt->execute([$cantidadFloat, (int) $id, (int) $almacenId, $cantidadFloat]);
+        return $stmt->rowCount() === 1;
     }
 
     public static function stockEnAlmacen(int $productoId, int $almacenId): float
@@ -404,6 +424,15 @@ class Producto
         $stmt->execute([$productoId, $almacenId]);
         $row = $stmt->fetch();
         return (float)($row['stock'] ?? 0);
+    }
+
+    public static function stockTotal(int $productoId): float
+    {
+        $db = Database::getInstance()->getConnection();
+        self::ensureStockTable($db);
+        $stmt = $db->prepare('SELECT COALESCE(SUM(stock), 0) AS total FROM stock_almacen WHERE producto_id = ?');
+        $stmt->execute([$productoId]);
+        return (float) ($stmt->fetchColumn() ?: 0);
     }
 
     public static function moverStock(int $productoId, int $origenId, int $destinoId, float $cantidad): bool
@@ -440,16 +469,21 @@ class Producto
     public static function allInventario($filtros = [])
     {
         $db = Database::getInstance()->getConnection();
+        $almacenSeleccionado = !empty($filtros['almacen_id']) ? (int) $filtros['almacen_id'] : null;
+        $stockJoin = $almacenSeleccionado
+            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
         $sql = "SELECT p.*,
+                       COALESCE(si.stock_actual, 0) AS stock_actual,
                        c.nombre AS categoria,
                        u.abreviacion AS unidad,
-                       (p.costo_compra * p.stock_actual) AS valor_total,
+                       (p.costo_compra * COALESCE(si.stock_actual, 0)) AS valor_total,
                        (SELECT MAX(created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento,
-                       epa.nombre AS estado_activo
+                       p.activo
                 FROM inventario p
+                {$stockJoin}
                 LEFT JOIN categorias c ON p.categoria_id = c.id
                 LEFT JOIN unidades_medida u ON p.unidad_medida_id = u.id
-                LEFT JOIN estados_producto_activo epa ON p.activo_id = epa.id
                 WHERE 1=1";
         $params = [];
         if (!empty($filtros['q'])) {
@@ -485,8 +519,8 @@ class Producto
 
         if (!empty($filtros['buscar'])) {
             $buscar = '%' . trim($filtros['buscar']) . '%';
-            $condiciones[] = '(p.nombre LIKE ? OR p.codigo LIKE ? OR p.codigo_barras LIKE ? OR IFNULL(p.descripcion, "") LIKE ? OR IFNULL(p.tags, "") LIKE ? OR IFNULL(pr.nombre, "") LIKE ?)';
-            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
+            $condiciones[] = '(p.nombre LIKE ? OR p.nomenclatura LIKE ? OR p.codigo_fabricante LIKE ? OR p.codigos_barras LIKE ? OR IFNULL(p.descripcion, "") LIKE ? OR IFNULL(p.marca, "") LIKE ? OR IFNULL(p.modelo, "") LIKE ?)';
+            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
         }
 
         if (!empty($filtros['nombre'])) {
@@ -495,12 +529,13 @@ class Producto
         }
 
         if (!empty($filtros['codigo'])) {
-            $condiciones[] = 'p.codigo LIKE ?';
-            $params[] = '%' . trim($filtros['codigo']) . '%';
+            $codigo = '%' . trim($filtros['codigo']) . '%';
+            $condiciones[] = '(p.nomenclatura LIKE ? OR p.codigo_fabricante LIKE ? OR p.codigos_barras LIKE ?)';
+            array_push($params, $codigo, $codigo, $codigo);
         }
 
         if (!empty($filtros['codigo_barras'])) {
-            $condiciones[] = 'p.codigo_barras = ?';
+            $condiciones[] = 'p.codigos_barras = ?';
             $params[] = trim($filtros['codigo_barras']);
         }
 
@@ -512,24 +547,14 @@ class Producto
             $params[] = trim($filtros['categoria_nombre']);
         }
 
-        if (!empty($filtros['almacen_id'])) {
-            $condiciones[] = 'p.almacen_id = ?';
-            $params[] = (int) $filtros['almacen_id'];
-        }
-
-        if (!empty($filtros['proveedor_id'])) {
-            $condiciones[] = 'p.proveedor_id = ?';
-            $params[] = (int) $filtros['proveedor_id'];
-        }
-
         if (!empty($filtros['tipo']) && in_array($filtros['tipo'], self::TIPOS, true)) {
             $condiciones[] = 'p.tipo = ?';
             $params[] = $filtros['tipo'];
         }
 
-        if (!empty($filtros['estado']) && in_array($filtros['estado'], self::ESTADOS, true)) {
-            $condiciones[] = 'p.estado = ?';
-            $params[] = $filtros['estado'];
+        if (!empty($filtros['marca'])) {
+            $condiciones[] = 'p.marca LIKE ?';
+            $params[] = '%' . trim($filtros['marca']) . '%';
         }
 
         $condiciones[] = 'p.activo = 1';
@@ -542,29 +567,24 @@ class Producto
         if (!empty($filtros['stock_flag'])) {
             switch ($filtros['stock_flag']) {
                 case 'bajo':
-                    $condiciones[] = 'p.stock_actual < p.stock_minimo';
+                    $condiciones[] = 'COALESCE(si.stock_actual, 0) < p.stock_minimo';
                     break;
                 case 'sin':
-                    $condiciones[] = 'p.stock_actual <= 0';
+                    $condiciones[] = 'COALESCE(si.stock_actual, 0) <= 0';
                     break;
                 case 'suficiente':
-                    $condiciones[] = 'p.stock_actual >= p.stock_minimo';
+                    $condiciones[] = 'COALESCE(si.stock_actual, 0) >= p.stock_minimo';
                     break;
             }
         }
 
-        if (!empty($filtros['tags'])) {
-            $condiciones[] = 'IFNULL(p.tags, "") LIKE ?';
-            $params[] = '%' . trim($filtros['tags']) . '%';
-        }
-
         if (!empty($filtros['valor_min']) && is_numeric($filtros['valor_min'])) {
-            $condiciones[] = '(p.costo_compra * p.stock_actual) >= ?';
+            $condiciones[] = 'p.precio_unitario >= ?';
             $params[] = (float) $filtros['valor_min'];
         }
 
         if (!empty($filtros['valor_max']) && is_numeric($filtros['valor_max'])) {
-            $condiciones[] = '(p.costo_compra * p.stock_actual) <= ?';
+            $condiciones[] = 'p.precio_unitario <= ?';
             $params[] = (float) $filtros['valor_max'];
         }
 
@@ -584,16 +604,24 @@ class Producto
             }
         }
 
-        $joins = " LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id"
-               . " LEFT JOIN almacenes a ON p.almacen_id = a.id"
+        $almacenSeleccionado = !empty($filtros['almacen_id']) ? (int) $filtros['almacen_id'] : null;
+        $stockJoin = $almacenSeleccionado
+            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+        $almacenJoin = $almacenSeleccionado
+            ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
+            : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
+        $joins = $stockJoin
+               . " LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id"
+               . $almacenJoin
                . " LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id";
 
         $whereSql = $condiciones ? ' WHERE ' . implode(' AND ', $condiciones) : '';
 
         $totalesSql = "SELECT COUNT(*) AS total,"
-                    . " SUM(p.precio_unitario * p.stock_actual) AS valor_total,"
-                    . " SUM(CASE WHEN p.stock_actual < p.stock_minimo THEN 1 ELSE 0 END) AS stock_bajo,"
-                    . " SUM(CASE WHEN p.stock_actual <= 0 THEN 1 ELSE 0 END) AS sin_stock,"
+                    . " SUM(p.precio_unitario * COALESCE(si.stock_actual, 0)) AS valor_total,"
+                    . " SUM(CASE WHEN COALESCE(si.stock_actual, 0) < p.stock_minimo THEN 1 ELSE 0 END) AS stock_bajo,"
+                    . " SUM(CASE WHEN COALESCE(si.stock_actual, 0) <= 0 THEN 1 ELSE 0 END) AS sin_stock,"
                     . " SUM(CASE WHEN p.tipo = 'Consumible' THEN 1 ELSE 0 END) AS consumibles,"
                     . " SUM(CASE WHEN p.tipo = 'Herramienta' THEN 1 ELSE 0 END) AS herramientas,"
                     . " SUM(CASE WHEN p.activo = 1 THEN 1 ELSE 0 END) AS activos,"
@@ -604,11 +632,11 @@ class Producto
         $stmtTotales->execute($params);
         $totales = $stmtTotales->fetch() ?: [];
 
-        $selectSql = "SELECT p.id, p.codigo_fabricante, p.nombre, p.descripcion, p.tipo, p.estado, p.stock_actual, p.stock_minimo,"
+        $selectSql = "SELECT p.id, p.nomenclatura, p.nomenclatura AS codigo, p.codigo_fabricante, p.codigos_barras, p.nombre, p.descripcion, p.tipo, COALESCE(si.stock_actual, 0) AS stock_actual, p.stock_minimo,"
                     . " p.precio_unitario, p.precio_beneficio, p.almacen_id, p.activo, p.created_at,"
                     . " c.nombre AS categoria, a.nombre AS almacen, um.nombre AS unidad_medida_nombre,"
-                    . " um.apodo AS unidad_abreviacion, p.tags, p.imagen_url, p.marca,"
-                    . " (p.precio_unitario * p.stock_actual) AS valor_total,"
+                    . " um.apodo AS unidad_abreviacion, p.imagen_url, p.marca, p.modelo,"
+                    . " (p.precio_unitario * COALESCE(si.stock_actual, 0)) AS valor_total,"
                     . " (SELECT MAX(m.created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento"
                     . " FROM inventario p" . $joins . $whereSql . " ORDER BY p.nombre ASC";
 
@@ -642,11 +670,6 @@ class Producto
         $db = Database::getInstance()->getConnection();
         $cats = $db->query("SELECT nombre FROM categorias ORDER BY nombre ASC")->fetchAll(PDO::FETCH_COLUMN);
         return $cats ?: [];
-    }
-
-    public static function estadosDisponibles(): array
-    {
-        return self::ESTADOS;
     }
 
     public static function tiposDisponibles(): array

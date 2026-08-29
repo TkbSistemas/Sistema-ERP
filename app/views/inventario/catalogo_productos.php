@@ -28,8 +28,8 @@ function format_stock($value) {
 $totalRegistros = $totalRegistros ?? count($productos);
 $page = $page ?? 1;
 $totalPaginas = $totalPaginas ?? 1;
-$perPage = $perPage ?? 15;
-$perPageOptions = $perPageOptions ?? [10, 15, 25, 50, 100];
+$perPage = $perPage ?? 10;
+$perPageOptions = $perPageOptions ?? [10];
 $offset = $offset ?? 0;
 $desde = $totalRegistros > 0 ? $offset + 1 : 0;
 $hasta = $totalRegistros > 0 ? min($offset + $perPage, $totalRegistros) : 0;
@@ -48,6 +48,7 @@ $buildQuery = function(array $overrides = []) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>CATÁLOGO DE PRODUCTOS | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
@@ -66,7 +67,7 @@ $buildQuery = function(array $overrides = []) {
         }
     </style>
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'catalogo_productos'; ?>
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
@@ -156,7 +157,7 @@ $buildQuery = function(array $overrides = []) {
                             <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción o Tags" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción, Marca o Modelo" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
                             </div>
                         </div>
                         <div class="filter-field">
@@ -168,23 +169,22 @@ $buildQuery = function(array $overrides = []) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
+
                         <div class="filter-field">
-                            <label for="codigo">Código Fabricante:</label>
-                            <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. H001">
+                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
+                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
                         </div>
+                        <div class="filter-field">
+                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
+                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
+                        </div>
+                    </div>
+
+                    <div class="filter-row">
                         <div class="filter-field">
                             <label for="codigo">Código Barras:</label>
                             <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. 1156161">
                         </div>
-                        <div class="filter-field">
-                            <label for="marca">Marca:</label>
-                            <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($filtros['marca']) ?>" placeholder="Buscar por Marca">
-                        </div>
-                        
-                    </div>
-
-                    <div class="filter-row">
-                        
                         <div class="filter-field">
                             <label for="tipo">Tipo:</label>
                             <select id="tipo" name="tipo">
@@ -203,47 +203,9 @@ $buildQuery = function(array $overrides = []) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                         <div class="filter-field">
-                            <label for="stock_flag">Estado de Stock</label>
-                            <select id="stock_flag" name="stock_flag">
-                                <option value="">Todos</option>
-                                <option value="bajo" <?= $filtros['stock_flag'] === 'bajo' ? 'selected' : '' ?>>Stock bajo</option>
-                                <option value="sin" <?= $filtros['stock_flag'] === 'sin' ? 'selected' : '' ?>>Sin stock</option>
-                                <option value="suficiente" <?= $filtros['stock_flag'] === 'suficiente' ? 'selected' : '' ?>>Stock suficiente</option>
-                            </select>
-                        </div>
                         <div class="filter-field">
-                            <label for="tags">Tags</label>
-                            <input type="text" id="tags" name="tags" value="<?= htmlspecialchars($filtros['tags']) ?>" placeholder="Palabras clave">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="unidad_medida">Unidad de Medida</label>
-                            <select id="unidad_medida" name="unidad_medida">
-                                <option value="">Todas</option>
-                                <?php foreach ($unidades as $unidad): ?>
-                                    <option value="<?= $unidad['id'] ?>" <?= $filtros['unidad_medida_id'] == $unidad['id'] ? 'selected' : '' ?>><?= htmlspecialchars($unidad['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="filter-row">
-    
-                        <div class="filter-field">
-                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
-                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
-                        </div>
-                        <div class="filter-field">
-                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
-                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
-                        </div>
-                        <div class="filter-field">
-                            <label for="per_page">Resultados por Página</label>
-                            <select id="per_page" name="per_page" onchange="this.form.submit()">
-                                <?php foreach ($perPageOptions as $option): ?>
-                                    <option value="<?= $option ?>" <?= (int)$perPage === (int)$option ? 'selected' : '' ?>><?= $option ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="marca">Marca:</label>
+                            <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($filtros['marca']) ?>" placeholder="Buscar por Marca">
                         </div>
                     </div>
 
@@ -251,7 +213,7 @@ $buildQuery = function(array $overrides = []) {
                         <div class="inv-filter-actions">
                             <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar Filtros</button>
                             <?php if ($hayFiltros): ?>
-                                <a class="btn-ghost" href="inventario_actual"><i class="fa fa-eraser"></i> Limpiar</a>
+                                <a class="btn-ghost" href="catalogo_productos"><i class="fa fa-eraser"></i> Limpiar</a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -267,7 +229,7 @@ $buildQuery = function(array $overrides = []) {
                     <?php if (empty($productos)): ?>
                         <div class="productos-empty">
                             <i class="fa fa-inbox"></i>
-                            <p>No se encontraron productos con los criterios seleccionados.</p>
+                            <p>No se Encontraron Productos con los Criterios Seleccionados.</p>
                         </div>
                     <?php else: ?>
                         <table class="productos-table">
@@ -278,7 +240,7 @@ $buildQuery = function(array $overrides = []) {
                                 <th>Tipo</th>
                                 <th>Categoría</th>
                                 <th class="col-stock">Stock</th>
-                                <th >Acciones</th>
+                                <th class="col-actions">Acciones</th>
                                 <th >Imagen</th>
                             </tr>
                             </thead>
@@ -296,12 +258,9 @@ $buildQuery = function(array $overrides = []) {
                                 }
                                 ?>
                                 <tr>
-                                    <td><span class="mono"><?= htmlspecialchars($producto['codigo_fabricante']) ?></span></td>
+                                    <td><span class="mono"><?= htmlspecialchars($producto['nomenclatura']) ?></span></td>
                                     <td>
                                         <strong><?= htmlspecialchars($producto['nombre']) ?></strong>
-                                        <?php if (!empty($producto['tags'])): ?>
-                                            <div class="producto-tags"><?= htmlspecialchars($producto['tags']) ?></div>
-                                        <?php endif; ?>
                                     </td>
                                     <td><span class="badge badge-tipo <?= strtolower($producto['tipo'] ?? '') ?>"><?= htmlspecialchars($producto['tipo']) ?></span></td>
                                     <td><?= htmlspecialchars($producto['categoria'] ?? 'Sin categor?a') ?></td>
@@ -311,7 +270,7 @@ $buildQuery = function(array $overrides = []) {
                                         </span>
                                         <small>Mín: <?= format_stock($stockMinimo) ?></small>
                                     </td>
-                                    <td>
+                                    <td class="col-actions">
                                         <div class="acciones-celda">
                                         <a class="btn-table" title="Ver Detalles" href="ver_producto?id=<?= $producto['id'] ?>"><i class="fa fa-eye"></i></a>
                                         <form method="post" action="eliminar_producto" class="inline-form form-eliminar" style="display:inline-block">

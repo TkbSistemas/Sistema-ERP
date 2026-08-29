@@ -29,7 +29,7 @@ class ReporteController
         $db            = Database::getInstance()->getConnection();
         $proveedores   = $db->query("SELECT id, nombre, rfc FROM proveedores ORDER BY nombre ASC")->fetchAll();
         $almacenes     = $db->query("SELECT id, nombre FROM almacenes ORDER BY nombre ASC")->fetchAll();
-        $categorias    = $db->query("SELECT id, nombre FROM categorias ORDER BY nombre ASC")->fetchAll();
+        $categorias    = $db->query("SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC")->fetchAll();
         $tiposProducto = Producto::tiposDisponibles();
 
         $proveedorFiltro = isset($_GET['proveedor_id']) ? (int) $_GET['proveedor_id'] : 0;
@@ -69,7 +69,6 @@ class ReporteController
         $prestamosAbiertos   = $this->reportePrestamosActivos($fechaInicio, $fechaFin);
         $prestamosVencidos   = $this->reportePrestamosVencidos();
         $topSalidas          = $this->reporteTopSalidas($fechaInicio, $fechaFin, $topTipo, $topAlmacenId);
-        $estadoInventario    = $this->reporteEstadoInventario();
         $productosPorTipo    = $this->reporteProductosPorTipo();
         $comprasPorProveedor = $mostrarCostos
             ? $this->reporteComprasPorProveedor($fechaInicio, $fechaFin, $proveedorFiltro)
@@ -83,7 +82,6 @@ class ReporteController
             'prestamos_abiertos'     => $prestamosAbiertos,
             'prestamos_vencidos'     => $prestamosVencidos,
             'top_salidas'            => $topSalidas,
-            'estado_inventario'      => $estadoInventario,
             'productos_consumibles'  => $productosPorTipo['consumibles'],
             'productos_herramientas' => $productosPorTipo['herramientas'],
             'productos_equipos'      => $productosPorTipo['equipos'],
@@ -134,14 +132,15 @@ class ReporteController
     {
         $db  = Database::getInstance()->getConnection();
         $sql = "SELECT COUNT(*) AS total,
-                       SUM(CASE WHEN stock_actual < stock_minimo THEN 1 ELSE 0 END) AS stock_bajo,
-                       SUM(CASE WHEN stock_actual <= 0 THEN 1 ELSE 0 END) AS sin_stock,
-                       SUM(CASE WHEN tipo = 'Consumible' THEN 1 ELSE 0 END) AS consumibles,
-                       SUM(CASE WHEN tipo = 'Herramienta' THEN 1 ELSE 0 END) AS herramientas,
-                       SUM(CASE WHEN activo_id = 1 THEN 1 ELSE 0 END) AS activos,
-                       SUM(CASE WHEN activo_id <> 1 THEN 1 ELSE 0 END) AS inactivos,
-                       SUM(stock_actual * costo_compra) AS valor_total
-                FROM productos";
+                       SUM(CASE WHEN COALESCE(si.stock_total, 0) < p.stock_minimo THEN 1 ELSE 0 END) AS stock_bajo,
+                       SUM(CASE WHEN COALESCE(si.stock_total, 0) <= 0 THEN 1 ELSE 0 END) AS sin_stock,
+                       SUM(CASE WHEN p.tipo = 'Consumible' THEN 1 ELSE 0 END) AS consumibles,
+                       SUM(CASE WHEN p.tipo = 'Herramienta' THEN 1 ELSE 0 END) AS herramientas,
+                       SUM(CASE WHEN p.activo = 1 THEN 1 ELSE 0 END) AS activos,
+                       SUM(CASE WHEN p.activo <> 1 THEN 1 ELSE 0 END) AS inactivos,
+                       SUM(COALESCE(si.stock_total, 0) * p.precio_unitario) AS valor_total
+                FROM inventario p
+                LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id";
         $data = $db->query($sql)->fetch();
 
         $prestamosPendientes = $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado'")->fetchColumn();
@@ -170,14 +169,13 @@ class ReporteController
         $db = Database::getInstance()->getConnection();
 
         $sql = "SELECT p.id,
-                       p.codigo,
+                       p.codigo_fabricante AS codigo,
                        p.nombre,
                        p.tipo,
                        p.stock_minimo,
-                       p.stock_actual AS stock_producto,
                        c.nombre AS categoria,
                        a.nombre AS almacen_producto,
-                       um.abreviacion AS unidad,
+                       um.apodo AS unidad,
                        SUM(sa.stock) AS stock_total,
                        COUNT(DISTINCT sa.almacen_id) AS almacenes_distintos";
 
@@ -188,10 +186,10 @@ class ReporteController
             $params[] = $almacenId;
         }
 
-        $sql .= " FROM productos p
-                  LEFT JOIN categorias c ON p.categoria_id = c.id
+        $sql .= " FROM inventario p
+                  LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                   LEFT JOIN almacenes a ON p.almacen_id = a.id
-                  LEFT JOIN unidades_medida um ON p.unidad_medida_id = um.id
+                  LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                   LEFT JOIN stock_almacen sa ON sa.producto_id = p.id";
 
         $where       = [];
@@ -223,10 +221,9 @@ class ReporteController
         foreach ($rows as $row) {
             $stockTotal     = $row['stock_total'] !== null ? (float) $row['stock_total'] : null;
             $stockFiltrado  = $almacenId !== null ? (float) ($row['stock_filtrado'] ?? 0) : null;
-            $stockProducto  = (float) ($row['stock_producto'] ?? 0);
             $stockCalculado = $almacenId !== null
                 ? $stockFiltrado
-                : ($stockTotal !== null ? (float) $stockTotal : $stockProducto);
+                : (float) ($stockTotal ?? 0);
 
             $stockMinimo = (float) ($row['stock_minimo'] ?? 0);
             if ($stockCalculado < $stockMinimo) {
@@ -258,14 +255,14 @@ class ReporteController
     private function reporteValorPorAlmacen(): array
     {
         $db = Database::getInstance()->getConnection();
-        // Agregar por stock por almacen cuando la tabla stock_almacen existe
+        // Agregar por el stock físico registrado en cada almacén.
         $sql = "SELECT a.nombre AS almacen,
                        COUNT(DISTINCT sa.producto_id) AS productos,
                        COALESCE(SUM(sa.stock), 0) AS unidades,
-                       COALESCE(SUM(sa.stock * p.costo_compra), 0) AS valor_total
+                       COALESCE(SUM(sa.stock * p.precio_unitario), 0) AS valor_total
                 FROM almacenes a
                 LEFT JOIN stock_almacen sa ON sa.almacen_id = a.id
-                LEFT JOIN productos p ON p.id = sa.producto_id
+                LEFT JOIN inventario p ON p.id = sa.producto_id
                 GROUP BY a.id
                 ORDER BY valor_total DESC, a.nombre ASC";
         return $db->query($sql)->fetchAll();
@@ -278,13 +275,13 @@ class ReporteController
                        m.tipo,
                        m.cantidad,
                        m.observaciones,
-                       p.codigo,
+                       p.codigo_fabricante AS codigo,
                        p.nombre AS producto,
                        ao.nombre AS almacen_origen,
                        ad.nombre AS almacen_destino,
                        u.nombre_completo AS usuario
                 FROM movimientos_inventario m
-                LEFT JOIN productos p ON m.producto_id = p.id
+                LEFT JOIN inventario p ON m.producto_id = p.id
                 LEFT JOIN almacenes ao ON m.almacen_origen_id = ao.id
                 LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
                 LEFT JOIN usuarios u ON m.usuario_id = u.id
@@ -312,12 +309,12 @@ class ReporteController
                        pr.fecha_prestamo,
                        pr.fecha_estimada_devolucion,
                        p.nombre AS producto,
-                       p.codigo,
+                       p.codigo_fabricante AS codigo,
                        u.nombre_completo AS empleado,
                        pr.observaciones,
                        pr.estado
                 FROM prestamos pr
-                LEFT JOIN productos p ON pr.producto_id = p.id
+                LEFT JOIN inventario p ON pr.producto_id = p.id
                 LEFT JOIN usuarios u ON pr.empleado_id = u.id
                 WHERE pr.estado = 'Prestado'
                   AND DATE(pr.fecha_prestamo) BETWEEN ? AND ?
@@ -335,11 +332,11 @@ class ReporteController
                        pr.fecha_estimada_devolucion,
                        TIMESTAMPDIFF(DAY, pr.fecha_estimada_devolucion, NOW()) AS dias_vencidos,
                        p.nombre AS producto,
-                       p.codigo,
+                       p.codigo_fabricante AS codigo,
                        u.nombre_completo AS empleado,
                        pr.observaciones
                 FROM prestamos pr
-                LEFT JOIN productos p ON pr.producto_id = p.id
+                LEFT JOIN inventario p ON pr.producto_id = p.id
                 LEFT JOIN usuarios u ON pr.empleado_id = u.id
                 WHERE pr.estado = 'Prestado'
                   AND pr.fecha_estimada_devolucion IS NOT NULL
@@ -351,15 +348,15 @@ class ReporteController
     private function reporteTopSalidas(string $desde, string $hasta, string $tipo = '', ?int $almacenId = null): array
     {
         $db  = Database::getInstance()->getConnection();
-        $sql = "SELECT p.codigo,
+        $sql = "SELECT p.codigo_fabricante AS codigo,
                        p.nombre,
                        p.tipo,
                        SUM(m.cantidad) AS total_salidas,
-                       SUM(m.cantidad * p.costo_compra) AS costo_estimado,
+                       SUM(m.cantidad * p.precio_unitario) AS costo_estimado,
                        COUNT(DISTINCT m.almacen_origen_id) AS almacenes_distintos,
                        MAX(ao.nombre) AS almacen_referencia
                 FROM movimientos_inventario m
-                INNER JOIN productos p ON m.producto_id = p.id
+                INNER JOIN inventario p ON m.producto_id = p.id
                 LEFT JOIN almacenes ao ON m.almacen_origen_id = ao.id
                 WHERE m.tipo = 'Salida'
                   AND DATE(m.fecha) BETWEEN ? AND ?";
@@ -498,37 +495,25 @@ class ReporteController
         ];
     }
 
-    private function reporteEstadoInventario(): array
-    {
-        $db  = Database::getInstance()->getConnection();
-        $sql = "SELECT estado,
-                       COUNT(*) AS cantidad,
-                       SUM(stock_actual) AS unidades,
-                       SUM(stock_actual * costo_compra) AS valor
-                FROM productos
-                GROUP BY estado
-                ORDER BY estado";
-        return $db->query($sql)->fetchAll();
-    }
-
     private function reporteProductosPorTipo(): array
     {
         $db  = Database::getInstance()->getConnection();
-        $sql = "SELECT p.codigo,
+        $sql = "SELECT p.codigo_fabricante AS codigo,
                        p.nombre,
                        p.tipo,
                        p.marca,
                        c.nombre AS categoria,
                        a.nombre AS almacen,
-                       p.ubicacion_fisica,
-                       p.stock_actual,
+                       sa.ubicacion_fisica,
+                       COALESCE(si.stock_total, 0) AS stock_actual,
                        p.stock_minimo,
-                       um.abreviacion AS unidad,
-                       p.estado
-                FROM productos p
-                LEFT JOIN categorias c ON p.categoria_id = c.id
+                       um.apodo AS unidad
+                FROM inventario p
+                LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
+                LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                 LEFT JOIN almacenes a ON p.almacen_id = a.id
-                LEFT JOIN unidades_medida um ON p.unidad_medida_id = um.id
+                LEFT JOIN stock_almacen sa ON sa.producto_id = p.id AND sa.almacen_id = p.almacen_id
+                LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                 ORDER BY p.tipo ASC, p.nombre ASC";
         $filas = $db->query($sql)->fetchAll();
 
@@ -691,19 +676,27 @@ class ReporteController
         }
         $tipoFiltro = $_GET['tipo'] ?? '';
         $almacenId  = $_GET['almacen_id'] ?? '';
+        $almacenSeleccionado = $almacenId !== '' ? (int) $almacenId : null;
+        $stockJoin = $almacenSeleccionado
+            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_total FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+        $almacenJoin = $almacenSeleccionado
+            ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
+            : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
 
         $sql = "SELECT p.id,
-                       p.codigo,
+                       p.codigo_fabricante AS codigo,
                        p.nombre,
                        p.tipo,
-                       p.stock_actual,
+                       COALESCE(si.stock_total, 0) AS stock_actual,
                        p.stock_minimo,
                        a.nombre AS almacen,
                        SUM(CASE WHEN m.tipo = 'Salida' THEN m.cantidad ELSE 0 END) AS total_salidas,
                        SUM(CASE WHEN m.tipo = 'Entrada' THEN m.cantidad ELSE 0 END) AS total_entradas,
                        MAX(m.fecha) AS ultimo_movimiento
-                FROM productos p
-                LEFT JOIN almacenes a ON p.almacen_id = a.id
+                FROM inventario p
+                {$stockJoin}
+                {$almacenJoin}
                 LEFT JOIN movimientos_inventario m
                        ON m.producto_id = p.id
                       AND DATE(m.fecha) BETWEEN ? AND ?";
@@ -713,10 +706,6 @@ class ReporteController
         if ($tipoFiltro !== '' && in_array($tipoFiltro, Producto::tiposDisponibles(), true)) {
             $where[]  = 'p.tipo = ?';
             $params[] = $tipoFiltro;
-        }
-        if ($almacenId !== '') {
-            $where[]  = 'p.almacen_id = ?';
-            $params[] = (int) $almacenId;
         }
         if ($where) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
@@ -935,20 +924,6 @@ class ReporteController
                         ['label' => 'Registrado por', 'value' => fn($row) => $row['creado_por'] ?? '-'],
                     ],
                 ];
-            case 'estado_inventario':
-                $config = [
-                    'title'    => 'Estado fisico del inventario',
-                    'filename' => 'estado_inventario',
-                    'columns'  => [
-                        ['label' => 'Estado', 'value' => fn($row) => $row['estado']],
-                        ['label' => 'Productos', 'value' => fn($row) => $row['cantidad']],
-                        ['label' => 'Unidades', 'value' => fn($row) => $formatNumber($row['unidades'])],
-                    ],
-                ];
-                if ($mostrarCostos) {
-                    $config['columns'][] = ['label' => 'Valor (MXN)', 'value' => fn($row) => $formatNumber($row['valor'])];
-                }
-                return $config;
             case 'productos_consumibles':
                 return [
                     'title'    => 'Catalogo de consumibles',

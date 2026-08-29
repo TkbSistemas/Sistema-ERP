@@ -5,8 +5,8 @@ $nombre = $_SESSION['nombre'] ?? '';
 $totalRegistros = $totalRegistros ?? count($rotacion);
 $page = $page ?? 1;
 $totalPaginas = $totalPaginas ?? 1;
-$perPage = $perPage ?? 15;
-$perPageOptions = $perPageOptions ?? [10, 15, 25, 50, 100];
+$perPage = $perPage ?? 10;
+$perPageOptions = $perPageOptions ?? [10];
 $offset = $offset ?? 0;
 $desde = $totalRegistros > 0 ? $offset + 1 : 0;
 $hasta = $totalRegistros > 0 ? min($offset + $perPage, $totalRegistros) : 0;
@@ -25,6 +25,7 @@ $buildQuery = function(array $overrides = []) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ROTACIÓN DE INVENTARIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/reportes.css">
@@ -54,7 +55,7 @@ $buildQuery = function(array $overrides = []) {
         }
     </style>
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'rotacion_inventario'; ?>
 <div class="main-layout">
      <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
@@ -101,15 +102,15 @@ $buildQuery = function(array $overrides = []) {
                         <input type="date" id="to" name="to" value="<?= htmlspecialchars($hasta) ?>">
                     </div>
                     </div>
-                    <!--div>
+                    <div class="filter-field">
                         <label for="almacen_id">Almacén</label>
                         <select id="almacen_id" name="almacen_id">
-                            <option value="">Todos</option>
-                            <//?php foreach ($almacenes as $almacen): ?>
-                                <option value="<//?= $almacen['id'] ?>" <//?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><//?= htmlspecialchars($almacen['nombre']) ?></option>
-                            <//?php endforeach; ?>
+                            <option value="">Todos los almacenes</option>
+                            <?php foreach ($almacenes as $almacen): ?>
+                                <option value="<?= $almacen['id'] ?>" <?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
+                            <?php endforeach; ?>
                         </select>
-                    </div-->
+                    </div>
                     
                     <div class="filter-row">
                     <div class="filter-field">

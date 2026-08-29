@@ -34,7 +34,7 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/DashboardController.php';
         (new DashboardController())->obtenerDashboardAdmin();
         break;
-    //Rutas para el Inventario
+    //================================== Rutas para el Inventario =======================================================
     case 'inventario':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->actual();

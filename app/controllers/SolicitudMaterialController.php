@@ -265,7 +265,7 @@
                         continue;
                     }
                     $cantidad = (float) $d['cantidad'];
-                    $stockDisponible = (float) ($producto['stock_actual'] ?? 0);
+                    $stockDisponible = Producto::stockTotal((int) $d['producto_id']);
                     if ($cantidad > $stockDisponible) {
                         $faltantes[] = ($producto['nombre'] ?? 'Producto') . ' (solicitado ' . $cantidad . ', disponible ' . $stockDisponible . ')';
                     }

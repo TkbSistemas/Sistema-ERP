@@ -29,12 +29,10 @@
 
             $filtros = [
                 'buscar'           => trim($_GET['buscar'] ?? ($_GET['q'] ?? '')),
+                'marca'            => trim($_GET['marca'] ?? ''),
                 'categoria_id'     => $_GET['categoria_id'] ?? '',
                 'almacen_id'       => $_GET['almacen_id'] ?? '',
-                'proveedor_id'     => $_GET['proveedor_id'] ?? '',
                 'tipo'             => $_GET['tipo'] ?? '',
-                'estado'           => $_GET['estado'] ?? '',
-                'activo_id'        => $_GET['activo_id'] ?? '',
                 'stock_flag'       => $_GET['stock_flag'] ?? '',
                 'valor_min'        => $_GET['valor_min'] ?? '',
                 'valor_max'        => $_GET['valor_max'] ?? '',
@@ -49,11 +47,8 @@
             }
 
             $page           = max(1, (int) ($_GET['page'] ?? 1));
-            $perPageOptions = [10, 15, 25, 50, 100];
-            $perPage        = (int) ($_GET['per_page'] ?? 15);
-            if (! in_array($perPage, $perPageOptions, true)) {
-                $perPage = 15;
-            }
+            $perPageOptions = [10];
+            $perPage        = 10;
             $offset = ($page - 1) * $perPage;
 
             $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
@@ -77,7 +72,6 @@
             $unidades    = $db->query("SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC")->fetchAll();
 
             $tiposProducto   = Producto::tiposDisponibles();
-            $estadosProducto = Producto::estadosDisponibles();
 
             $hayFiltros = false;
             foreach ($filtros as $valor) {
@@ -434,11 +428,9 @@
             'tipo'             => $_GET['tipo'] ?? '',
             'categoria_id'     => $_GET['categoria_id'] ?? '',
             'almacen_id'       => $_GET['almacen_id'] ?? '',
-            'proveedor_id'     => $_GET['proveedor_id'] ?? '',
             'stock_flag'       => $_GET['stock_flag'] ?? '',
             'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
             'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
-            'tags'             => trim($_GET['tags'] ?? ''),
             'fecha_desde'      => $_GET['fecha_desde'] ?? '',
             'fecha_hasta'      => $_GET['fecha_hasta'] ?? '',
             'valor_min'        => $_GET['valor_min'] ?? '',
@@ -446,11 +438,8 @@
         ];
 
         $page           = max(1, (int) ($_GET['page'] ?? 1));
-        $perPageOptions = [10, 15, 25, 50, 100];
-        $perPage        = (int) ($_GET['per_page'] ?? 15);
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = 15;
-        }
+        $perPageOptions = [10];
+        $perPage        = 10;
         $offset = ($page - 1) * $perPage;
 
         $resultado      = Producto::inventarioListado($filtros, $perPage, $offset);
@@ -473,7 +462,6 @@
         $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
-        $estadosProducto = Producto::estadosDisponibles();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $hayFiltros = false;
@@ -509,6 +497,7 @@
         $errors = [];
         $data   = [];
         $values  = [];
+        $mensaje_error = 'Revisa los datos del formulario.';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
@@ -533,24 +522,6 @@
                 if (!empty($data['codigos_barras']) && Producto::findByCodigoBarras($data['codigos_barras'])) {
                     $errors[] = 'Ya Existe un Producto con Ese Código de Barras.';
                 }
-
-                $tasaCambioUsd = 18;
-
-                $precioMxnRaw = $input['precio_unitario'] ?? '';
-                $precioUsdRaw = $input['precio_unitario_usd'] ?? '';
-
-                $hasMxn = ($precioMxnRaw !== '' && is_numeric($precioMxnRaw));
-                $hasUsd = ($precioUsdRaw !== '' && is_numeric($precioUsdRaw));
-
-                $precioFinalMxn = 0.00;
-
-                if ($hasMxn) {
-                    $precioFinalMxn = (float) $precioMxnRaw;
-                } elseif ($hasUsd) {
-                    $precioFinalMxn = (float) $precioUsdRaw * $tasaCambioUsd;
-                }
-
-                $precioFinalMxn = max(0.00, $precioFinalMxn);
 
                 $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors);
                 if ($nuevaImagen === false) {
@@ -633,19 +604,19 @@
         $data['codigo_fabricante'] = strtoupper(trim($input['codigo_fabricante'] ?? ''));
         if (mb_strlen($data['codigo_fabricante']) > 50) {
             $errors[] = 'El Código es Demasiado Largo.';
-        } elseif (! preg_match('/^[A-Z0-9][A-Z0-9_.-]*$/', $data['codigo_fabricante'])) {
+        } elseif ($data['codigo_fabricante'] !== '' && ! preg_match('/^[A-Z0-9][A-Z0-9_.-]*$/', $data['codigo_fabricante'])) {
             $errors[] = 'El Código Solo Puede Contener Letras, Números, Guion (-), Guion Bajo (_) o Punto (.) Sin Espacios.';
         }
 
         $data['sku'] = self::generarSku();
 
-        $data['codigo_barras'] = strtoupper(trim($input['codigo_barras'] ?? ''));
-        if ($data['codigo_barras'] !== '') {
-            if (mb_strlen($data['codigo_barras']) > 64) {
+        $data['codigos_barras'] = strtoupper(trim($input['codigos_barras'] ?? ''));
+        if ($data['codigos_barras'] !== '') {
+            if (mb_strlen($data['codigos_barras']) > 64) {
                 $errors[] = 'El Código de Barras es Demasiado Largo.';
-            } elseif (! preg_match('/^[A-Z0-9\\-_.]+$/', $data['codigo_barras'])) {
+            } elseif (! preg_match('/^[A-Z0-9\\-_.]+$/', $data['codigos_barras'])) {
                 $errors[] = 'El Código de Barras Solo Puede Contener Letras, Números, Guión (-), Guion Bajo (_) o Punto (.) Sin Espacios.';
-            } elseif (Producto::codigoBarrasExiste($data['codigo_barras'], $productoId)) {
+            } elseif (Producto::codigoBarrasExiste($data['codigos_barras'], $productoId)) {
                 $errors[] = 'Ya Existe un Producto con Ese Código de Barras.';
             }
         }
@@ -664,6 +635,24 @@
 
         $data['categoria_id']     = $this->toNullableInt($input['categoria_id'] ?? null);
         $data['unidad_medida_id'] = $this->toNullableInt($input['unidad_medida_id'] ?? null);
+        $data['sistema']          = trim($input['sistema'] ?? '');
+        if ($data['sistema'] === '') {
+            $errors[] = 'Debes Seleccionar un Sistema de Medida.';
+        }
+
+        $data['num_serie'] = trim($input['num_serie'] ?? '');
+        $data['codigo_sat'] = trim($input['codigo_sat'] ?? '');
+        if (empty($data['unidad_medida_id'])) {
+            $errors[] = 'Debes Seleccionar una Unidad de Medida.';
+        } else {
+            $db = Database::getInstance()->getConnection();
+            $stmtUnidad = $db->prepare('SELECT sistema FROM catalogo_unidades_medida WHERE id = ?');
+            $stmtUnidad->execute([$data['unidad_medida_id']]);
+            $sistemaUnidad = (string) ($stmtUnidad->fetchColumn() ?: '');
+            if ($sistemaUnidad === '' || $sistemaUnidad !== $data['sistema']) {
+                $errors[] = 'La Unidad de Medida no Corresponde al Sistema Seleccionado.';
+            }
+        }
         $data['almacen_id']       = $this->toNullableInt($input['almacen_id'] ?? null);
         if (empty($data['almacen_id'])) {
             $errors[] = 'Debes Seleccionar un Almacén Asignado.';
@@ -674,10 +663,12 @@
         }
 
         $data['marca']                     = trim($input['marca'] ?? '');
+        if ($data['marca'] === '') {
+            $errors[] = 'La Marca es Obligatoria.';
+        }
         $data['modelo']                     = trim($input['modelo'] ?? '');
         $data['color']                     = trim($input['color'] ?? '');
         $data['pais_origen']                    = trim($input['pais_origen'] ?? '');
-        $data['tags']                      = trim($input['tags'] ?? '');
 
 
         $data['stock_minimo'] = $this->normalizeDecimal($input['stock_minimo'] ?? 0);
@@ -685,7 +676,20 @@
             $errors[] = 'El Stock Mínimo Debe Ser un Número Mayor o Igual a Cero.';
         }
 
-        $data['precio_unitario'] = $this->normalizeDecimal($input['precio_unitario'] ?? 0);
+        // El stock es propiedad de cada almacén; sólo se acepta como saldo inicial al crear.
+        $data['stock_inicial'] = $this->normalizeDecimal($input['stock_inicial'] ?? 0);
+        if ($data['stock_inicial'] === null || $data['stock_inicial'] < 0) {
+            $errors[] = 'El Stock Inicial Debe Ser un Número Mayor o Igual a Cero.';
+        }
+
+        $precioMxn = $this->normalizeDecimal($input['precio_unitario'] ?? 0);
+        $precioUsd = $this->normalizeDecimal($input['precio_unitario_usd'] ?? 0);
+        if (($precioMxn !== null && $precioMxn < 0) || ($precioUsd !== null && $precioUsd < 0)) {
+            $errors[] = 'Los Precios Deben Ser Mayores o Iguales a Cero.';
+        }
+        $data['precio_unitario'] = ($precioMxn !== null && $precioMxn > 0)
+            ? $precioMxn
+            : (($precioUsd !== null && $precioUsd > 0) ? round($precioUsd * 18, 2) : 0.0);
         if ($data['precio_unitario'] === null || $data['precio_unitario'] < 0) {
             $errors[] = 'El precio Unitario Debe Ser un Número Mayor o Igual a Cero.';
         }
@@ -699,6 +703,8 @@
         if (! in_array($data['tipo'], Producto::tiposDisponibles(), true)) {
             $errors[] = 'El tipo Seleccionado no es Valido.';
         }
+
+        $data['imagen_url'] = null;
 
         return $data;
     }
@@ -796,7 +802,10 @@
     {
         return [
             'codigo'                    => '',
-            'codigo_barras'             => '',
+            'codigo_fabricante'         => '',
+            'codigos_barras'            => '',
+            'num_serie'                 => '',
+            'codigo_sat'                => '',
             'nombre'                    => '',
             'descripcion'               => '',
             'proveedor_id'              => null,
@@ -808,20 +817,20 @@
             'unidad_medida_id'          => null,
             'clase_categoria'           => '',
             'marca'                     => '',
+            'modelo'                    => '',
             'color'                     => '',
             'forma'                     => '',
             'especificaciones_tecnicas' => '',
-            'origen'                    => '',
+            'pais_origen'               => '',
+            'sistema'                   => '',
             'precio_unitario'           => 0.0,
             'precio_venta'              => 0.0,
             'stock_minimo'              => 0.0,
-            'stock_actual'              => 0.0,
+            'stock_inicial'             => 0.0,
             'almacen_id'                => null,
             'ubicacion_fisica'          => '',
-            'estado'                    => 'Nuevo',
             'tipo'                      => 'Consumible',
             'imagen_url'                => null,
-            'tags'                      => '',
             'activo_id'                 => 1,
         ];
     }
@@ -836,13 +845,12 @@
             'nombre',
             'descripcion',
             'tipo',
-            'estado',
             'categoria_id',
             'proveedor_id',
             'almacen_id',
             'ubicacion_fisica',
             'unidad_medida_id',
-            'stock_actual',
+            'stock_inicial',
             'stock_minimo',
             'precio_unitario',
             'precio_beneficio',
@@ -854,7 +862,6 @@
             'color',
             'forma',
             'origen',
-            'tags',
         ];
 
         header('Content-Type: text/csv; charset=utf-8');
@@ -933,7 +940,6 @@
         ];
 
         $tiposValidos   = Producto::tiposDisponibles();
-        $estadosValidos = Producto::estadosDisponibles();
 
         while (($row = fgetcsv($handle)) !== false) {
             $result['processed']++;
@@ -972,22 +978,13 @@
                 continue;
             }
 
-            $estado = ucfirst(strtolower(trim($rowAssoc['estado'] ?? '')));
-            if ($estado === '') {
-                $estado = 'Nuevo';
-            }
-            if (! in_array($estado, $estadosValidos, true)) {
-                $result['errors'][] = "Fila {$lineNumber}: el estado '{$rowAssoc['estado']}' no es valido. Valores permitidos: " . implode(', ', $estadosValidos) . '.';
-                continue;
-            }
-
             $almacenId = (int) ($rowAssoc['almacen_id'] ?? 0);
             if ($almacenId <= 0) {
                 $result['errors'][] = "Fila {$lineNumber}: el campo 'almacen_id' debe ser un numero valido.";
                 continue;
             }
 
-            $stockActual = (float) str_replace(',', '.', $rowAssoc['stock_actual'] ?? 0);
+            $stockActual = (float) str_replace(',', '.', $rowAssoc['stock_inicial'] ?? 0);
             $stockMinimo = (float) str_replace(',', '.', $rowAssoc['stock_minimo'] ?? 0);
             if ($stockActual < 0 || $stockMinimo < 0) {
                 $result['errors'][] = "Fila {$lineNumber}: el stock no puede ser negativo.";
@@ -1018,15 +1015,13 @@
                 'costo_compra'              => $costoCompra,
                 'precio_venta'              => $precioVenta,
                 'stock_minimo'              => $stockMinimo,
-                'stock_actual'              => $stockActual,
+                'stock_inicial'             => $stockActual,
                 'almacen_id'                => $almacenId,
                 'ubicacion_fisica'          => trim($rowAssoc['ubicacion_fisica'] ?? ''),
-                'estado'                    => $estado,
                 'tipo'                      => $tipo,
                 'imagen_url'                => null,
                 'last_requested_by_user_id' => null,
                 'last_request_date'         => null,
-                'tags'                      => trim($rowAssoc['tags'] ?? ''),
                 'activo_id'                 => 1,
             ];
 
@@ -1106,7 +1101,6 @@
         $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
-        $estadosProducto = Producto::estadosDisponibles();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $errors = [];
@@ -1367,20 +1361,28 @@ endobj
     $tipoFiltro    = $_GET['tipo'] ?? '';
     $almacenId     = $_GET['almacen_id'] ?? '';
     $clasifFiltro  = $_GET['clasificacion'] ?? ''; // 🔍 Nuevo parámetro de filtro
+    $almacenSeleccionado = $almacenId !== '' ? (int) $almacenId : null;
+    $stockJoin = $almacenSeleccionado
+        ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+        : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+    $almacenJoin = $almacenSeleccionado
+        ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
+        : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
 
     // 1. Construcción y ejecución de la consulta base
     $sql = "SELECT p.id,
-                   p.codigo,
+                   p.codigo_fabricante AS codigo,
                    p.nombre,
                    p.tipo,
-                   p.stock_actual,
+                   COALESCE(si.stock_actual, 0) AS stock_actual,
                    p.stock_minimo,
                    a.nombre AS almacen,
                    SUM(CASE WHEN m.tipo = 'Salida' THEN m.cantidad ELSE 0 END) AS total_salidas,
                    SUM(CASE WHEN m.tipo = 'Entrada' THEN m.cantidad ELSE 0 END) AS total_entradas,
                    MAX(m.fecha) AS ultimo_movimiento
-            FROM productos p
-            LEFT JOIN almacenes a ON p.almacen_id = a.id
+            FROM inventario p
+            {$stockJoin}
+            {$almacenJoin}
             LEFT JOIN movimientos_inventario m
                    ON m.producto_id = p.id
                   AND DATE(m.fecha) BETWEEN ? AND ?";
@@ -1390,10 +1392,6 @@ endobj
     if ($tipoFiltro !== '' && in_array($tipoFiltro, Producto::tiposDisponibles(), true)) {
         $where[]  = 'p.tipo = ?';
         $params[] = $tipoFiltro;
-    }
-    if ($almacenId !== '') {
-        $where[]  = 'p.almacen_id = ?';
-        $params[] = (int) $almacenId;
     }
     if ($where) {
         $sql .= ' WHERE ' . implode(' AND ', $where);
@@ -1445,8 +1443,8 @@ endobj
         }
     }
 
-    // --- LOGICA DE PAGINACIÓN COMPLETA (Fijado en 15 por página) ---
-    $productosPorPagina = 15;
+    // --- LOGICA DE PAGINACIÓN COMPLETA (máximo 10 productos por página) ---
+    $productosPorPagina = 10;
     $totalRegistros     = count($todasLasRotaciones);
     $totalPaginas       = max(1, ceil($totalRegistros / $productosPorPagina));
     

@@ -8,12 +8,13 @@ $nombre = $_SESSION['nombre'];
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestión de Almacenes - TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <div class="main-layout">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -72,7 +73,7 @@ $nombre = $_SESSION['nombre'];
                 <table class="takab-table">
                     <thead>
                         <tr>
-                            <th>Nombre</th><th>Ubicación</th><th>Responsable</th><th>Principal</th><th>Acciones</th>
+                            <th>Nombre</th><th>Ubicación</th><th>Responsable</th><th>Principal</th><th class="col-actions">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,8 +84,10 @@ $nombre = $_SESSION['nombre'];
                             <td><?= $a['responsable'] ?? '-' ?></td>
                             <td><?= $a['es_principal'] ? 'Sí' : 'No' ?></td>
                             <td class="table-actions">
-                                <a href="almacenes_edit.php?id=<?= $a['id'] ?>"><i class="fa fa-pen"></i> Editar</a>
-                                <a href="almacenes_delete.php?id=<?= $a['id'] ?>" onclick="return confirm('¿Eliminar almacén?');" class="btn-danger"><i class="fa fa-trash"></i> Eliminar</a>
+                                <div class="acciones-celda">
+                                    <a href="almacenes_edit.php?id=<?= $a['id'] ?>"><i class="fa fa-pen"></i><span>Editar</span></a>
+                                    <a href="almacenes_delete.php?id=<?= $a['id'] ?>" onclick="return confirm('¿Eliminar almacén?');" class="btn-danger"><i class="fa fa-trash"></i><span>Eliminar</span></a>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>

@@ -91,7 +91,7 @@ class Prestamo
         }
     }
 
-    public static function historialPaginado($busqueda = '', $pagina = 1, $porPagina = 15, array $filtros = [])
+    public static function historialPaginado($busqueda = '', $pagina = 1, $porPagina = 10, array $filtros = [])
     {
         $db = Database::getInstance()->getConnection();
         $offset = ($pagina - 1) * $porPagina;

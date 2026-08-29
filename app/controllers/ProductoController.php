@@ -18,12 +18,10 @@ class ProductoController
             'categoria_id'     => $_GET['categoria_id'] ?? '',
             'almacen_id'       => $_GET['almacen_id'] ?? '',
             'proveedor_id'     => $_GET['proveedor_id'] ?? '',
-            'estado'           => $_GET['estado'] ?? '',
             'activo_id'        => $_GET['activo_id'] ?? '',
             'stock_flag'       => $_GET['stock_flag'] ?? '',
             'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
             'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
-            'tags'             => trim($_GET['tags'] ?? ''),
             'fecha_desde'      => $_GET['fecha_desde'] ?? '',
             'fecha_hasta'      => $_GET['fecha_hasta'] ?? '',
             'valor_min'        => $_GET['valor_min'] ?? '',
@@ -60,7 +58,6 @@ class ProductoController
         $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
         $estadosActivos  = Producto::estadosActivos();
-        $estadosProducto = Producto::estadosDisponibles();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $hayFiltros = false;
@@ -93,7 +90,6 @@ class ProductoController
         $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
-        $estadosProducto = Producto::estadosDisponibles();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $errors = [];
@@ -157,7 +153,6 @@ class ProductoController
         $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
-        $estadosProducto = Producto::estadosDisponibles();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $errors = [];
@@ -374,13 +369,12 @@ class ProductoController
             'nombre',
             'descripcion',
             'tipo',
-            'estado',
             'categoria_id',
             'proveedor_id',
             'almacen_id',
             'ubicacion_fisica',
             'unidad_medida_id',
-            'stock_actual',
+            'stock_inicial',
             'stock_minimo',
             'costo_compra',
             'precio_venta',
@@ -392,7 +386,6 @@ class ProductoController
             'color',
             'forma',
             'origen',
-            'tags',
         ];
 
         header('Content-Type: text/csv; charset=utf-8');
@@ -472,7 +465,6 @@ class ProductoController
         ];
 
         $tiposValidos   = Producto::tiposDisponibles();
-        $estadosValidos = Producto::estadosDisponibles();
 
         while (($row = fgetcsv($handle)) !== false) {
             $result['processed']++;
@@ -511,24 +503,15 @@ class ProductoController
                 continue;
             }
 
-            $estado = ucfirst(strtolower(trim($rowAssoc['estado'] ?? '')));
-            if ($estado === '') {
-                $estado = 'Nuevo';
-            }
-            if (! in_array($estado, $estadosValidos, true)) {
-                $result['errors'][] = "Fila {$lineNumber}: el estado '{$rowAssoc['estado']}' no es valido. Valores permitidos: " . implode(', ', $estadosValidos) . '.';
-                continue;
-            }
-
             $almacenId = (int) ($rowAssoc['almacen_id'] ?? 0);
             if ($almacenId <= 0) {
                 $result['errors'][] = "Fila {$lineNumber}: el campo 'almacen_id' debe ser un numero valido.";
                 continue;
             }
 
-            $stockActual = (float) str_replace(',', '.', $rowAssoc['stock_actual'] ?? 0);
+            $stockInicial = (float) str_replace(',', '.', $rowAssoc['stock_inicial'] ?? 0);
             $stockMinimo = (float) str_replace(',', '.', $rowAssoc['stock_minimo'] ?? 0);
-            if ($stockActual < 0 || $stockMinimo < 0) {
+            if ($stockInicial < 0 || $stockMinimo < 0) {
                 $result['errors'][] = "Fila {$lineNumber}: el stock no puede ser negativo.";
                 continue;
             }
@@ -557,15 +540,13 @@ class ProductoController
                 'costo_compra'              => $costoCompra,
                 'precio_venta'              => $precioVenta,
                 'stock_minimo'              => $stockMinimo,
-                'stock_actual'              => $stockActual,
+                'stock_inicial'             => $stockInicial,
                 'almacen_id'                => $almacenId,
                 'ubicacion_fisica'          => trim($rowAssoc['ubicacion_fisica'] ?? ''),
-                'estado'                    => $estado,
                 'tipo'                      => $tipo,
                 'imagen_url'                => null,
                 'last_requested_by_user_id' => null,
                 'last_request_date'         => null,
-                'tags'                      => trim($rowAssoc['tags'] ?? ''),
                 'activo_id'                 => 1,
             ];
 
@@ -647,13 +628,11 @@ class ProductoController
             'costo_compra'              => 0.0,
             'precio_venta'              => 0.0,
             'stock_minimo'              => 0.0,
-            'stock_actual'              => 0.0,
+            'stock_inicial'             => 0.0,
             'almacen_id'                => null,
             'ubicacion_fisica'          => '',
-            'estado'                    => 'Nuevo',
             'tipo'                      => 'Consumible',
             'imagen_url'                => null,
-            'tags'                      => '',
             'activo_id'                 => 1,
         ];
     }
@@ -712,16 +691,15 @@ class ProductoController
         $data['forma']                     = trim($input['forma'] ?? '');
         $data['especificaciones_tecnicas'] = trim($input['especificaciones_tecnicas'] ?? '');
         $data['origen']                    = trim($input['origen'] ?? '');
-        $data['tags']                      = trim($input['tags'] ?? '');
 
         $data['peso']        = $this->normalizeDecimal($input['peso'] ?? null);
         $data['ancho']       = $this->normalizeDecimal($input['ancho'] ?? null);
         $data['alto']        = $this->normalizeDecimal($input['alto'] ?? null);
         $data['profundidad'] = $this->normalizeDecimal($input['profundidad'] ?? null);
 
-        $data['stock_actual'] = $this->normalizeDecimal($input['stock_actual'] ?? 0);
-        if ($data['stock_actual'] === null || $data['stock_actual'] < 0) {
-            $errors[] = 'El stock actual debe ser un numero mayor o igual a cero.';
+        $data['stock_inicial'] = $this->normalizeDecimal($input['stock_inicial'] ?? 0);
+        if ($data['stock_inicial'] === null || $data['stock_inicial'] < 0) {
+            $errors[] = 'El stock inicial debe ser un numero mayor o igual a cero.';
         }
 
         $data['stock_minimo'] = $this->normalizeDecimal($input['stock_minimo'] ?? 0);
@@ -742,11 +720,6 @@ class ProductoController
         $data['tipo'] = $input['tipo'] ?? 'Consumible';
         if (! in_array($data['tipo'], Producto::tiposDisponibles(), true)) {
             $errors[] = 'El tipo seleccionado no es valido.';
-        }
-
-        $data['estado'] = $input['estado'] ?? 'Nuevo';
-        if (! in_array($data['estado'], Producto::estadosDisponibles(), true)) {
-            $errors[] = 'El estado seleccionado no es valido.';
         }
 
         return $data;

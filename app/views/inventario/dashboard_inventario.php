@@ -4,14 +4,21 @@ Session::requireLogin(['Administrador', 'Almacen']);
 
 $role = $_SESSION['role'] ?? 'Empleado';
 $nombre = $_SESSION['nombre'] ?? '';
+function format_stock($value) {
+    $num = (float) $value;
+    if (abs($num - round($num)) < 0.00001) {
+        return number_format($num, 0, '.', ',');
+    }
+    return number_format($num, 2, '.', ',');
+}
 
 $mostrarCostos = $role !== 'Almacen';
 $stats = $stats ?? ['valor_total' => 0, 'stock_bajo' => 0, 'sin_stock' => 0, 'consumibles' => 0, 'herramientas' => 0, 'activos' => 0, 'inactivos' => 0];
 $totalRegistros = $totalRegistros ?? count($productos);
 $page = $page ?? 1;
 $totalPaginas = $totalPaginas ?? 1;
-$perPage = $perPage ?? 15;
-$perPageOptions = $perPageOptions ?? [10, 15, 25, 50, 100];
+$perPage = $perPage ?? 10;
+$perPageOptions = $perPageOptions ?? [10];
 $offset = $offset ?? 0;
 $filtros = $filtros ?? [];
 $hayFiltros = $hayFiltros ?? false;
@@ -24,7 +31,6 @@ $categoriaId = htmlspecialchars($filtros['categoria_id'] ?? '', ENT_QUOTES, 'UTF
 $almacenId = htmlspecialchars($filtros['almacen_id'] ?? '', ENT_QUOTES, 'UTF-8');
 $proveedorId = htmlspecialchars($filtros['proveedor_id'] ?? '', ENT_QUOTES, 'UTF-8');
 $tipoFiltro = htmlspecialchars($filtros['tipo'] ?? '', ENT_QUOTES, 'UTF-8');
-$estadoFiltro = htmlspecialchars($filtros['estado'] ?? '', ENT_QUOTES, 'UTF-8');
 $activoFiltro = htmlspecialchars($filtros['activo_id'] ?? '', ENT_QUOTES, 'UTF-8');
 $stockFlag = htmlspecialchars($filtros['stock_flag'] ?? '', ENT_QUOTES, 'UTF-8');
 $valorMin = htmlspecialchars($filtros['valor_min'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -48,15 +54,26 @@ $buildQuery = function(array $overrides = []) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>INVENTARIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesigncss.min.css">
+    <style>
+        .inventario-table .col-stock { width: 140px; min-width: 120px; text-align: center; }
+        .inventario-table td.col-stock { white-space: nowrap; }
+        .inventario-table td.col-stock .badge { display: inline-block; }
+        .inventario-table td.col-stock small { display: block; font-size: 0.75rem; color: #666; }
+        @media (max-width: 700px) {
+            .inventario-table .col-stock { width: auto; min-width: 0; }
+            .inventario-table td.col-stock { white-space: normal; }
+        }
+    </style>
 </head>
-<body>
-<?php $seccion_activa = 'dashboard_inventario'; ?>
+<body class="module-inventory-warehouse">
+<?php $seccion_activa = 'inventario'; ?>
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
@@ -64,33 +81,15 @@ $buildQuery = function(array $overrides = []) {
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 
     <div class="content-area">
-        <?php
-            require_once __DIR__ . '/../../helpers/Navigation.php';
-
-            $role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
-        ?>
-            <header class="top-header">
-                <div class="top-header-left">
-                </div>
-                <div class="top-header-user">
-                    <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
-                    <i class="fa-solid fa-user-circle"></i>
-                    <a href="dashboard_almacen" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
-                    <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
-                </div>
-            </header>
+        
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
 
         <main class="dashboard-main">
             <div class="dashboard-header-row">
                 <div>
                     <h1>INVENTARIO GENERAL</h1>
-                    <span class="dashboard-desc">Supervisa el Estado del Stock, Ubicaciones y Movimientos de Productos.</p>
+                    <span class="dashboard-desc">Supervisa el Estado del Stock, Ubicaciones y Movimientos de Productos.</span>
                 </div>
-                <!--  
-                <div class="dashboard-updated">
-                    <div>Último Actualizado</div>
-                    <//?= htmlspecialchars($datos['last_update']) ?>
-                </div> -->
             </div>
 
             <section class="dashboard-cards-row">
@@ -138,40 +137,31 @@ $buildQuery = function(array $overrides = []) {
                                 <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción o proveedor" value="<?= $buscar ?>">
                             </div>
                         </div>
+
                         <div class="inv-filter-field">
-                            <label for="codigo_barras">Código de Barras</label>
-                            <input type="text" id="codigo_barras" name="codigo_barras" value="<?= htmlspecialchars($filtros['codigo_barras'] ?? '') ?>" placeholder="Escanea o escribe codigo">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="categoria_id">Categoría</label>
-                            <select id="categoria_id" name="categoria_id">
-                                <option value="">Todas</option>
-                                <?php foreach ($categorias as $categoria): ?>
-                                    <option value="<?= $categoria['id'] ?>" <?= $categoriaId == $categoria['id'] ? 'selected' : '' ?>><?= htmlspecialchars($categoria['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <!--div class="inv-filter-field">
                             <label for="almacen_id">Almacén</label>
                             <select id="almacen_id" name="almacen_id">
-                                <option value="">Todos</option>
-                                <//?php foreach ($almacenes as $almacen): ?>
-                                    <option value="<//?= $almacen['id'] ?>" <//?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><//?= htmlspecialchars($almacen['nombre']) ?></option>
-                                <//?php endforeach; ?>
-                            </select>
-                        </div-->
-                        <div class="inv-filter-field">
-                            <label for="proveedor_id">Proveedor</label>
-                            <select id="proveedor_id" name="proveedor_id">
-                                <option value="">Todos</option>
-                                <?php foreach ($proveedores as $proveedor): ?>
-                                    <option value="<?= $proveedor['id'] ?>" <?= $proveedorId == $proveedor['id'] ? 'selected' : '' ?>><?= htmlspecialchars($proveedor['nombre']) ?></option>
+                                <option value="">Todos los almacenes</option>
+                                <?php foreach ($almacenes as $almacen): ?>
+                                    <option value="<?= $almacen['id'] ?>" <?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        <div class="inv-filter-field">
+                            <label for="fecha_desde">Fecha de Alta (desde)</label>
+                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= $fechaDesde ?>">
+                        </div>
+                        <div class="inv-filter-field">
+                            <label for="fecha_hasta">Fecha de Alta (hasta)</label>
+                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= $fechaHasta ?>">
                         </div>
                     </div>
 
                     <div class="inv-filter-row">
+                        <div class="inv-filter-field">
+                            <label for="codigo_barras">Código de Barras</label>
+                            <input type="text" id="codigo_barras" name="codigo_barras" value="<?= htmlspecialchars($filtros['codigo_barras'] ?? '') ?>" placeholder="Escanea o Escribe Código">
+                        </div>
                         <div class="inv-filter-field">
                             <label for="tipo">Tipo</label>
                             <select id="tipo" name="tipo">
@@ -182,14 +172,22 @@ $buildQuery = function(array $overrides = []) {
                             </select>
                         </div>
                         <div class="inv-filter-field">
-                            <label for="estado">Estado Físico</label>
-                            <select id="estado" name="estado">
-                                <option value="">Todos</option>
-                                <?php foreach ($estadosProducto as $estado): ?>
-                                    <option value="<?= $estado ?>" <?= $estadoFiltro === $estado ? 'selected' : '' ?>><?= $estado ?></option>
+                            <label for="categoria_id">Categoría</label>
+                            <select id="categoria_id" name="categoria_id">
+                                <option value="">Todas</option>
+                                <?php foreach ($categorias as $categoria): ?>
+                                    <option value="<?= $categoria['id'] ?>" <?= $categoriaId == $categoria['id'] ? 'selected' : '' ?>><?= htmlspecialchars($categoria['nombre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
+
+                        <div class="inv-filter-field">
+                            <label for="marca">Marca:</label>
+                            <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($filtros['marca'] ?? '') ?>" placeholder="Buscar por Marca">
+                        </div>
+                    </div>
+
+                    <div class="inv-filter-row">
                         <div class="inv-filter-field">
                             <label for="stock_flag">Estado de Stock</label>
                             <select id="stock_flag" name="stock_flag">
@@ -199,51 +197,23 @@ $buildQuery = function(array $overrides = []) {
                                 <option value="suficiente" <?= $stockFlag === 'suficiente' ? 'selected' : '' ?>>Stock suficiente</option>
                             </select>
                         </div>
-                        <div class="inv-filter-field">
-                            <label for="unidad_medida_id">Unidad de Medida</label>
-                            <select id="unidad_medida_id" name="unidad_medida_id">
-                                <option value="">Todas</option>
-                                <?php foreach ($unidades as $unidad): ?>
-                                    <option value="<?= $unidad['id'] ?>" <?= $unidadMedidaId == $unidad['id'] ? 'selected' : '' ?>><?= htmlspecialchars($unidad['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="inv-filter-row">
                         <?php if ($mostrarCostos):?>
                         <div class="inv-filter-field">
-                            <label for="valor_min">Valor Mínimo (MXN)</label>
+                            <label for="valor_min">Precio Unitario Mínimo (MXN)</label>
                             <input type="number" step="10" id="valor_min" name="valor_min" value="<?= $valorMin ?>">
                         </div>
                         <div class="inv-filter-field">
-                            <label for="valor_max">Valor Máximo (MXN)</label>
+                            <label for="valor_max">Precio Unitario Máximo (MXN)</label>
                             <input type="number" step="10" id="valor_max" name="valor_max" value="<?= $valorMax ?>">
                         </div>
                         <?php endif; ?>
-                        <div class="inv-filter-field">
-                            <label for="fecha_desde">Fecha de Alta (desde)</label>
-                            <input type="date" id="fecha_desde" name="fecha_desde" value="<?= $fechaDesde ?>">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="fecha_hasta">Fecha de Alta (hasta)</label>
-                            <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= $fechaHasta ?>">
-                        </div>
-                        <div class="inv-filter-field">
-                            <label for="per_page">Resultados por Página</label>
-                            <select id="per_page" name="per_page" onchange="this.form.submit()">
-                                <?php foreach ($perPageOptions as $option): ?>
-                                    <option value="<?= $option ?>" <?= (int)$perPage === (int)$option ? 'selected' : '' ?>><?= $option ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="inv-filter-row">
                         <div class="inv-filter-actions">
                             <button type="submit" class="btn-main"><i class="fa fa-filter"></i> Aplicar Filtros</button>
                             <?php if ($hayFiltros): ?>
-                                <a class="btn-ghost" href="inventario_actual"><i class="fa fa-eraser"></i> Limpiar</a>
+                                <a class="btn-ghost" href="inventario"><i class="fa fa-eraser"></i> Limpiar</a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -269,12 +239,10 @@ $buildQuery = function(array $overrides = []) {
                                     <th>Producto</th>
                                     <th>Tipo</th>
                                     <th>Categoría</th>
-                                    <!--th>Almacén</th-->
-                                    <th>Stock Actual</th>
-                                    <th>Stock Mínimo</th>
-                                    <?php if ($mostrarCostos): ?><th>Valor</th><?php endif; ?>
-                                    <!--th>Estado</th-->
-                                    <!--th>Último movimiento</th-->
+                                    <th>Marca</th>
+                                    <th>Modelo</th>
+                                    <th class="col-stock">Stock</th>
+                                    <?php if ($mostrarCostos): ?><th>Precio Unitario</th><?php endif; ?>
                                 </tr>
                             </thead>
                             <tbody>
@@ -282,37 +250,36 @@ $buildQuery = function(array $overrides = []) {
                                     <?php
                                         $stockActual = (float) ($producto['stock_actual'] ?? 0);
                                         $stockMinimo = (float) ($producto['stock_minimo'] ?? 0);
-                                        $valor = (float) ($producto['valor_total'] ?? 0);
+                                        $precioUnitario = (float) ($producto['precio_unitario'] ?? 0);
+
                                         $badgeStock = 'ok';
                                         if ($stockActual <= 0) {
                                             $badgeStock = 'sin';
                                         } elseif ($stockActual < $stockMinimo) {
                                             $badgeStock = 'bajo';
                                         }
-                                        $fechaMovimiento = $producto['ultimo_movimiento'] ?? null;
+
+                                        // Manejo de compatibilidad para la unidad de medida
+                                        $unidad = $producto['unidad_apodo'] ?? $producto['unidad_abreviacion'] ?? '';
                                     ?>
                                     <tr>
                                         <td><span class="mono"><?= htmlspecialchars($producto['codigo'] ?? '-') ?></span></td>
                                         <td>
                                             <div class="tabla-producto-nombre"><?= htmlspecialchars($producto['nombre'] ?? '-') ?></div>
-                                            <?php if (!empty($producto['tags'])): ?>
-                                                <div class="tabla-tags"><i class="fa fa-tags"></i> <?= htmlspecialchars($producto['tags']) ?></div>
-                                            <?php endif; ?>
                                         </td>
                                         <td><span class="badge badge-tipo <?= strtolower($producto['tipo'] ?? '') ?>"><?= htmlspecialchars($producto['tipo'] ?? '-') ?></span></td>
                                         <td><?= htmlspecialchars($producto['categoria'] ?? '-') ?></td>
-                                        <!--td><//?= htmlspecialchars($producto['almacen'] ?? '-') ?></td-->
-                                        <td>
+                                        <td><?= htmlspecialchars($producto['marca'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($producto['modelo'] ?? '-') ?></td>
+                                        <td class="col-stock">
                                             <span class="badge badge-stock <?= $badgeStock ?>">
-                                                <?= rtrim(rtrim(number_format($stockActual, 2), '0'), '.') ?> <?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?>
+                                                <?= format_stock($stockActual) ?> <?= htmlspecialchars($unidad) ?>
                                             </span>
+                                            <small>Mín: <?= format_stock($stockMinimo) ?></small>
                                         </td>
-                                        <td><?= rtrim(rtrim(number_format($stockMinimo, 2), '0'), '.') ?> <?= htmlspecialchars($producto['unidad_abreviacion'] ?? '') ?></td>
                                         <?php if ($mostrarCostos): ?>
-                                            <td>$<?= number_format($valor, 2) ?></td>
+                                            <td>$<?= number_format($precioUnitario, 2) ?></td>
                                         <?php endif; ?>
-                                        <!--td><span class="badge badge-activo <//?= (int)($producto['activo_id'] ?? 1) === 1 ? 'activo' : 'inactivo' ?>"><//?= htmlspecialchars($producto['estado_activo'] ?? '-') ?></span></td-->
-                                        <!--td><//?= $fechaMovimiento ? date('d/m/Y H:i', strtotime($fechaMovimiento)) : 'Sin movimientos' ?></td-->
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

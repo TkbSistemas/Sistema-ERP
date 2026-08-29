@@ -13,13 +13,14 @@ $alertas = $datos['alertas'] ?? [];
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>TAKAB - ALMÁCEN</title>
     <link rel="stylesheet" href="assets/css/dashboard.css"> 
     <link rel="stylesheet" href="assets/css/dashboard_custom.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
@@ -83,7 +84,7 @@ $alertas = $datos['alertas'] ?? [];
                         <?php foreach ($datos['ultimosMovimientos'] as $mov): ?>
                             <tr>
                                 <td><?= date('d/m H:i', strtotime($mov['created_at'])) ?></td>
-                                <td><span class="mono"><?= htmlspecialchars($mov['codigo_fabricante'] ?? '-') ?></span></td>
+                                <td><span class="mono"><?= htmlspecialchars($mov['nomenclatura'] ?? '-') ?></span></td>
                                 <td><?= htmlspecialchars($mov['nombre'] ?? '-') ?> </td>
                                 <td><span class="badge badge-tipo <?= strtolower($mov['tipo']) ?>"><?= htmlspecialchars($mov['tipo']) ?></span></td>
                                 <td><?= number_format((float) $mov['cantidad'], 2) ?></td>

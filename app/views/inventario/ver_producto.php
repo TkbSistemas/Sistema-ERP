@@ -12,9 +12,7 @@ $producto = is_array($producto ?? null) ? $producto : [];
 $stockActual = (float) ($producto['stock_actual'] ?? 0);
 $stockMinimo = (float) ($producto['stock_minimo'] ?? 0);
 $valorInventario = (float) ($producto['costo_compra'] ?? 0) * $stockActual;
-$estadoActivo = $producto['estado_activo'] ?? 'Activo';
 $unidad = $producto['unidad_abreviacion'] ?? $producto['unidad_medida_nombre'] ?? '';
-$tags = array_filter(array_map('trim', explode(',', $producto['tags'] ?? '')));
 
 $breadcrumbs = [
     ['label' => 'Detalle del producto'],
@@ -37,13 +35,14 @@ function format_stock($value) {
 <html lang="es">
 <head>
 	<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>DETALLES DE PRODUCTO | TAKAB</title>
 	<link rel="stylesheet" href="assets/css/dashboard.css">
 	<link rel="stylesheet" href="assets/css/config.css">
 	<link rel="stylesheet" href="assets/css/productos.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'catalogo_productos'; ?>
 <div class="main-layout">
 	<button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
@@ -89,12 +88,6 @@ function format_stock($value) {
 					</div>
 					<?php if (!empty($producto['descripcion'])): ?>
 						<p class="hero-description"><?= nl2br(htmlspecialchars($producto['descripcion'])) ?></p>
-					<?php endif; ?>
-					<?php if ($tags): ?>
-						<div class="producto-tags">
-							<i class="fa fa-tags"></i>
-							<?= htmlspecialchars(implode(', ', $tags)) ?>
-						</div>
 					<?php endif; ?>
 					<div class="hero-stats">
 						<div class="hero-stat">

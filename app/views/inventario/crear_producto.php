@@ -13,6 +13,7 @@ $breadcrumbs = [
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>NUEVO PRODUCTO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
@@ -20,7 +21,7 @@ $breadcrumbs = [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'catalogo_productos'; ?>
 <div class="main-layout">
      <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
@@ -131,10 +132,6 @@ $breadcrumbs = [
                             <label for="color">Color</label>
                             <input type="text" id="color" name="color" value="<?= htmlspecialchars($values['color'] ?? '') ?>" placeholder="Color del Producto">
                         </div>
-                        <div class="productos-form-field">
-                            <label for="tags">Etiquetas</label>
-                            <input type="text" id="tags" name="tags" value="<?= htmlspecialchars($values['tags'] ?? '') ?>" placeholder="Ej. Fibra, Red, Herramienta">
-                        </div>
                     </div>
                 </section>
 
@@ -143,7 +140,7 @@ $breadcrumbs = [
                     <div class="productos-form-grid">
                             <div class="productos-form-field">
                                 <label for="sistema">Sistema de Medida</label>
-                                <select id="sistema" name="sistema">
+                                <select id="sistema" name="sistema" required>
                                     <option value="">Selecciona un Sistema</option>
                                     <?php 
                                     $sistemasMostrados = []; 
@@ -189,6 +186,11 @@ $breadcrumbs = [
                         <div class="productos-form-field">
                             <label for="ubicacion_fisica">Ubicación Física</label>
                             <input type="text" id="ubicacion_fisica" name="ubicacion_fisica" value="<?= htmlspecialchars($values['ubicacion_fisica'] ?? '') ?>" placeholder="Ej. Estante A-3">
+                        </div>
+                        <div class="productos-form-field">
+                            <label for="stock_inicial">Stock inicial</label>
+                            <input type="number" step="0.01" id="stock_inicial" name="stock_inicial" min="0" value="<?= htmlspecialchars($values['stock_inicial'] ?? '0') ?>">
+                            <span class="productos-form-note">Se registrará en el almacén asignado.</span>
                         </div>
                         <div class="productos-form-field">
                             <label for="stock_minimo">Stock Mínimo</label>
@@ -248,8 +250,12 @@ $breadcrumbs = [
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    const selectSistema = document.getElementById('sistema_medida_id');
+    const selectSistema = document.getElementById('sistema');
     const selectUnidad = document.getElementById('unidad_medida_id');
+
+    if (!selectSistema || !selectUnidad) {
+        return;
+    }
 
     function filtrarUnidades() {
         const sistemaSeleccionado = selectSistema.value;
@@ -264,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const sistemaDeEstaUnidad = option.dataset.sistema;
-            if (sistemaSeleccionado === '' || sistemaDeEstaUnidad === sistemaSeleccionado) {
+            if (sistemaSeleccionado !== '' && sistemaDeEstaUnidad === sistemaSeleccionado) {
                 option.hidden = false;
                 option.disabled = false;
                 if (option.selected) unidadAunValida = true;

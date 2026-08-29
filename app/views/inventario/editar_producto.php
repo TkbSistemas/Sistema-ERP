@@ -13,13 +13,14 @@ $breadcrumbs = [
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EDITAR PRODUCTO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body><?php $seccion_activa = 'catalogo_productos'; ?>
+<body class="module-inventory-warehouse"><?php $seccion_activa = 'catalogo_productos'; ?>
 <div class="main-layout">
 	<button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
         <i class="fa-solid fa-bars"></i>
@@ -93,14 +94,6 @@ $breadcrumbs = [
                             </select>
                         </div>
                         <div class="productos-form-field">
-                            <label for="estado">Estado Físico *</label>
-                            <select id="estado" name="estado" required>
-                                <?php foreach ($estadosProducto as $estado): ?>
-                                    <option value="<?= $estado ?>" <?= (($values['estado'] ?? '') === $estado) ? 'selected' : '' ?>><?= htmlspecialchars($estado) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="productos-form-field">
                             <label for="categoria_id">Categoría *</label>
                             <select id="categoria_id" name="categoria_id" required>
                                 <option value="">Selecciona una categoría</option>
@@ -145,10 +138,6 @@ $breadcrumbs = [
                         <div class="productos-form-field">
                             <label for="origen">Origen</label>
                             <input type="text" id="origen" name="origen" value="<?= htmlspecialchars($values['origen'] ?? '') ?>">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="tags">Etiquetas</label>
-                            <input type="text" id="tags" name="tags" value="<?= htmlspecialchars($values['tags'] ?? '') ?>">
                         </div>
                     </div>
                 </section>
@@ -201,8 +190,9 @@ $breadcrumbs = [
                             <input type="text" id="ubicacion_fisica" name="ubicacion_fisica" value="<?= htmlspecialchars($values['ubicacion_fisica'] ?? '') ?>" placeholder="Ej. Estante A-3">
                         </div>
                         <div class="productos-form-field">
-                            <label for="stock_actual">Stock actual *</label>
-                            <input type="number" step="0.01" id="stock_actual" name="stock_actual" min="0" value="<?= htmlspecialchars($values['stock_actual'] ?? '0') ?>" required>
+                            <label for="stock_actual">Stock total</label>
+                            <input type="number" step="0.01" id="stock_actual" value="<?= htmlspecialchars($values['stock_actual'] ?? '0') ?>" readonly aria-describedby="stock_actual_note">
+                            <span id="stock_actual_note" class="productos-form-note">El stock se modifica mediante entradas, salidas y transferencias por almacén.</span>
                         </div>
                         <div class="productos-form-field">
                             <label for="stock_minimo">Stock Mínimo *</label>

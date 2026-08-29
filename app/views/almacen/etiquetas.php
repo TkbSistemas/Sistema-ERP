@@ -14,13 +14,14 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Etiquetas de producto | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <div class="main-layout">
     <aside class="main_sidebar">
         <div class="sidebar-header">

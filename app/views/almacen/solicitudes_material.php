@@ -3,14 +3,30 @@ require_once __DIR__ . '/../../helpers/Session.php';
 Session::requireLogin(['Administrador', 'Almacen']);
 $role = $_SESSION['role'] ?? '';
 $nombre = $_SESSION['nombre'] ?? '';
+$tab_activa = $_GET['tab'] ?? 'pendientes';
 
 if (!isset($pagina)) $pagina = 1;
 if (!isset($total_paginas)) $total_paginas = 1;
+$pagination = $pagination ?? [
+    'pagina' => $pagina,
+    'total_paginas' => $total_paginas,
+    'por_pagina' => 8,
+    'total' => 0,
+    'desde' => 0,
+    'hasta' => 0,
+];
+$buildPaginationQuery = function (int $targetPage) use ($tab_activa): string {
+    return '?' . http_build_query(array_merge($_GET, ['tab' => $tab_activa, 'pagina' => $targetPage]));
+};
+$buildTabQuery = function (string $tab): string {
+    return '?' . http_build_query(array_merge($_GET, ['tab' => $tab, 'pagina' => 1]));
+};
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SOLICITUDES MATERIAL | TAKAB</title>
     <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
@@ -18,7 +34,7 @@ if (!isset($total_paginas)) $total_paginas = 1;
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'solicitudes_material'; ?>
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
@@ -57,8 +73,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
             <?php $tab_activa = $_GET['tab'] ?? 'pendientes'; ?>
 
             <div class="tab-container">
-                <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
-                <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
+                <a href="<?= $buildTabQuery('pendientes') ?>" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="<?= $buildTabQuery('historial') ?>" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
             </div>
         <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
         <table class="takab-table">
@@ -76,7 +92,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <tbody>
         <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['estatus']) ?></td>
+                    <?php $estatusClase = strtolower((string) ($s['estatus'] ?? '')); ?>
+                    <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
@@ -135,7 +152,8 @@ if (!isset($total_paginas)) $total_paginas = 1;
         <tbody>
         <?php foreach ($datos['solicitudesEsteMes'] as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['estatus']) ?></td>
+                    <?php $estatusClase = strtolower((string) ($s['estatus'] ?? '')); ?>
+                    <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
@@ -147,28 +165,20 @@ if (!isset($total_paginas)) $total_paginas = 1;
         </table>
         </div>
         
-        <?php if ($total_paginas > 1): ?>
-            <div class="takab-pagination">
-                <?php if ($pagina > 1): ?>
-                    <a href="?pagina=<?= $pagina - 1 ?>&tab=<?= $tab_activa ?>" class="pagination-btn">&laquo; Anterior</a>
+        <nav class="module-pagination" aria-label="Paginación de solicitudes">
+            <span class="module-pagination-info">
+                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin solicitudes para mostrar' ?>
+            </span>
+            <div class="module-pagination-controls">
+                <?php if ($pagination['pagina'] > 1): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] - 1) ?>" class="module-pagination-button"><i class="fa fa-chevron-left"></i><span>Anterior</span></a>
                 <?php endif; ?>
-                
-                <?php
-                $inicio = max(1, $pagina - 3);
-                $fin    = min($total_paginas, $pagina + 3);
-                for ($i = $inicio; $i <= $fin; $i++):
-                    if ($i == $pagina): ?>
-                        <span class="pagination-current"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="?pagina=<?= $i ?>&tab=<?= $tab_activa ?>" class="pagination-btn"><?= $i ?></a>
-                    <?php endif;
-                endfor;
-                
-                if ($pagina < $total_paginas): ?>
-                    <a href="?pagina=<?= $pagina + 1 ?>&tab=<?= $tab_activa ?>" class="pagination-btn">Siguiente &raquo;</a>
+                <span class="module-pagination-status">Página <?= $pagination['pagina'] ?> de <?= $pagination['total_paginas'] ?></span>
+                <?php if ($pagination['pagina'] < $pagination['total_paginas']): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] + 1) ?>" class="module-pagination-button"><span>Siguiente</span><i class="fa fa-chevron-right"></i></a>
                 <?php endif; ?>
             </div>
-        <?php endif; ?>
+        </nav>
         </main>
     </div>
 </div>

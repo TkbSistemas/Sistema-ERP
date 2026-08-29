@@ -41,9 +41,9 @@ class DashboardController
 
     private function datosGenerales($db): array
     {
-        $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
-        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM productos WHERE stock_actual < stock_minimo')->fetchColumn();
-        $valorTotal            = (float) $db->query('SELECT SUM(stock_actual * costo_compra) FROM productos')->fetchColumn();
+        $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
+        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id WHERE COALESCE(si.stock_total, 0) < p.stock_minimo')->fetchColumn();
+        $valorTotal            = (float) $db->query('SELECT COALESCE(SUM(COALESCE(si.stock_total, 0) * p.precio_unitario), 0) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id')->fetchColumn();
         $herramientasPrestadas = (int) $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado'")->fetchColumn();
         $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado' AND fecha_estimada_devolucion IS NOT NULL AND fecha_estimada_devolucion < NOW()")->fetchColumn();
 
@@ -74,7 +74,7 @@ class DashboardController
     private function datosAlmacen($db): array{
         $datos = $this->datosGenerales($db);
 
-        $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM productos')->fetchColumn();
+        $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
         $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado IN ('pendiente','aprobada')")->fetchColumn();
 
         $datos['productosAlmacen']   = $productosAlmacen;
@@ -106,10 +106,11 @@ class DashboardController
 
     private function alertasInventario($db): array
     {
-        $stmt = $db->query("SELECT nombre, stock_actual, stock_minimo, DATE_FORMAT(created_at, '%d/%m/%Y') AS fecha
-                             FROM productos
-                             WHERE stock_actual < stock_minimo
-                             ORDER BY stock_actual ASC
+        $stmt = $db->query("SELECT p.nombre, COALESCE(si.stock_total, 0) AS stock_disponible, p.stock_minimo, DATE_FORMAT(p.created_at, '%d/%m/%Y') AS fecha
+                             FROM inventario p
+                             LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
+                             WHERE COALESCE(si.stock_total, 0) < p.stock_minimo
+                             ORDER BY COALESCE(si.stock_total, 0) ASC
                              LIMIT 5");
         $productos = $stmt->fetchAll();
 
@@ -128,7 +129,7 @@ class DashboardController
     {
         $stmt = $db->query("SELECT p.nombre AS producto, pr.fecha_estimada_devolucion, u.nombre_completo AS empleado
                              FROM prestamos pr
-                             LEFT JOIN productos p ON pr.producto_id = p.id
+                             LEFT JOIN inventario p ON pr.producto_id = p.id
                              LEFT JOIN usuarios u ON pr.empleado_id = u.id
                              WHERE pr.estado = 'Prestado'
                                AND pr.fecha_estimada_devolucion IS NOT NULL
@@ -156,7 +157,7 @@ class DashboardController
                                     m.cantidad,
                                     COALESCE(a.nombre, ad.nombre) AS almacen
                              FROM movimientos_inventario m
-                             LEFT JOIN productos p ON m.producto_id = p.id
+                             LEFT JOIN inventario p ON m.producto_id = p.id
                              LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
                              LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
                              ORDER BY m.fecha DESC
@@ -173,7 +174,7 @@ class DashboardController
                                     m.fecha,
                                     COALESCE(a.nombre, ad.nombre) AS almacen
                              FROM movimientos_inventario m
-                             LEFT JOIN productos p ON m.producto_id = p.id
+                             LEFT JOIN inventario p ON m.producto_id = p.id
                              LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
                              LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
                              ORDER BY m.fecha DESC

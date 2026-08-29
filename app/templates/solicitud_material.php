@@ -333,7 +333,7 @@
                         ?>
                             <tr>
                                 <td class="col-no"><?= $num ?></td>
-                                <td class="col-codigo"><?= htmlspecialchars($prod['codigo_fabricante'] ?? 'N/A') ?></td>
+                                <td class="col-codigo"><?= htmlspecialchars($prod['nomenclatura'] ?? 'N/A') ?></td>
                                 <td class="col-nombre"><?= htmlspecialchars($prod['nombre'] ?? '-') ?></td>
                                 <td class="col-cant"><?= htmlspecialchars($prod['cantidad'] ?? 1) ?></td>
                                 <td class="col-udm"><?= htmlspecialchars($prod['unidad_medida'] ?? 'Pza') ?></td>

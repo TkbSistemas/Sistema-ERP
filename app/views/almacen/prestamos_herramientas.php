@@ -12,18 +12,33 @@ $nombre = $_SESSION['nombre'] ?? '';
 
 if (!isset($pagina)) $pagina = 1;
 if (!isset($total_paginas)) $total_paginas = 1;
+$pagination = $pagination ?? [
+    'pagina' => $pagina,
+    'total_paginas' => $total_paginas,
+    'por_pagina' => 8,
+    'total' => 0,
+    'desde' => 0,
+    'hasta' => 0,
+];
+$buildPaginationQuery = function (int $targetPage): string {
+    return '?' . http_build_query(array_merge($_GET, ['pagina' => $targetPage]));
+};
+$buildTabQuery = function (string $tab): string {
+    return '?' . http_build_query(array_merge($_GET, ['tab' => $tab, 'pagina' => 1]));
+};
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PRESTAMOS HERRAMIENTAS | TAKAB</title>
     <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'prestamos_herramientas'; ?>
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
@@ -73,10 +88,10 @@ if (!isset($total_paginas)) $total_paginas = 1;
             ?>
 
             <div class="tab-container">
-                <a href="?tab=activas" class="prestamos-tab <?= $tab_activa === 'activas' ? 'active' : '' ?>">Activas</a>
-                <a href="?tab=pendientes" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
-                <a href="?tab=vencidas" class="prestamos-tab <?= $tab_activa === 'vencidas' ? 'active' : '' ?>">Vencidas</a>
-                <a href="?tab=historial" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
+                <a href="<?= $buildTabQuery('activas') ?>" class="prestamos-tab <?= $tab_activa === 'activas' ? 'active' : '' ?>">Activas</a>
+                <a href="<?= $buildTabQuery('pendientes') ?>" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="<?= $buildTabQuery('vencidas') ?>" class="prestamos-tab <?= $tab_activa === 'vencidas' ? 'active' : '' ?>">Vencidas</a>
+                <a href="<?= $buildTabQuery('historial') ?>" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
         </div>
         <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
         <table class="takab-table">
@@ -210,27 +225,20 @@ if (!isset($total_paginas)) $total_paginas = 1;
         </table>
         </div>
         
-        <!-- PAGINACIÓN -->
-        <?php if ($total_paginas > 1): ?>
-            <div class="takab-pagination">
-                <?php if ($pagina > 1): ?>
-                    <a href="?pagina=<?= $pagina - 1 ?>" class="pagination-btn">&laquo; Anterior</a>
+        <nav class="module-pagination" aria-label="Paginación de préstamos">
+            <span class="module-pagination-info">
+                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin préstamos para mostrar' ?>
+            </span>
+            <div class="module-pagination-controls">
+                <?php if ($pagination['pagina'] > 1): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] - 1) ?>" class="module-pagination-button"><i class="fa fa-chevron-left"></i><span>Anterior</span></a>
                 <?php endif; ?>
-                <?php
-                $inicio = max(1, $pagina - 3);
-                $fin    = min($total_paginas, $pagina + 3);
-                for ($i = $inicio; $i <= $fin; $i++):
-                    if ($i == $pagina): ?>
-                        <span class="pagination-current"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="?pagina=<?= $i ?>" class="pagination-btn"><?= $i ?></a>
-                    <?php endif;
-                endfor;
-                if ($pagina < $total_paginas): ?>
-                    <a href="?pagina=<?= $pagina + 1 ?>" class="pagination-btn">Siguiente &raquo;</a>
+                <span class="module-pagination-status">Página <?= $pagination['pagina'] ?> de <?= $pagination['total_paginas'] ?></span>
+                <?php if ($pagination['pagina'] < $pagination['total_paginas']): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] + 1) ?>" class="module-pagination-button"><span>Siguiente</span><i class="fa fa-chevron-right"></i></a>
                 <?php endif; ?>
             </div>
-        <?php endif; ?>
+        </nav>
         </main>
     </div>
 </div>

@@ -16,6 +16,7 @@ $buildQuery = function(array $overrides = []) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rotación de inventario | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/reportes.css">
@@ -43,7 +44,7 @@ $buildQuery = function(array $overrides = []) {
         }
     </style>
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <div class="main-layout">
      <aside class="sidebar">
         <div class="sidebar-header">

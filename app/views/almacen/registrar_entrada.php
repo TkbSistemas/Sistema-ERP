@@ -25,6 +25,7 @@ $breadcrumbs = [
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ENTRADA DE INVENTARIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
@@ -32,7 +33,7 @@ $breadcrumbs = [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <?php $seccion_activa = 'registrar_entrada'; ?>
 
                 
@@ -42,21 +43,7 @@ $breadcrumbs = [
     </button>
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     <div class="content-area">
-        <?php 
-            require_once __DIR__ . '/../../helpers/Navigation.php';
-
-            $role = Navigation::normalizeRole($role ?? ($_SESSION['role'] ?? ''));
-            ?>
-            <header class="top-header">
-                <div class="top-header-left">
-                </div>
-                <div class="top-header-user">
-                    <span><?= htmlspecialchars($nombre ?: 'Usuario') ?> (<?= htmlspecialchars($role) ?>)</span>
-                    <i class="fa-solid fa-user-circle"></i>
-                    <a href="dashboard_almacen" class="logout-btn" title="Ir al Dashboard"><i class="fa-solid fa-home"></i></a>
-                    <a href="logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>    
-                </div>
-            </header>
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
 
         <?php if (isset($_SESSION['alerta'])): ?>
         <script>

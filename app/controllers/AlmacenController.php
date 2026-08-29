@@ -50,6 +50,12 @@ class AlmacenController
 
             $db = Database::getInstance()->getConnection();
             $datos = [];
+            $porPagina = 8;
+            $tabActiva = $_GET['tab'] ?? 'pendientes';
+            if (!in_array($tabActiva, ['pendientes', 'historial'], true)) {
+                $tabActiva = 'pendientes';
+            }
+            $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
 
             $solicitudesEsteMes = $db->query("
                 SELECT 
@@ -117,11 +123,35 @@ class AlmacenController
                 WHERE estatus IN ('pendiente', 'aprobada')
             ")->fetchColumn();
 
+            $totalSeleccionado = $tabActiva === 'historial'
+                ? $numSolicitudesEsteMes
+                : $numSolicitudesPendientes;
+            $total_paginas = max(1, (int) ceil($totalSeleccionado / $porPagina));
+            $pagina = min($pagina, $total_paginas);
+            $offset = ($pagina - 1) * $porPagina;
+
+            // Ambas consultas se conservan para las pestañas; la lista activa se recorta
+            // antes de renderizar para garantizar el máximo de ocho filas visibles.
+            if ($tabActiva === 'historial') {
+                $solicitudesEsteMes = array_slice($solicitudesEsteMes, $offset, $porPagina);
+            } else {
+                $solicitudesPendientes = array_slice($solicitudesPendientes, $offset, $porPagina);
+            }
+
 
             $datos['numSolicitudesEsteMes'] = $numSolicitudesEsteMes;
             $datos['solicitudesEsteMes'] = $solicitudesEsteMes;
             $datos['solicitudesPendientes'] = $solicitudesPendientes;
             $datos['numSolicitudesPendientes'] = $numSolicitudesPendientes;
+
+            $pagination = [
+                'pagina' => $pagina,
+                'total_paginas' => $total_paginas,
+                'por_pagina' => $porPagina,
+                'total' => $totalSeleccionado,
+                'desde' => $totalSeleccionado > 0 ? $offset + 1 : 0,
+                'hasta' => min($offset + $porPagina, $totalSeleccionado),
+            ];
 
             include __DIR__ . '/../views/almacen/solicitudes_material.php';
     }
@@ -317,7 +347,7 @@ class AlmacenController
     
     public function viewRegistrarSalida(){
             Session::requireLogin(['Administrador', 'Almacen']); 
-            $limite = 5;
+            $limite = 8;
             $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
             $productos = Producto::All();
             $almacenes = Almacen::all();
@@ -326,6 +356,12 @@ class AlmacenController
             $solicitudesHistorial  = SolicitudMaterial::obtenerSalidasHistorial($page, $limite);
             $totalPendientes = SolicitudMaterial::contarBajasPendientes();
             $totalHistorial = SolicitudMaterial::contarBajasHistorial();
+            $maxPaginas = max(1, (int) ceil(max($totalPendientes, $totalHistorial) / $limite));
+            if ($page > $maxPaginas) {
+                $page = $maxPaginas;
+                $solicitudesPendientes = SolicitudMaterial::obtenerSalidasPendientes($page, $limite);
+                $solicitudesHistorial  = SolicitudMaterial::obtenerSalidasHistorial($page, $limite);
+            }
             
             include __DIR__ . '/../views/almacen/registrar_salida.php';
     }
@@ -647,8 +683,8 @@ class AlmacenController
 
      private function datosGenerales($db): array{
         $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
-        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM inventario WHERE stock_actual < stock_minimo')->fetchColumn();
-        $valorTotal            = (float) $db->query('SELECT SUM(stock_actual * precio_iva) FROM inventario')->fetchColumn();
+        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id WHERE COALESCE(si.stock_actual, 0) < p.stock_minimo')->fetchColumn();
+        $valorTotal            = (float) $db->query('SELECT SUM(COALESCE(si.stock_actual, 0) * p.precio_iva) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id')->fetchColumn();
         $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM solicitudes_herramienta WHERE estatus = 'Activa' AND fecha_fin IS NOT NULL AND fecha_devolucion < NOW()")->fetchColumn();
 
         return [
@@ -662,10 +698,11 @@ class AlmacenController
 
     private function alertasInventario($db): array
     {
-        $stmt = $db->query("SELECT nombre, stock_actual, stock_minimo, DATE_FORMAT(created_at, '%d/%m/%Y') AS fecha
-                             FROM inventario
-                             WHERE stock_actual < stock_minimo
-                             ORDER BY stock_actual ASC
+        $stmt = $db->query("SELECT p.nombre, COALESCE(si.stock_actual, 0) AS stock_actual, p.stock_minimo, DATE_FORMAT(p.created_at, '%d/%m/%Y') AS fecha
+                             FROM inventario p
+                             LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
+                             WHERE COALESCE(si.stock_actual, 0) < p.stock_minimo
+                             ORDER BY COALESCE(si.stock_actual, 0) ASC
                              LIMIT 5");
         $productos = $stmt->fetchAll();
 
@@ -722,7 +759,7 @@ class AlmacenController
 
     private function expuestosMovimientos($db): array{
         $stmt = $db->query("SELECT p.nombre,
-                                    p.codigo_fabricante,
+                                    p.nomenclatura,
                                     m.tipo,
                                     m.cantidad,
                                     m.created_at,
@@ -740,6 +777,20 @@ class AlmacenController
     {
         Session::requireLogin(['Administrador', 'Almacen']);
         $prestamos = Prestamo::pendientes();
+        $limite = 8;
+        $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+        $totalRegistros = count($prestamos);
+        $total_paginas = max(1, (int) ceil($totalRegistros / $limite));
+        $pagina = min($pagina, $total_paginas);
+        $prestamos = array_slice($prestamos, ($pagina - 1) * $limite, $limite);
+        $pagination = [
+            'pagina' => $pagina,
+            'total_paginas' => $total_paginas,
+            'por_pagina' => $limite,
+            'total' => $totalRegistros,
+            'desde' => $totalRegistros > 0 ? (($pagina - 1) * $limite) + 1 : 0,
+            'hasta' => min($pagina * $limite, $totalRegistros),
+        ];
         include __DIR__ . '/../views/almacen/prestamos_herramientas.php';
     }
 

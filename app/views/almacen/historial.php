@@ -6,7 +6,7 @@ $estado = $estado ?? '';
 $desde = $desde ?? '';
 $hasta = $hasta ?? '';
 $page = $page ?? 1;
-$porPagina = $porPagina ?? 9;
+$porPagina = $porPagina ?? 8;
 $totalPages = max(1, $totalPages ?? 1);
 $breadcrumbs = [['label' => 'Historial de préstamos']];
 ?>
@@ -14,12 +14,13 @@ $breadcrumbs = [['label' => 'Historial de préstamos']];
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Historial de Prestamos de Herramientas | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/prestamo-historial.css">
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
+<body class="module-inventory-warehouse">
 <div class="main-layout">
       <aside class="sidebar">
         <div class="sidebar-header">
