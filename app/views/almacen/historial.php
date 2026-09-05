@@ -43,7 +43,7 @@ $breadcrumbs = [['label' => 'Historial de préstamos']];
         </nav>
     </aside>
     <div class="content-area">
-        <?php include __DIR__ . '/../partials/topbar.php'; ?>
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
 
         <main class="historial-main">
         <div class="historial-title">
@@ -135,7 +135,7 @@ $breadcrumbs = [['label' => 'Historial de préstamos']];
         </main>
     </div>
 </div>
-<?php include __DIR__ . '/../partials/scripts.php'; ?>
+<?php include __DIR__ . '/../layouts/scripts.php'; ?>
 </body>
 </html>
 

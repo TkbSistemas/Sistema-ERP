@@ -67,20 +67,20 @@ class AlmacenController
                     s.estatus,
                     s.solicitante_id,
                     u.nombre AS nombre_solicitante,
-                    COUNT(d.id) AS total_items,
-                    SUM(d.cantidad) AS total_cantidad_materiales,
-                    GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') AS materiales_resumen
+                    (SELECT COUNT(*) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id)
+                        + (SELECT COUNT(*) FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id) AS total_items,
+                    COALESCE((SELECT SUM(d.cantidad) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id), 0)
+                        + COALESCE((SELECT SUM(nr.cantidad) FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id), 0) AS total_cantidad_materiales,
+                    CONCAT_WS('<br>',
+                        (SELECT GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') FROM solicitudes_material_detalles d INNER JOIN inventario i ON i.id = d.producto_id WHERE d.solicitud_id = s.id),
+                        (SELECT GROUP_CONCAT(CONCAT(nr.cantidad, 'x ', nr.nombre, ' (Fuera del Catálogo)') SEPARATOR '<br>') FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id)
+                    ) AS materiales_resumen
                 FROM solicitudes_material s
                 LEFT JOIN usuarios u 
                     ON s.solicitante_id = u.id
-                LEFT JOIN solicitudes_material_detalles d 
-                    ON s.id = d.solicitud_id
-                LEFT JOIN inventario i 
-                    ON d.producto_id = i.id 
                 WHERE estatus IN ('Rechazada', 'Entregada')
                 AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
                 AND fecha_solicitud <= CONCAT(LAST_DAY(NOW()), ' 23:59:59')
-                GROUP BY s.id
                 ORDER BY s.fecha_solicitud DESC
             ")->fetchAll();
 
@@ -102,25 +102,25 @@ class AlmacenController
                     s.estatus,
                     s.solicitante_id,
                     u.nombre AS nombre_solicitante,
-                    COUNT(d.id) AS total_items,
-                    SUM(d.cantidad) AS total_cantidad_materiales,
-                    GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') AS materiales_resumen
+                    (SELECT COUNT(*) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id)
+                        + (SELECT COUNT(*) FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id) AS total_items,
+                    COALESCE((SELECT SUM(d.cantidad) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id), 0)
+                        + COALESCE((SELECT SUM(nr.cantidad) FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id), 0) AS total_cantidad_materiales,
+                    CONCAT_WS('<br>',
+                        (SELECT GROUP_CONCAT(CONCAT(d.cantidad, 'x ', i.nombre) SEPARATOR '<br>') FROM solicitudes_material_detalles d INNER JOIN inventario i ON i.id = d.producto_id WHERE d.solicitud_id = s.id),
+                        (SELECT GROUP_CONCAT(CONCAT(nr.cantidad, 'x ', nr.nombre, ' (Fuera del Catálogo)') SEPARATOR '<br>') FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id)
+                    ) AS materiales_resumen
                 FROM solicitudes_material s
                 LEFT JOIN usuarios u 
                     ON s.solicitante_id = u.id
-                LEFT JOIN solicitudes_material_detalles d 
-                    ON s.id = d.solicitud_id
-                LEFT JOIN inventario i 
-                    ON d.producto_id = i.id
-                WHERE estatus IN ('pendiente','aprobada')
-                GROUP BY s.id
+                WHERE estatus IN ('Pendiente','Aprobada')
                 ORDER BY s.fecha_solicitud DESC
             ")->fetchAll(PDO::FETCH_ASSOC);
 
             $numSolicitudesPendientes = (int) $db->query("
                 SELECT COUNT(*) 
                 FROM solicitudes_material 
-                WHERE estatus IN ('pendiente', 'aprobada')
+                WHERE estatus IN ('Pendiente', 'Aprobada')
             ")->fetchColumn();
 
             $totalSeleccionado = $tabActiva === 'historial'
@@ -470,8 +470,9 @@ class AlmacenController
         $siguienteNumero = ($row && $row['ultimo_id']) ? ((int)$row['ultimo_id'] + 1) : 1;
 
         $numeroFormateado = str_pad($siguienteNumero, 5, '0', STR_PAD_LEFT);
-        $anioActual = date('Y');
-        return "TAKAB-SB-{$anioActual}-{$numeroFormateado}";
+        $anioActual = date('Y') ; 
+        $mesActual = date('m');
+        return "TAKAB-SB-{$anioActual}{$mesActual}-{$numeroFormateado}";
     }
 
     public function verArchivoSalida(){

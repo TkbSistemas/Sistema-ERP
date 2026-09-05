@@ -17,9 +17,9 @@ $nombre = $_SESSION['nombre'];
 <body class="module-inventory-warehouse">
 <div class="main-layout">
     <!-- Sidebar -->
-    <?php include __DIR__ . '/../partials/sidebar.php'; ?>
+    <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     <div class="content-area">
-        <?php include __DIR__ . '/../partials/topbar.php'; ?>
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
         <main class="dashboard-main">
             <div class="form-card">
                 <div class="form-title">Editar Almacén</div>
@@ -54,6 +54,6 @@ $nombre = $_SESSION['nombre'];
         </main>
     </div>
 </div>
-<?php include __DIR__ . '/../partials/scripts.php'; ?>
+<?php include __DIR__ . '/../layouts/scripts.php'; ?>
 </body>
 </html>

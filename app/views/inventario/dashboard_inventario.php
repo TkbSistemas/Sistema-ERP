@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../helpers/Session.php';
-Session::requireLogin(['Administrador', 'Almacen']);
+Session::requireLogin(['Administrador', 'Almacen', 'Inventario']);
 
 $role = $_SESSION['role'] ?? 'Empleado';
 $nombre = $_SESSION['nombre'] ?? '';
@@ -118,7 +118,7 @@ $buildQuery = function(array $overrides = []) {
                     <div class="card-info">
                         <div class="card-label">Valor Estimado</div>
                         <div class="card-value"><?= number_format((float) ($stats['valor_total'] ?? 0), 2) ?></div>
-                        <div class="card-sub">Costo acumulado de inventario con I.V.A.</div>
+                        <div class="card-sub">Costo Acumulado de Inventario Sin I.V.A.</div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-alert-circle-outline"></span>
@@ -134,7 +134,7 @@ $buildQuery = function(array $overrides = []) {
                             <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción o proveedor" value="<?= $buscar ?>">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, nomenclatura, SKU, fabricante o número de serie" value="<?= $buscar ?>">
                             </div>
                         </div>
 
@@ -315,7 +315,6 @@ $buildQuery = function(array $overrides = []) {
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
-            console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
             
             mainContent.classList.toggle('collapsed');

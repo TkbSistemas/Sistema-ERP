@@ -237,7 +237,7 @@
             foreach ($solicitud['items'] as $item) {
                 $tipo = ucfirst(strtolower($item['tipo'] ?? 'Materiales'));
                 if (strpos($tipo, 'Herramienta') !== false) {
-                    $grupos['Herramientas'][] = $item;
+                    $grupos['Herramienta'][] = $item;
                     $requiereDevolucion = true; 
                 }elseif(strpos($tipo, 'Equipo') !== false) {
                     $grupos['Equipo'][] = $item;

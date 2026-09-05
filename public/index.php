@@ -34,7 +34,12 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/DashboardController.php';
         (new DashboardController())->obtenerDashboardAdmin();
         break;
+    case 'menu_admin':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        (new AdminController())->obtenerMenuAdmin();
+        break;
     //================================== Rutas para el Inventario =======================================================
+    case 'dashboard_inventario':
     case 'inventario':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->actual();
@@ -163,6 +168,23 @@ switch ($route) {
     case 'dashboard_compras':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->obtenerDashboardCompras();
+        break;
+    // ===================================== Rutas para Empleado  ======================================================
+    case 'dashboard_empleado':
+        require_once __DIR__ . '/../app/controllers/EmpleadoController.php';
+        (new EmpleadoController())->obtenerDashboardEmpleado();
+        break;
+    case 'mis_solicitudes':
+        require_once __DIR__ . '/../app/controllers/EmpleadoController.php';
+        (new EmpleadoController())->obtenerSolicitudesEmpleado();
+        break;
+    case 'cancelar_solicitud_empleado':
+        require_once __DIR__ . '/../app/controllers/EmpleadoController.php';
+        (new EmpleadoController())->cancelarSolicitudEmpleado();
+        break;
+    case 'crear_solicitud':
+        require_once __DIR__ . '/../app/controllers/EmpleadoController.php';
+        (new EmpleadoController())->crearSolicitudMaterial();
         break;
     default:
         // Si la ruta no existe, mandamos un error 404

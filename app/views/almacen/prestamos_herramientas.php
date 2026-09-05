@@ -4,14 +4,27 @@ Session::requireLogin(['Administrador', 'Almacen']);
 $breadcrumbs = [["label" => 'Préstamos pendientes']];
 $role = $_SESSION['role'] ?? '';
 $nombre = $_SESSION['nombre'] ?? '';
-
-// Variables necesarias:
-// $prestamos           - array de registros a mostrar
-// $pagina              - página actual (entero, desde 1)
-// $total_paginas       - total de páginas (entero)
-
-if (!isset($pagina)) $pagina = 1;
-if (!isset($total_paginas)) $total_paginas = 1;
+$prestamos = is_array($prestamos ?? null) ? $prestamos : [];
+$pagina = max(1, (int) ($pagina ?? 1));
+$total_paginas = max(1, (int) ($total_paginas ?? 1));
+$hoy = new DateTimeImmutable('today');
+$totalActivos = 0;
+$totalPendientes = 0;
+$totalVencidos = 0;
+foreach ($prestamos as $prestamo) {
+    $estatus = strtolower((string) ($prestamo['estatus'] ?? $prestamo['estado'] ?? ''));
+    $fechaFin = !empty($prestamo['fecha_fin']) ? new DateTimeImmutable($prestamo['fecha_fin']) : null;
+    $devuelto = !empty($prestamo['fecha_devolucion']);
+    if ($estatus === 'pendiente') {
+        $totalPendientes++;
+    }
+    if (in_array($estatus, ['activa', 'prestado'], true) && !$devuelto) {
+        $totalActivos++;
+        if ($fechaFin && $fechaFin < $hoy) {
+            $totalVencidos++;
+        }
+    }
+}
 $pagination = $pagination ?? [
     'pagina' => $pagina,
     'total_paginas' => $total_paginas,
@@ -58,7 +71,7 @@ $buildTabQuery = function (string $tab): string {
                 <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Prestamos Activos</div>
-                        <div class="card-value">10</div>
+                        <div class="card-value"><?= number_format($totalActivos) ?></div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-clock-check"></span>
@@ -67,7 +80,7 @@ $buildTabQuery = function (string $tab): string {
                 <div class="dashboard-card warning">
                     <div class="card-info">
                         <div class="card-label">Prestamos Pendientes</div>
-                        <div class="card-value"><//?= number_format($datos['solicitudesAlmacen'] ?? 0) ?></div>
+                        <div class="card-value"><?= number_format($totalPendientes) ?></div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-clock-alert"></span>
@@ -76,7 +89,7 @@ $buildTabQuery = function (string $tab): string {
                 <div class="dashboard-card caution">
                     <div class="card-info">
                         <div class="card-label">Prestamos Vencidos</div>
-                        <div class="card-value"><//?= number_format($datos['stockBajo'] ?? 0) ?></div>
+                        <div class="card-value"><?= number_format($totalVencidos) ?></div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-clock-remove"></span>

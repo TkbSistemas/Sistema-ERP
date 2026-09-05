@@ -234,7 +234,6 @@ $breadcrumbs = [
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
-            console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('collapsed');
             const icon = toggleBtn.querySelector('i');

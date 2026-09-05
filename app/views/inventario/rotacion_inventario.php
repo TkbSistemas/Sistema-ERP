@@ -177,11 +177,9 @@ $buildQuery = function(array $overrides = []) {
                                 <td><span class="mono"><?= htmlspecialchars($row['codigo']) ?></span></td>
                                 <td><?= htmlspecialchars($row['nombre']) ?></td>
                                 <td><span class="badge badge-tipo <?= strtolower($row['tipo']) ?>"><?= htmlspecialchars($row['tipo']) ?></span></td>
-                                <!--td><//?= htmlspecialchars($row['almacen'] ?? '-') ?></td-->
                                 <td><?= number_format((float) $row['stock_actual'], 2) ?></td>
                                 <td><?= number_format((float) $row['salidas'], 2) ?></td>
                                 <td><?= number_format((float) $row['entradas'], 2) ?></td>
-                                <!--td><//?= number_format((float) $row['indice'], 2) ?></td-->
                                 <td><span class="badge-rotacion <?= $badgeClass ?>"><?= htmlspecialchars($row['clasificacion']) ?></span></td>
                                 <td><?= $row['ultimo_movimiento'] ? date('d/m/Y H:i', strtotime($row['ultimo_movimiento'])) : '-' ?></td>
                                 <td><?= $row['dias_sin_movimiento'] !== null ? $row['dias_sin_movimiento'] . ' días' : '-' ?></td>
@@ -222,7 +220,6 @@ $buildQuery = function(array $overrides = []) {
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
-            console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
             
             mainContent.classList.toggle('collapsed');

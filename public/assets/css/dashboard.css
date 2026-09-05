@@ -376,6 +376,14 @@ body, html {
     color: #b48a00; /* Color del texto para la tarjeta amarilla */
 }
 
+.dashboard-card.waiting {
+    color: #2b81cc;
+}
+
+.dashboard-card.waiting .card-value {
+    color: #2b81cc;
+}
+
 .dashboard-card.caution{
     color: #e12d39; }
 

@@ -92,19 +92,12 @@ function format_stock($value) {
 					<div class="hero-stats">
 						<div class="hero-stat">
 							<span class="label">Stock Mínimo: </span>
-							<!--span class="value"><//?= format_stock($stockActual) ?> <?= htmlspecialchars($unidad) ?></span-->
 							<span class="value"><?= format_stock($stockMinimo) ?></span>
 						</div>
 						<div class="hero-stat">
 							<span class="label">Costo Referencia: </span>
 							<span class="value">$<?= number_format((float)($producto['precio_unitario'] ?? 0), 2) ?></span>
-							<!--span class="stat-foot">Precio venta: $<//?= number_format((float)($producto['precio_venta'] ?? 0), 2) ?></span-->
 						</div>
-						<!--div class="hero-stat">
-							<span class="label">Valor Inventario</span>
-							<span class="value">$<//?= number_format($valorInventario, 2) ?></span>
-							<span class="stat-foot">Almacén <//?= htmlspecialchars($producto['almacen'] ?? '-') ?></span>
-						</div-->
 						<div class="hero-stat">
 							<span class="label">Ultimo Proveedor: </span>
 							<span class="value"><?= htmlspecialchars($producto['proveedor'] ?? '-') ?></span>
@@ -160,31 +153,6 @@ function format_stock($value) {
 					</div>
 				</div>
 			</section>
-			<!--section class="productos-detail-card">
-				<h2><i class="fa fa-ruler"></i> Dimensiones y Unidades</h2>
-				<div class="detail-grid">
-					<div class="detail-item">
-						<span class="label">Peso</span>
-						<span class="value"><//?= htmlspecialchars($producto['peso'] ?? '0') ?> kg</span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Ancho</span>
-						<span class="value"><//?= htmlspecialchars($producto['ancho'] ?? '0') ?> cm</span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Alto</span>
-						<span class="value"><//?= htmlspecialchars($producto['alto'] ?? '0') ?> cm</span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Profundidad</span>
-						<span class="value"><//?= htmlspecialchars($producto['profundidad'] ?? '0') ?> cm</span>
-					</div>
-					<div class="detail-item">
-						<span class="label">Unidad de medida</span>
-						<span class="value"></?= htmlspecialchars($producto['unidad_medida_nombre'] ?? '-') ?></span>
-					</div>
-				</div>
-			</section-->
 			<section class="productos-detail-card">
 				<h2><i class="fa fa-clock"></i> Historial Interno</h2>
 				<div class="detail-grid">
@@ -210,7 +178,6 @@ function format_stock($value) {
 
         if (toggleBtn && sidebar && mainContent) {
             toggleBtn.addEventListener('click', function () {
-                console.log('Sidebar toggle script loaded');
                 sidebar.classList.toggle('collapsed');
                 mainContent.classList.toggle('collapsed');
                 const icon = toggleBtn.querySelector('i');

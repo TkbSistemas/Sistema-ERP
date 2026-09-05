@@ -30,8 +30,8 @@ class Producto
 
         if (!empty($filtros['buscar'])) {
             $buscar = '%' . trim($filtros['buscar']) . '%';
-            $sql .= " AND (p.nombre LIKE ? OR p.nomenclatura LIKE ? OR p.codigo_fabricante LIKE ? OR p.codigos_barras LIKE ? OR p.descripcion LIKE ? OR p.marca LIKE ? OR p.modelo LIKE ?)";
-            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
+            $sql .= " AND (p.nombre LIKE ? OR p.nomenclatura LIKE ? OR p.sku LIKE ? OR p.codigo_fabricante LIKE ? OR p.num_serie LIKE ?)";
+            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar);
         }
 
         if (!empty($filtros['nombre'])) {
@@ -519,8 +519,8 @@ class Producto
 
         if (!empty($filtros['buscar'])) {
             $buscar = '%' . trim($filtros['buscar']) . '%';
-            $condiciones[] = '(p.nombre LIKE ? OR p.nomenclatura LIKE ? OR p.codigo_fabricante LIKE ? OR p.codigos_barras LIKE ? OR IFNULL(p.descripcion, "") LIKE ? OR IFNULL(p.marca, "") LIKE ? OR IFNULL(p.modelo, "") LIKE ?)';
-            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar, $buscar);
+            $condiciones[] = '(p.nombre LIKE ? OR p.nomenclatura LIKE ? OR p.sku LIKE ? OR p.codigo_fabricante LIKE ? OR p.num_serie LIKE ?)';
+            array_push($params, $buscar, $buscar, $buscar, $buscar, $buscar);
         }
 
         if (!empty($filtros['nombre'])) {

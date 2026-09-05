@@ -44,8 +44,8 @@ class DashboardController
         $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
         $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id WHERE COALESCE(si.stock_total, 0) < p.stock_minimo')->fetchColumn();
         $valorTotal            = (float) $db->query('SELECT COALESCE(SUM(COALESCE(si.stock_total, 0) * p.precio_unitario), 0) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_total FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id')->fetchColumn();
-        $herramientasPrestadas = (int) $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado'")->fetchColumn();
-        $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM prestamos WHERE estado = 'Prestado' AND fecha_estimada_devolucion IS NOT NULL AND fecha_estimada_devolucion < NOW()")->fetchColumn();
+        $herramientasPrestadas = (int) $db->query("SELECT COUNT(*) FROM solicitudes_herramienta WHERE estatus = 'Activa'")->fetchColumn();
+        $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM solicitudes_herramienta WHERE estatus = 'Activa' AND fecha_fin IS NOT NULL AND fecha_fin < NOW() AND fecha_devolucion IS NULL")->fetchColumn();
 
         return [
             'totalProductos'        => $totalProductos,
@@ -61,8 +61,8 @@ class DashboardController
     {
         $datos = $this->datosGenerales($db);
 
-        $solicitudesPendientes = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado = 'pendiente'")->fetchColumn();
-        $solicitudesAprobadas  = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estado = 'aprobada'")->fetchColumn();
+        $solicitudesPendientes = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus = 'Pendiente'")->fetchColumn();
+        $solicitudesAprobadas  = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus = 'Aprobada'")->fetchColumn();
 
         $datos['solicitudesPendientes'] = $solicitudesPendientes;
         $datos['solicitudesAprobadas']  = $solicitudesAprobadas;
@@ -127,14 +127,16 @@ class DashboardController
 
     private function alertasPrestamosVencidos($db): array
     {
-        $stmt = $db->query("SELECT p.nombre AS producto, pr.fecha_estimada_devolucion, u.nombre_completo AS empleado
-                             FROM prestamos pr
-                             LEFT JOIN inventario p ON pr.producto_id = p.id
-                             LEFT JOIN usuarios u ON pr.empleado_id = u.id
-                             WHERE pr.estado = 'Prestado'
-                               AND pr.fecha_estimada_devolucion IS NOT NULL
-                               AND pr.fecha_estimada_devolucion < NOW()
-                             ORDER BY pr.fecha_estimada_devolucion ASC
+        $stmt = $db->query("SELECT p.nombre AS producto, pr.fecha_fin AS fecha_estimada_devolucion, u.nombre AS empleado
+                             FROM solicitudes_herramienta pr
+                             LEFT JOIN solicitudes_herramienta_detalles d ON d.solicitud_id = pr.id
+                             LEFT JOIN inventario p ON d.producto_id = p.id
+                             LEFT JOIN usuarios u ON pr.solicitante_id = u.id
+                             WHERE pr.estatus = 'Activa'
+                               AND pr.fecha_fin IS NOT NULL
+                               AND pr.fecha_fin < NOW()
+                               AND pr.fecha_devolucion IS NULL
+                             ORDER BY pr.fecha_fin ASC
                              LIMIT 5");
         $rows    = $stmt->fetchAll() ?: [];
         $alertas = [];
@@ -153,14 +155,13 @@ class DashboardController
     {
         $stmt = $db->query("SELECT p.nombre,
                                     m.tipo,
-                                    m.fecha,
+                                    m.created_at AS fecha,
                                     m.cantidad,
-                                    COALESCE(a.nombre, ad.nombre) AS almacen
+                                    a.nombre AS almacen
                              FROM movimientos_inventario m
                              LEFT JOIN inventario p ON m.producto_id = p.id
-                             LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
-                             LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
-                             ORDER BY m.fecha DESC
+                             LEFT JOIN almacenes a ON m.almacen_id = a.id
+                             ORDER BY m.created_at DESC
                              LIMIT 5");
         return $stmt->fetchAll();
     }

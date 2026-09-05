@@ -143,7 +143,6 @@ $buildQuery = function(array $overrides = []) {
                             <i class="fa-solid fa-file-csv"></i> Importar Catálogo
                         </button>
                     </form>
-                    <!-- <a class="btn-secondary" href="productos_barcode.php"><i class="fa fa-barcode"></i> Buscar por código</a> -->
                     <a class="btn-main" href="producto_nuevo"><i class="fa fa-plus"></i> Nuevo Producto</a>
                 </div>
                 <p class="productos-import-note mobile-only">Usa la plantilla para cargar múltiples productos. Los valores deben corresponder con los IDs de catálogos ya registrados (categorías, proveedores, almacenes, unidades).</p>
@@ -157,7 +156,7 @@ $buildQuery = function(array $overrides = []) {
                             <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Código, Descripción, Marca o Modelo" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, nomenclatura, SKU, fabricante o número de serie" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
                             </div>
                         </div>
                         <div class="filter-field">
@@ -345,7 +344,6 @@ $buildQuery = function(array $overrides = []) {
 
     if (toggleBtn && sidebar && mainContent) {
         toggleBtn.addEventListener('click', function () {
-            console.log('Sidebar toggle script loaded');
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('collapsed');
             const icon = toggleBtn.querySelector('i');

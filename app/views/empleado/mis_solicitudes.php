@@ -1,0 +1,261 @@
+<?php
+require_once __DIR__ . '/../../helpers/Session.php';
+Session::requireLogin(['Empleado', 'Administrador']);
+$role = $_SESSION['role'] ?? '';
+$nombre = $_SESSION['nombre'] ?? '';
+$tab_activa = $_GET['tab'] ?? 'pendientes';
+
+if (!isset($pagina)) $pagina = 1;
+if (!isset($total_paginas)) $total_paginas = 1;
+$pagination = $pagination ?? [
+    'pagina' => $pagina,
+    'total_paginas' => $total_paginas,
+    'por_pagina' => 8,
+    'total' => 0,
+    'desde' => 0,
+    'hasta' => 0,
+];
+$buildPaginationQuery = function (int $targetPage) use ($tab_activa): string {
+    return '?' . http_build_query(array_merge($_GET, ['tab' => $tab_activa, 'pagina' => $targetPage]));
+};
+$buildTabQuery = function (string $tab): string {
+    return '?' . http_build_query(array_merge($_GET, ['tab' => $tab, 'pagina' => 1]));
+};
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MIS SOLICITUDES | TAKAB</title>
+    <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
+</head>
+<body class="module-inventory-warehouse">
+<?php $seccion_activa = 'mis_solicitudes'; ?>
+<?php if (isset($_SESSION['alerta'])): ?>
+                    <script>
+                        Swal.fire({
+                            icon: '<?php echo $_SESSION['alerta']['tipo']; ?>',
+                            title: '<?php echo $_SESSION['alerta']['titulo']; ?>',
+                            text: '<?php echo $_SESSION['alerta']['mensaje']; ?>',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    </script>
+                    <?php 
+                        unset($_SESSION['alerta']); 
+                    ?>
+                <?php endif; ?>
+<div class="main-layout">
+    <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Toggle Menu">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
+    <div class="content-area">
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
+        <main class="prestamos-main">
+        <div class="prestamos-title">
+            <i class="fa-solid fa-toolbox"></i>
+            MIS SOLICITUDES
+        </div>
+            <section class="dashboard-cards-row">
+                <div class="dashboard-card waiting">
+                    <div class="card-info">
+                        <div class="card-label">Solicitudes en Entrega</div>
+                        <div class="card-value"><?= number_format($datos['numSolicitudesEnEntrega'] ?? 0) ?></div>
+                        <div class="card-sub">Pendientes de Recepción</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-package"></span>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-info">
+                        <div class="card-label">Mis Solicitudes</div>
+                        <div class="card-value"><?= number_format($datos[''] ?? 0) ?></div>
+                        <div class="card-sub">Este Mes</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-folder-text"></span>
+                    </div>
+                </div>
+            </section>
+
+            <?php $tab_activa = $_GET['tab'] ?? 'pendientes'; ?>
+
+            <div class="tab-container">
+                <a href="<?= $buildTabQuery('pendientes') ?>" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="<?= $buildTabQuery('historial') ?>" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
+            </div>
+        <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Estatus</th>
+                    <th>Folio</th>
+                    <th>Proyecto</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Materiales</th>
+                    <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
+                <tr>
+                    <?php $estatusClase = strtolower((string) ($s['estatus'] ?? '')); ?>
+                    <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
+                    <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['nombre_proyecto']) ?></td>
+                    <td><?= date('d/m/Y', strtotime($s['fecha_solicitud'])) ?></td>
+                    <td><?= nl2br($s['materiales_resumen']) ?></td>
+                    <td>
+                        <?php if (in_array($s['estatus'], ['Pendiente', 'Aprobada'])): ?>
+                            <a class="btn-table btn-confirmar" 
+                            title="Rechazar" 
+                            href="javascript:void(0)" 
+                            data-id="<?= $s['id'] ?>" 
+                            data-folio="<?= htmlspecialchars($s['folio'] ?? '') ?>">
+                                <i class="fa fa-circle-xmark"></i>
+                            </a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+        <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+
+        <div id="wrapper-historial" <?= $tab_activa !== 'historial' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Estatus</th>
+                    <th>Folio</th>
+                    <th>Proyecto</th>
+                    <th>Fecha Respuesta</th>
+                    <th>Comentario Responsable</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($datos['solicitudesEsteMes'] as $s): ?>
+                <tr>
+                    <?php $estatusClase = strtolower((string) ($s['estatus'] ?? '')); ?>
+                    <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
+                    <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['nombre_proyecto']) ?></td>
+                    <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
+                    <td><?= htmlspecialchars($s['comentario_responsable']) ?></td>
+                    </tr>
+        <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        
+        <nav class="module-pagination" aria-label="Paginación de solicitudes">
+            <span class="module-pagination-info">
+                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin solicitudes para mostrar' ?>
+            </span>
+            <div class="module-pagination-controls">
+                <?php if ($pagination['pagina'] > 1): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] - 1) ?>" class="module-pagination-button"><i class="fa fa-chevron-left"></i><span>Anterior</span></a>
+                <?php endif; ?>
+                <span class="module-pagination-status">Página <?= $pagination['pagina'] ?> de <?= $pagination['total_paginas'] ?></span>
+                <?php if ($pagination['pagina'] < $pagination['total_paginas']): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] + 1) ?>" class="module-pagination-button"><span>Siguiente</span><i class="fa fa-chevron-right"></i></a>
+                <?php endif; ?>
+            </div>
+        </nav>
+        </main>
+    </div>
+</div>
+
+<script>
+    //Alerta de confirmación para Cancelar solicitudes
+   document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.btn-confirmar').forEach(boton => {
+        boton.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const id = this.dataset.id;
+            const folio = this.dataset.folio ? `folio ${this.dataset.folio}` : 'esta solicitud';
+
+            Swal.fire({
+                title: 'Cancelar Solicitud',
+                text: `¿Cancelar Solicitud con ${folio}? Es Obligatorio Indicar el Motivo del Cancelamiento.`,
+                icon: 'warning',
+                
+                input: 'textarea',
+                inputPlaceholder: 'Escribe aquí el motivo del cancelamiento...',
+                inputAttributes: {
+                    'aria-label': 'Escribe tu comentario'
+                },
+                
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Cancelar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+
+                inputValidator: (value) => {
+                    if (!value.trim()) {
+                        return '¡Debe Especificar el Motivo del Cancelamiento!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const comentario = result.value ? result.value.trim() : '';
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `cancelar_solicitud_empleado`;
+
+                    const inputId = document.createElement('input');
+                    inputId.type = 'hidden';
+                    inputId.name = 'id';
+                    inputId.value = id;
+                    form.appendChild(inputId);
+
+                    const inputComentario = document.createElement('input');
+                    inputComentario.type = 'hidden';
+                    inputComentario.name = 'comentario_solicitante';
+                    inputComentario.value = comentario;
+                    form.appendChild(inputComentario);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+    });
+
+    //Ocultar y mostrar el sidebar
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.querySelector('.main_sidebar'); 
+        const mainContent = document.querySelector('.content-area');
+
+        if (toggleBtn && sidebar && mainContent) {
+            toggleBtn.addEventListener('click', function () {
+                sidebar.classList.toggle('collapsed');
+                
+                mainContent.classList.toggle('collapsed');
+                
+                const icon = toggleBtn.querySelector('i');
+                if (icon) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.className = 'fa-solid fa-bars'; 
+                    } else {
+                        icon.className = 'fa-solid fa-xmark'; 
+                    }
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

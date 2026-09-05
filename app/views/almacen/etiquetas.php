@@ -44,7 +44,7 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
     </aside>
 
     <div class="content-area">
-        <?php include __DIR__ . '/../partials/topbar.php'; ?>
+        <?php include __DIR__ . '/../layouts/topbar.php'; ?>
 
         <main class="dashboard-main productos-main">
             <div class="productos-header">
@@ -117,7 +117,7 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
         </main>
     </div>
 </div>
-<?php include __DIR__ . '/../partials/scripts.php'; ?>
+<?php include __DIR__ . '/../layouts/scripts.php'; ?>
 </body>
 </html>
 

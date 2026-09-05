@@ -67,7 +67,7 @@ class AuthController
         $rol = $user['role'] ?? null;
         
         $roleDashboards = [
-            'Administrador' => 'dashboard_admin',
+            'Administrador' => 'menu_admin',
             'Almacen'       => 'dashboard_almacen',
             'RH'            => 'dashboard_rh',
             'Compras'       => 'dashboard_compras',
