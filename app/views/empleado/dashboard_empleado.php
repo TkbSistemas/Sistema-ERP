@@ -31,7 +31,7 @@ $nombre = $datos['nombre'] ?? '';
         <main class="dashboard-main">
             <div class="dashboard-header-row">
                 <div>
-                    <h1>DASHBOARD EMPLEADO</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> DASHBOARD EMPLEADO</h1>
                     <span class="dashboard-desc">Panel para Gestión de Procesos de Empleado.</span>
                 </div>
                 <div class="dashboard-updated">

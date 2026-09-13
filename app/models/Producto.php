@@ -118,7 +118,12 @@ class Producto
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            $row['num_serie'] = self::decodeNumeroSerie($row['num_serie'] ?? null);
+        }
+        unset($row);
+        return $rows;
     }
 
     public static function create($data)
@@ -138,7 +143,7 @@ class Producto
         $db->beginTransaction();
         try {
         $stmt->execute([ //Regresa true o false dependiendo si se pudo ejecutar la consulta
-            $data['sku'], $data['codigo_fabricante'], $data['num_serie'], $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
+            $data['sku'], $data['codigo_fabricante'], self::encodeNumeroSerie($data['num_serie'] ?? null), $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
             $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.508, $data['pais_origen'], $data['stock_minimo'],
             $data['color'], $data['almacen_id'], $data['imagen_url'] ?? null
         ]);
@@ -170,35 +175,23 @@ class Producto
                                     a.nombre AS almacen,
                                     um.nombre AS unidad_medida_nombre,
                                     um.apodo AS unidad_apodo,
-                                    sa.ubicacion_fisica,
-                                    fs.folio AS folio_solicitud
+                                    um.sistema,
+                                    sa.ubicacion_fisica
                             FROM inventario p
                             LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
                             LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
                             LEFT JOIN almacenes a ON p.almacen_id = a.id
                             LEFT JOIN stock_almacen sa ON sa.producto_id = p.id AND sa.almacen_id = p.almacen_id
                             LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
-                            LEFT JOIN solicitudes_material fs ON p.last_request_id = fs.folio
                             WHERE p.id = ?");
         $stmt->execute([(int) $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        return $row ?: null;
-    }
-
-    private static function ultimaSolicitudPorProducto(\PDO $db, int $productoId): ?array
-    {
-        $sql = "SELECT s.usuario_id, s.fecha_solicitud, u.nombre_completo
-                FROM detalle_solicitud d
-                INNER JOIN solicitudes_material s ON s.id = d.solicitud_id
-                LEFT JOIN usuarios u ON s.usuario_id = u.id
-                WHERE d.producto_id = ?
-                ORDER BY s.fecha_solicitud DESC
-                LIMIT 1";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$productoId]);
-        $row = $stmt->fetch();
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+        $row['num_serie'] = self::decodeNumeroSerie($row['num_serie'] ?? null);
+        return $row;
     }
 
     public static function findByCodigo($codigo)
@@ -267,7 +260,7 @@ class Producto
         $db = Database::getInstance()->getConnection();
         self::ensureStockTable($db);
         $sql = "UPDATE inventario SET
-                    codigo_fabricante = ?, codigos_barras = ?, nombre = ?, descripcion = ?, tipo = ?,
+                    codigo_fabricante = ?, codigos_barras = ?, num_serie = ?, codigo_sat = ?, nombre = ?, descripcion = ?, tipo = ?,
                     categoria_id = ?, marca = ?, modelo = ?, unidad_medida_id = ?, precio_unitario = ?,
                     precio_iva = ?, precio_beneficio = ?, pais_origen = ?, stock_minimo = ?, color = ?,
                     almacen_id = ?, imagen_url = ?
@@ -283,6 +276,8 @@ class Producto
             $stmt->execute([
                 $codigoFabricante,
                 $codigoBarras,
+                self::encodeNumeroSerie($data['num_serie'] ?? null),
+                ($data['codigo_sat'] ?? '') !== '' ? $data['codigo_sat'] : null,
                 $data['nombre'],
                 $data['descripcion'] ?? null,
                 $data['tipo'],
@@ -387,6 +382,34 @@ class Producto
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         $db->exec($sql);
         self::$stockTableChecked = true;
+    }
+
+    private static function encodeNumeroSerie($value): ?string
+    {
+        $value = trim((string) ($value ?? ''));
+        if ($value === '') {
+            return null;
+        }
+
+        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    }
+
+    private static function decodeNumeroSerie($value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        try {
+            $decoded = json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($decoded)) {
+                return implode(', ', array_map('strval', $decoded));
+            }
+            return is_scalar($decoded) ? (string) $decoded : '';
+        } catch (JsonException $e) {
+            // Conserva compatibilidad con datos históricos que no estuvieran en JSON.
+            return (string) $value;
+        }
     }
 
     public static function sumarStock($id, $cantidad, ?int $almacenId = null)

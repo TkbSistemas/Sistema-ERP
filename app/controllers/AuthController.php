@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../helpers/Session.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 Session::start(); //Se ejecuta al inicio para asegurar que la sesión esté disponible en toda la aplicación
 
@@ -19,7 +20,6 @@ class AuthController
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
             $user = Usuario::findByUsername($username);
-            $this->console_log($user); // Log the user data for debugging
             if(!$user) {
                 $_SESSION['alerta'] = [
                     'tipo' => 'error',
@@ -35,6 +35,9 @@ class AuthController
             } elseif ($this->credentialsMatch($user, $password)) { //Si las credenciales coinciden, iniciar sesión
                 Session::regen();
                 Session::setUser($user);
+                ActivityLogger::registrarAccion('autenticacion', 'inicio_sesion', 'Inicio de Sesión Exitoso', [
+                    'rol' => $user['role'] ?? null,
+                ]);
 
                 //Usamos el nuevo método centralizado
                 $this->redirectUser($user, $next, $module);
@@ -48,12 +51,6 @@ class AuthController
         }
 
         include __DIR__ . '/../views/auth/login.php';
-    }
-
-    function console_log($data) {
-        echo '<script>';
-        echo 'console.log(' . json_encode($data) . ');';
-        echo '</script>';
     }
 
     private function redirectUser($user, $next = null, $module = null) {
@@ -164,6 +161,12 @@ class AuthController
     }
 
     public function logout(){
+        $usuario = Session::user();
+        if ($usuario !== null) {
+            ActivityLogger::registrarAccion('autenticacion', 'cierre_sesion', 'Cierre de Sesión', [
+                'rol' => $usuario['role'] ?? null,
+            ]);
+        }
         Session::logout();
         include __DIR__ . '/../views/inicio_sesion/inicio.php';
         exit();

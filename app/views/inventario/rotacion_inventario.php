@@ -81,7 +81,7 @@ $buildQuery = function(array $overrides = []) {
         <main class="dashboard-main rotacion-main">
             <div class="rotacion-header">
                 <div>
-                    <h1>Rotación de Inventario</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Rotación de Inventario</h1>
                     <p class="reportes-desc">Identifica Productos con Alto y Bajo Movimiento para Ajustar tus Niveles de Stock.</p>
                 </div>
                 <div class="section-actions">

@@ -47,7 +47,7 @@ $breadcrumbs = [
 
             <div class="productos-header">
                 <div>
-                    <h1>NUEVO PRODUCTO</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-square-plus" aria-hidden="true"></i> NUEVO PRODUCTO</h1>
                     <p class="productos-header-desc">Registra un Nuevo Artículo en el Catálogo.</p>
                 </div>
                 <div class="productos-header-actions">
@@ -185,7 +185,7 @@ $breadcrumbs = [
                         </div>
                         <div class="productos-form-field">
                             <label for="ubicacion_fisica">Ubicación Física</label>
-                            <input type="text" id="ubicacion_fisica" name="ubicacion_fisica" value="<?= htmlspecialchars($values['ubicacion_fisica'] ?? '') ?>" placeholder="Ej. Estante A-3">
+                            <input type="text" id="ubicacion_fisica" name="ubicacion_fisica" maxlength="150" value="<?= htmlspecialchars($values['ubicacion_fisica'] ?? '') ?>" placeholder="Ej. Estante A-3">
                         </div>
                         <div class="productos-form-field">
                             <label for="stock_inicial">Stock inicial</label>

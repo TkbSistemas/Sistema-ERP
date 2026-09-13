@@ -26,7 +26,7 @@ class Log
             $params[] = $filtros['hasta'];
         }
 
-        $sql = "SELECT l.*, u.nombre_completo AS usuario_nombre, u.username
+        $sql = "SELECT l.*, u.nombre AS usuario_nombre, u.username
                 FROM logs_actividad l
                 LEFT JOIN usuarios u ON l.usuario_id = u.id";
 

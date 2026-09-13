@@ -44,6 +44,10 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->actual();
         break;
+    case 'imprimir_inventario':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->imprimirListadoInventario();
+        break;
     case 'catalogo_productos':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->obtenerCatalogo();
@@ -164,10 +168,28 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/UsuarioController.php';
         (new UsuarioController())->index();
         break;
+    case 'logs':
+    case 'logs.php':
+        require_once __DIR__ . '/../app/controllers/LogController.php';
+        (new LogController())->index();
+        break;
     // ===================================== Rutas para Compras  ======================================================
     case 'dashboard_compras':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->obtenerDashboardCompras();
+        break;
+    case 'ordenes_compra':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->crearOrdenCompra();
+        break;
+    case 'proveedores':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->obtenerProveedores();
+        break;
+
+    case 'eliminar_proveedor':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->eliminarProveedor($_POST['id']);
         break;
     // ===================================== Rutas para Empleado  ======================================================
     case 'dashboard_empleado':

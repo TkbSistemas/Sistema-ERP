@@ -17,14 +17,6 @@ if ($errorCode === 'relaciones') {
     $mensajeError = 'El formulario expiró, intenta nuevamente.';
 }
 $importResultado = $importAlert ?? null;
-function format_stock($value) {
-    $num = (float) $value;
-    if (abs($num - round($num)) < 0.00001) {
-        return number_format($num, 0, '.', ',');
-    }
-    return number_format($num, 2, '.', ',');
-}
-
 $totalRegistros = $totalRegistros ?? count($productos);
 $page = $page ?? 1;
 $totalPaginas = $totalPaginas ?? 1;
@@ -56,16 +48,6 @@ $buildQuery = function(array $overrides = []) {
     <link rel="stylesheet" href="assets/css/inventario.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
-    <style>
-        .productos-table .col-stock { width: 140px; min-width: 120px; text-align: center; }
-        .productos-table td.col-stock { white-space: nowrap; }
-        .productos-table td.col-stock .badge { display: inline-block; }
-        .productos-table td.col-stock small { display: block; font-size: 0.75rem; color: #666; }
-        @media (max-width: 700px) {
-            .productos-table .col-stock { width: auto; min-width: 0; }
-            .productos-table td.col-stock { white-space: normal; }
-        }
-    </style>
 </head>
 <body class="module-inventory-warehouse">
 <?php $seccion_activa = 'catalogo_productos'; ?>
@@ -129,19 +111,12 @@ $buildQuery = function(array $overrides = []) {
 
             <div class="productos-header">
                 <div>
-                    <h1>CATÁLOGO DE PRODUCTOS</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> CATÁLOGO DE PRODUCTOS</h1>
                     <p class="productos-header-desc">Administra el Catálogo de Materiales y Herramientas.</p>
-                    <!-- ESTO DEBER SER UNA SWEET ALERT
-                    <p class="productos-import-note desktop-only">Usa la plantilla para cargar múltiples productos. Los valores deben corresponder con los IDs de catálogos ya registrados (categorías, proveedores, almacenes, unidades).</p-->
-                </div>
+                   </div>
                 <div class="productos-header-actions">
-                    <a class="btn-secondary" href=""><i class="fa-solid fa-download"></i> Descargar Plantilla</a>
                     <form class="productos-import-form" id="importForm" action="importar_catalogo" method="post" enctype="multipart/form-data">
                         <input type="file" id="csvFileInput" name="productos_archivo" accept=".csv,text/csv" style="display: none;" required>
-                        
-                        <button type="button" id="btnImportar" class="btn-main">
-                            <i class="fa-solid fa-file-csv"></i> Importar Catálogo
-                        </button>
                     </form>
                     <a class="btn-main" href="producto_nuevo"><i class="fa fa-plus"></i> Nuevo Producto</a>
                 </div>
@@ -236,39 +211,23 @@ $buildQuery = function(array $overrides = []) {
                             <tr>
                                 <th>Código</th>
                                 <th>Producto</th>
-                                <th>Tipo</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
                                 <th>Categoría</th>
-                                <th class="col-stock">Stock</th>
                                 <th class="col-actions">Acciones</th>
-                                <th >Imagen</th>
+                                <th>Imagen</th>
                             </tr>
                             </thead>
                             <tbody>
                             <?php foreach ($productos as $producto): ?>
-                                <?php
-                                $stockActual = (float) ($producto['stock_actual'] ?? 0);
-                                $stockMinimo = (float) ($producto['stock_minimo'] ?? 0);
-                                $valorInventario = (float) ($producto['costo_compra'] ?? 0) * $stockActual;
-                                $badgeStock = 'ok';
-                                if ($stockActual <= 0) {
-                                    $badgeStock = 'sin';
-                                } elseif ($stockActual < $stockMinimo) {
-                                    $badgeStock = 'bajo';
-                                }
-                                ?>
                                 <tr>
                                     <td><span class="mono"><?= htmlspecialchars($producto['nomenclatura']) ?></span></td>
                                     <td>
                                         <strong><?= htmlspecialchars($producto['nombre']) ?></strong>
                                     </td>
-                                    <td><span class="badge badge-tipo <?= strtolower($producto['tipo'] ?? '') ?>"><?= htmlspecialchars($producto['tipo']) ?></span></td>
-                                    <td><?= htmlspecialchars($producto['categoria'] ?? 'Sin categor?a') ?></td>
-                                    <td class="col-stock">
-                                        <span class="badge badge-stock <?= $badgeStock ?>">
-                                            <?= format_stock($stockActual) ?> <?= htmlspecialchars($producto['unidad_apodo'] ?? '') ?>
-                                        </span>
-                                        <small>Mín: <?= format_stock($stockMinimo) ?></small>
-                                    </td>
+                                    <td><?= htmlspecialchars(trim((string) ($producto['marca'] ?? '')) ?: 'Sin Marca') ?></td>
+                                    <td><?= htmlspecialchars(trim((string) ($producto['modelo'] ?? '')) ?: 'Sin Modelo') ?></td>
+                                    <td><?= htmlspecialchars($producto['categoria'] ?? 'Sin Categoría') ?></td>
                                     <td class="col-actions">
                                         <div class="acciones-celda">
                                         <a class="btn-table" title="Ver Detalles" href="ver_producto?id=<?= $producto['id'] ?>"><i class="fa fa-eye"></i></a>

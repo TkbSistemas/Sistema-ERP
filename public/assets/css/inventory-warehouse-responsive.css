@@ -56,6 +56,19 @@ body.module-inventory-warehouse :is(.dashboard-header-row, .inventario-header, .
     gap: var(--module-card-gap);
 }
 
+/* Shared primary-title treatment used throughout the ERP views. */
+.page-title-icon {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.page-title-icon > i {
+    flex: 0 0 auto;
+    color: #2859ad;
+    font-size: .88em;
+}
+
 body.module-inventory-warehouse :is(.dashboard-cards-row, .inventario-stats-grid, .productos-stats-grid, .reportes-summary-grid) {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
     gap: var(--module-card-gap);

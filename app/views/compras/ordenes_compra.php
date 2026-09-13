@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../helpers/Session.php';
-Session::requireLogin(['Administrador', 'Empleado']);
+Session::requireLogin(['Administrador', 'Compras']);
 
 $role = $_SESSION['role'] ?? 'Empleado';
 $nombre = $_SESSION['nombre'] ?? '';
@@ -31,22 +31,23 @@ if (is_string($materialesPost) && $materialesPost !== '') {
 } elseif (!empty($entradaItems) && is_array($entradaItems)) {
     $materialesIniciales = array_values($entradaItems);
 }
+$tab_activa = $_GET['tab'] ?? 'pendientes';
 
 $alertaSesion = $_SESSION['alerta'] ?? null;
 unset($_SESSION['alerta']);
-$seccion_activa = 'crear_solicitud';
+$seccion_activa = 'ordenes_compra';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Solicitar Material | TAKAB</title>
+    <title>ÓRDENES DE COMPRA | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario_form.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
+    <script src="assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
 <body class="module-inventory-warehouse solicitud-material-page">
 <div class="main-layout">
@@ -61,10 +62,134 @@ $seccion_activa = 'crear_solicitud';
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1 class="page-title-icon"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> Solicitud de Materiales</h1>
-                    <p class="form-desc">Agrega Productos del Catálogo o Materiales que todavía no Estén Registrados.</p>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> Órdenes de Compra</h1>
+                    <p class="form-desc">Lista las órdenes de Compra o Crea una Nueva.</p>
                 </div>
             </div>
+
+            <section class="dashboard-cards-row">
+                <div class="dashboard-card warning">
+                    <div class="card-info">
+                        <div class="card-label">Órdenes Pendientes</div>
+                        <div class="card-value">1<//?= number_format($totalRegistros) ?></div>
+                        <div class="card-sub">Por Procesar</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-shape-outline"></span>
+                    </div>
+                </div>
+                <div class="dashboard-card waiting">
+                    <div class="card-info">
+                        <div class="card-label">Órdenes En Entrega</div>
+                        <div class="card-value">2<//?= number_format($totalRegistros) ?></div>
+                        <div class="card-sub">En Espera de Reparto</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-alert-circle-outline"></span>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-info">
+                        <div class="card-label">Órdenes</div>
+                        <div class="card-value">10<//?= number_format($totalRegistros) ?></div>
+                        <div class="card-sub">Este Mes</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-alert-circle-outline"></span>
+                    </div>
+            </section>
+
+
+            <?php $tab_activa = $_GET['tab'] ?? 'pendientes'; ?>
+
+            <div class="tab-container">
+                <a href="<?= $buildTabQuery('pendientes') ?>" class="prestamos-tab <?= $tab_activa === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                <a href="<?= $buildTabQuery('historial') ?>" class="prestamos-tab <?= $tab_activa === 'historial' ? 'active' : '' ?>">Historial</a>
+            </div>
+        <div id="wrapper-pendientes" <?= $tab_activa !== 'pendientes' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Estatus</th>
+                    <th>Folio</th>
+                    <th>Proyecto</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Materiales</th>
+                    <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($datos['solicitudesPendientes'] as $s): ?>
+                <tr>
+                    <?php $estatusClase = strtolower((string) ($s['estatus'] ?? '')); ?>
+                    <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
+                    <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['nombre_proyecto']) ?></td>
+                    <td><?= date('d/m/Y', strtotime($s['fecha_solicitud'])) ?></td>
+                    <td><?= nl2br(htmlspecialchars((string) ($s['materiales_resumen'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></td>
+                    <td>
+                        <?php if (in_array($s['estatus'], ['Pendiente', 'Aprobada'])): ?>
+                            <a class="btn-table btn-confirmar" 
+                            title="Rechazar" 
+                            href="javascript:void(0)" 
+                            data-id="<?= $s['id'] ?>" 
+                            data-folio="<?= htmlspecialchars($s['folio'] ?? '') ?>">
+                                <i class="fa fa-circle-xmark"></i>
+                            </a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+        <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+
+        <div id="wrapper-historial" <?= $tab_activa !== 'historial' ? 'hidden' : '' ?>>
+        <table class="takab-table">
+            <thead>
+                <tr>
+                    <th>Estatus</th>
+                    <th>Folio</th>
+                    <th>Proyecto</th>
+                    <th>Fecha Respuesta</th>
+                    <th>Comentario Responsable</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($datos['solicitudesEsteMes'] as $s): ?>
+                <tr>
+                    <?php $estatusClase = strtolower((string) ($s['estatus'] ?? '')); ?>
+                    <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
+                    <td><?= htmlspecialchars($s['folio']) ?></td>
+                    <td><?= htmlspecialchars($s['nombre_proyecto']) ?></td>
+                    <td><?= htmlspecialchars($s['fecha_respuesta']) ?></td>
+                    <td><?= htmlspecialchars($s['comentario_responsable']) ?></td>
+                    </tr>
+        <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        
+        <nav class="module-pagination" aria-label="Paginación de solicitudes">
+            <span class="module-pagination-info">
+                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin Solicitudes para Mostrar' ?>
+            </span>
+            <div class="module-pagination-controls">
+                <?php if ($pagination['pagina'] > 1): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] - 1) ?>" class="module-pagination-button"><i class="fa fa-chevron-left"></i><span>Anterior</span></a>
+                <?php endif; ?>
+                <span class="module-pagination-status">Página <?= $pagination['pagina'] ?> de <?= $pagination['total_paginas'] ?></span>
+                <?php if ($pagination['pagina'] < $pagination['total_paginas']): ?>
+                    <a href="<?= $buildPaginationQuery($pagination['pagina'] + 1) ?>" class="module-pagination-button"><span>Siguiente</span><i class="fa fa-chevron-right"></i></a>
+                <?php endif; ?>
+            </div>
+        </nav>
+            </section>
+        </main>
+    </div>
+</div>
+
+
 
             <?php if ($msg !== ''): ?>
                 <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?= htmlspecialchars($msg) ?></div>
@@ -75,7 +200,7 @@ $seccion_activa = 'crear_solicitud';
 
             <div class="inventario-form-grid">
                 <section class="inventario-form-card">
-                    <h2><i class="fa-solid fa-clipboard-list"></i> Datos de la Solicitud</h2>
+                    <h2><i class="fa-solid fa-clipboard-list"></i> Datos de la Órden</h2>
                     <form action="<?= htmlspecialchars(Session::url('crear_solicitud'), ENT_QUOTES, 'UTF-8') ?>"
                           method="post"
                           autocomplete="off"
@@ -112,11 +237,6 @@ $seccion_activa = 'crear_solicitud';
                             <textarea id="comentario_general" name="comentario_general" rows="3"
                                       maxlength="255"
                                       placeholder="Describe Brevemente para qué se Utilizarán los Materiales."><?= htmlspecialchars($_POST['comentario_general'] ?? '') ?></textarea>
-                        </div>
-
-                        <div class="form-field-line">
-                            <input type="checkbox" id="toggle_fuera_catalogo">
-                            <label for="toggle_fuera_catalogo">El Material no Está en el Catálogo</label>
                         </div>
 
                         <div id="modo_catalogo">
@@ -165,36 +285,10 @@ $seccion_activa = 'crear_solicitud';
                                                 data-unidad="<?= htmlspecialchars($unidadProducto) ?>"
                                                 data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
                                                 data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>">
-                                            <?= htmlspecialchars($producto['nombre'] ?? '') ?><?= $codigo !== '' ? ' — ' . htmlspecialchars($codigo) : '' ?> · Stock: <?= number_format($stockActual, 2) ?> <?= htmlspecialchars($unidadProducto) ?>
+                                            <?= htmlspecialchars($producto['nombre'] ?? '') ?><?= $codigo !== '' ? ' — ' . htmlspecialchars($codigo) : '' ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                            </div>
-                        </div>
-
-                        <div id="modo_manual" hidden>
-                            <div class="double-field">
-                                <div class="form-field">
-                                    <label for="manual_nombre">Nombre del Material *</label>
-                                    <input type="text" id="manual_nombre" maxlength="100" placeholder="Ej. Broca de Cobalto 1/2">
-                                </div>
-                                <div class="form-field">
-                                    <label for="manual_marca">Marca o Modelo Sugerido</label>
-                                    <input type="text" id="manual_marca" maxlength="100" placeholder="Ej. Truper o DeWalt">
-                                </div>
-                                <div class="form-field">
-                                    <label for="manual_tamano">Dimensiones o Especificación</label>
-                                    <input type="text" id="manual_tamano" maxlength="50" placeholder="Ej. 1/2 Pulgada">
-                                </div>
-                                <div class="form-field">
-                                    <label for="manual_unidad">Unidad de Medida *</label>
-                                    <select id="manual_unidad">
-                                        <option value="Pieza">Pieza</option>
-                                        <option value="Metro">Metro</option>
-                                        <option value="Litro">Litro</option>
-                                        <option value="Kilogramo">Kilogramo</option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -237,15 +331,15 @@ $seccion_activa = 'crear_solicitud';
                 </section>
 
                 <aside class="inventario-form-card form-summary">
-                    <h2><i class="fa fa-circle-info"></i> Resumen de la Solicitud</h2>
+                    <h2><i class="fa fa-circle-info"></i> Resumen de la Órden</h2>
                     <div class="summary-placeholder" id="summary-placeholder">
                         <i class="fa fa-box"></i>
                         <p>Agrega un Material para Consultar el Resumen.</p>
                     </div>
                     <div class="summary-content" id="summary-content" hidden>
-                        <div class="summary-item"><span class="label">Total</span><span class="value" id="summary-total">0</span></div>
-                        <div class="summary-item"><span class="label">Del Catálogo</span><span class="value" id="summary-catalogo">0</span></div>
-                        <div class="summary-item"><span class="label">Fuera del Catálogo</span><span class="value" id="summary-externos">0</span></div>
+                        <div class="summary-item"><span class="label">Proveedor</span><span class="value" id="summary-total">0</span></div>
+                        <div class="summary-item"><span class="label">Importe sin IVA</span><span class="value" id="summary-catalogo">0</span></div>
+                        <div class="summary-item"><span class="label">Precion con IVA</span><span class="value" id="summary-externos">0</span></div>
                         <div class="summary-item"><span class="label">Proyecto</span><span class="value" id="summary-proyecto">Sin Seleccionar</span></div>
                         <div class="summary-item"><span class="label">Fecha Requerida</span><span class="value" id="summary-fecha">Sin Seleccionar</span></div>
                     </div>
@@ -401,20 +495,6 @@ $seccion_activa = 'crear_solicitud';
         }
 
         let material;
-        if (toggleManual.checked) {
-            const nombreMaterial = manualNombre.value.trim();
-            if (!nombreMaterial) {
-                avisar('Material Incompleto', 'Escribe el Nombre del Material que no Está en el Catálogo.');
-                manualNombre.focus();
-                return;
-            }
-            material = {
-                tipo: 'Extra', producto_id: null,
-                producto_nombre: nombreMaterial,
-                cantidad, observacion: observacionesInput.value.trim(), unidad: manualUnidad.value,
-                marca_modelo: manualMarca.value.trim(), tamano: manualTamano.value.trim()
-            };
-        } else {
             const option = productoSelect.selectedOptions[0];
             if (!option?.value) {
                 avisar('Producto Incompleto', 'Selecciona un Producto del Catálogo.');
@@ -432,7 +512,6 @@ $seccion_activa = 'crear_solicitud';
                 observacion: observacionesInput.value.trim(), unidad: option.dataset.unidad || '',
                 marca_modelo: '', tamano: ''
             };
-        }
 
         materiales.push(material);
         limpiarBorrador();
@@ -456,13 +535,6 @@ $seccion_activa = 'crear_solicitud';
         });
         if (productoSelect.selectedOptions[0]?.disabled) productoSelect.value = '';
         filtroResultados.textContent = String(visibles);
-    }
-
-    function alternarModo() {
-        modoCatalogo.hidden = toggleManual.checked;
-        modoManual.hidden = !toggleManual.checked;
-        productoSelect.value = '';
-        manualNombre.value = '';
     }
 
     document.getElementById('agregar-material').addEventListener('click', agregarMaterial);

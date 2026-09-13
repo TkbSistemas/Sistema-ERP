@@ -1,4 +1,5 @@
  :root {
+    --takab-font-ui: 'Segoe UI', Tahoma, Arial, sans-serif;
     --bg-deep: #0f224f;
     --bg-deeper: #0c1b3f;
     --brand-primary: #243ea3;
@@ -19,7 +20,11 @@
 html, body {
     margin: 0;
     min-height: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--takab-font-ui);
+}
+
+button, input, select, textarea {
+    font-family: var(--takab-font-ui);
 }
 
 body {
@@ -274,6 +279,12 @@ body {
 
 .input-wrap input::placeholder {
     color: #94a3b8;
+}
+
+/* Edge agrega su propio control al escribir; se conserva el botón fijo del formulario. */
+.input-wrap input[type="password"]::-ms-reveal,
+.input-wrap input[type="password"]::-ms-clear {
+    display: none;
 }
 
 .input-wrap:focus-within {

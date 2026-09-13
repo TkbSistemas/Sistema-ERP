@@ -33,7 +33,7 @@ $alertas = $datos['alertas'] ?? [];
         <main class="dashboard-main">
             <div class="dashboard-header-row">
                 <div>
-                    <h1>DASHBOARD COMPRAS</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> DASHBOARD COMPRAS</h1>
                     <span class="dashboard-desc">Panel para Gestión de Procesos de Compras.</span>
                 </div>
                 <div class="dashboard-updated">

@@ -142,6 +142,17 @@
             border-radius: 2px 2px 0 0;
         }
 
+        .category-title.external-category {
+            background-color: #0070c0;
+        }
+
+        .material-detail {
+            display: block;
+            margin-top: 2px;
+            color: #475569;
+            font-size: 0.9em;
+        }
+
         .material-table {
             width: 100%;
             border-collapse: collapse;
@@ -217,6 +228,14 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+            .category-title.external-category {
+                background-color: #b45309 !important;
+            }
+            .external-badge {
+                background-color: #fff7ed !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
             tr { page-break-inside: avoid; break-inside: avoid; }
         }
     </style>
@@ -227,14 +246,19 @@
         $grupos = [
             'Consumible'  => [],
             'Herramienta' => [],
-            'Equipo'   => [],
-            'Materiales'   => []
+            'Equipo' => [],
+            'Materiales' => [],
+            'Fuera del Catálogo' => []
         ];
 
         $requiereDevolucion = false;
 
         if (!empty($solicitud['items']) && is_array($solicitud['items'])) {
             foreach ($solicitud['items'] as $item) {
+                if (!empty($item['fuera_catalogo'])) {
+                    $grupos['Fuera del Catálogo'][] = $item;
+                    continue;
+                }
                 $tipo = ucfirst(strtolower($item['tipo'] ?? 'Materiales'));
                 if (strpos($tipo, 'Herramienta') !== false) {
                     $grupos['Herramienta'][] = $item;
@@ -257,10 +281,7 @@
         
         <div class="header-container">
             <div class="header-top-row">
-                <?php 
-                $ruta_logo = $_SERVER['DOCUMENT_ROOT'] . '/proyectos/Sistema-ERP/public/assets/images/logo.png'; 
-                ?>
-                <img class="logo-takab" src="/trabajos/Sistema-ERP-New/public/assets/images/logo.png" alt="TAKAB Logo" />
+                <img class="logo-takab" src="assets/images/logo.png" alt="TAKAB Logo" />
                 
                 <h1 class="doc-title">SOLICITUD DE MATERIALES</h1>
                 
@@ -315,7 +336,7 @@
                 $hayItems = true;
         ?>
             <div class="category-block">
-                <div class="category-title"><?= $categoria ?></div>
+                <div class="category-title <?= $categoria === 'Fuera del Catálogo' ? 'external-category' : '' ?>"><?= htmlspecialchars($categoria) ?></div>
                 <table class="material-table">
                     <thead>
                         <tr>
@@ -333,8 +354,21 @@
                         ?>
                             <tr>
                                 <td class="col-no"><?= $num ?></td>
-                                <td class="col-codigo"><?= htmlspecialchars($prod['nomenclatura'] ?? 'N/A') ?></td>
-                                <td class="col-nombre"><?= htmlspecialchars($prod['nombre'] ?? '-') ?></td>
+                                <td class="col-codigo">
+                                    <?= !empty($prod['fuera_catalogo']) ? 'NO REGISTRADO' : htmlspecialchars($prod['nomenclatura'] ?? 'N/A') ?>
+                                </td>
+                                <td class="col-nombre">
+                                    <?= htmlspecialchars($prod['nombre'] ?? '-') ?>
+                                    <?php if (!empty($prod['marca'])): ?>
+                                        <span class="material-detail"><strong>Marca o Modelo:</strong> <?= htmlspecialchars($prod['marca']) ?></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($prod['dimensiones'])): ?>
+                                        <span class="material-detail"><strong>Dimensiones:</strong> <?= htmlspecialchars($prod['dimensiones']) ?></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($prod['observaciones'])): ?>
+                                        <span class="material-detail"><strong>Observaciones:</strong> <?= htmlspecialchars($prod['observaciones']) ?></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="col-cant"><?= htmlspecialchars($prod['cantidad'] ?? 1) ?></td>
                                 <td class="col-udm"><?= htmlspecialchars($prod['unidad_medida'] ?? 'Pza') ?></td>
                             </tr>

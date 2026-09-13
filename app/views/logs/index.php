@@ -67,7 +67,7 @@ $buildQuery = function(array $overrides = []) {
         <main class="dashboard-main logs-main">
             <div class="logs-header">
                 <div>
-                    <h1>Bitácora de actividad</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Bitácora de Actividad</h1>
                     <p class="reportes-desc">Consulta los eventos más recientes realizados por los usuarios de la plataforma.</p>
                 </div>
             </div>
@@ -80,14 +80,14 @@ $buildQuery = function(array $overrides = []) {
                             <option value="">Todos</option>
                             <?php foreach ($usuarios as $usuario): ?>
                                 <option value="<?= $usuario['id'] ?>" <?= $filtros['usuario_id'] == $usuario['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($usuario['nombre_completo']) ?>
+                                    <?= htmlspecialchars($usuario['nombre']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="logs-filter-field">
                         <label for="accion">Acción</label>
-                        <input type="text" id="accion" name="accion" placeholder="Buscar por acción (ej. producto_creado)" value="<?= htmlspecialchars($filtros['accion']) ?>">
+                        <input type="text" id="accion" name="accion" placeholder="Ej. inventario.producto.alta" value="<?= htmlspecialchars($filtros['accion']) ?>">
                     </div>
                     <div class="logs-filter-field">
                         <label for="desde">Desde</label>

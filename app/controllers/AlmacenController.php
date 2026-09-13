@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Prestamo.php';
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../models/MovimientoInventario.php';
 require_once __DIR__ . '/../models/SolicitudMaterial.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 class AlmacenController
 {
@@ -67,6 +68,7 @@ class AlmacenController
                     s.estatus,
                     s.solicitante_id,
                     u.nombre AS nombre_solicitante,
+                    p.nombre AS nombre_proyecto,
                     (SELECT COUNT(*) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id)
                         + (SELECT COUNT(*) FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id) AS total_items,
                     COALESCE((SELECT SUM(d.cantidad) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id), 0)
@@ -78,6 +80,8 @@ class AlmacenController
                 FROM solicitudes_material s
                 LEFT JOIN usuarios u 
                     ON s.solicitante_id = u.id
+                LEFT JOIN proyectos p
+                    ON s.proyecto_id = p.id
                 WHERE estatus IN ('Rechazada', 'Entregada')
                 AND fecha_solicitud >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
                 AND fecha_solicitud <= CONCAT(LAST_DAY(NOW()), ' 23:59:59')
@@ -102,6 +106,7 @@ class AlmacenController
                     s.estatus,
                     s.solicitante_id,
                     u.nombre AS nombre_solicitante,
+                    p.nombre AS nombre_proyecto,
                     (SELECT COUNT(*) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id)
                         + (SELECT COUNT(*) FROM solicitudes_material_noregistrados nr WHERE nr.solicitud_id = s.id) AS total_items,
                     COALESCE((SELECT SUM(d.cantidad) FROM solicitudes_material_detalles d WHERE d.solicitud_id = s.id), 0)
@@ -113,6 +118,8 @@ class AlmacenController
                 FROM solicitudes_material s
                 LEFT JOIN usuarios u 
                     ON s.solicitante_id = u.id
+                LEFT JOIN proyectos p
+                    ON s.proyecto_id = p.id
                 WHERE estatus IN ('Pendiente','Aprobada')
                 ORDER BY s.fecha_solicitud DESC
             ")->fetchAll(PDO::FETCH_ASSOC);
@@ -167,7 +174,7 @@ class AlmacenController
         include __DIR__ . '/../templates/solicitud_material.php';
     }
 
-    public function aprobarSolicitud($id){
+    public function aprobarSolicitud(): void {
         Session::requireLogin(['Administrador', 'Almacen']);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -181,15 +188,31 @@ class AlmacenController
                     SET estatus = 'Aprobada', 
                         comentario_responsable = ?, 
                         fecha_respuesta = NOW() 
-                    WHERE id = ?
+                    WHERE id = ? AND estatus = 'Pendiente'
                 ");
                 $stmt->execute([$comentario, $id]);
 
-                $_SESSION['alerta'] = [
-                'tipo' => 'success',
-                'titulo' => 'Solicitud Aprobada',
-                'mensaje' => 'Solicitud Aprobada Éxitosamente.'
-            ];
+                if ($stmt->rowCount() === 1) {
+                    ActivityLogger::registrarCambioEstado(
+                        'almacen',
+                        'solicitud_material',
+                        $id,
+                        'Aprobada',
+                        'Solicitud de Material Aprobada',
+                        ['comentario_registrado' => $comentario !== '']
+                    );
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'success',
+                        'titulo' => 'Solicitud Aprobada',
+                        'mensaje' => 'Solicitud Aprobada Éxitosamente.'
+                    ];
+                } else {
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'error',
+                        'titulo' => 'Solicitud no Disponible',
+                        'mensaje' => 'La Solicitud no Existe o ya Fue Procesada.'
+                    ];
+                }
             } else {
                     $_SESSION['alerta'] = [
                     'tipo' => 'error',
@@ -202,7 +225,7 @@ class AlmacenController
         }
     }
 
-    public function rechazarSolicitud($id){
+    public function rechazarSolicitud(): void {
         Session::requireLogin(['Administrador', 'Almacen']);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -216,15 +239,31 @@ class AlmacenController
                     SET estatus = 'Rechazada', 
                         comentario_responsable = ?, 
                         fecha_respuesta = NOW() 
-                    WHERE id = ?
+                    WHERE id = ? AND estatus IN ('Pendiente', 'Aprobada')
                 ");
                 $stmt->execute([$comentario, $id]);
 
-                $_SESSION['alerta'] = [
-                    'tipo' => 'success',
-                    'titulo' => 'Solicitud Rechazada',
-                    'mensaje' => 'Solicitud Rechazada Éxitosamente.'
-                ];
+                if ($stmt->rowCount() === 1) {
+                    ActivityLogger::registrarCambioEstado(
+                        'almacen',
+                        'solicitud_material',
+                        $id,
+                        'Rechazada',
+                        'Solicitud de Material Rechazada',
+                        ['comentario_registrado' => $comentario !== '']
+                    );
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'success',
+                        'titulo' => 'Solicitud Rechazada',
+                        'mensaje' => 'Solicitud Rechazada Éxitosamente.'
+                    ];
+                } else {
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'error',
+                        'titulo' => 'Solicitud no Disponible',
+                        'mensaje' => 'La Solicitud no Existe o ya Fue Procesada.'
+                    ];
+                }
             } else {
                 $_SESSION['alerta'] = [
                     'tipo' => 'error',
@@ -279,6 +318,9 @@ class AlmacenController
                 $db = Database::getInstance()->getConnection();
 
                     try {
+                        // La comprobación puede ejecutar DDL, que provoca un commit implícito
+                        // en MariaDB/MySQL; por eso debe ocurrir antes de la transacción.
+                        Producto::ensureStockTableReady();
                         $db->beginTransaction();
     
                         foreach ($entradaItems as $indice => $linea) {
@@ -297,7 +339,7 @@ class AlmacenController
                                 'responsable_id'     => $_SESSION['user_id'] ?? 0,
                                 'almacen_id' => $almacenId,
                                 'observaciones'        => $linea['observaciones'] ?? null,
-                                'folio_solicitud'                => $linea['folio_solicitud'] ?? null
+                                'folio_solicitud' => $linea['folio'] ?? null
                             ];
 
                             if (! MovimientoInventario::registrar($data)) {
@@ -312,6 +354,18 @@ class AlmacenController
                         $db->commit();
 
                         $totalLineas = count($entradaItems);
+                        ActivityLogger::registrarAccion(
+                            'inventario',
+                            'entrada_rapida',
+                            'Entrada Rápida de Inventario Registrada',
+                            [
+                                'lineas' => $totalLineas,
+                                'productos' => array_values(array_unique(array_map(
+                                    static fn(array $linea): int => (int) ($linea['producto_id'] ?? 0),
+                                    $entradaItems
+                                ))),
+                            ]
+                        );
                         $_SESSION['alerta'] = [
                             'tipo' => 'success',
                             'titulo' => 'Entrada Registrada',
@@ -437,6 +491,18 @@ class AlmacenController
 
                         $db->commit();
 
+                        ActivityLogger::registrarAlta(
+                            'almacen',
+                            'solicitud_baja',
+                            $solicitudId,
+                            'Solicitud de Baja Registrada',
+                            [
+                                'folio' => $data['folio'],
+                                'almacen_id' => (int) $almacen_id,
+                                'lineas' => count($entradaItems),
+                            ]
+                        );
+
                         $_SESSION['alerta'] = [
                             'tipo' => 'success',
                             'titulo' => 'Solicitud Registrada',
@@ -500,14 +566,20 @@ class AlmacenController
 
         try {
             $db = Database::getInstance()->getConnection();
+            // Esta comprobación puede ejecutar DDL. Debe ocurrir antes de abrir
+            // la transacción para evitar un commit implícito en MySQL/MariaDB.
+            Producto::ensureStockTableReady();
             $db->beginTransaction();
 
-            $stmtSolicitud = $db->prepare("SELECT folio, almacen_id FROM solicitudes_bajas WHERE id = ?");
+            $stmtSolicitud = $db->prepare("SELECT folio, almacen_id, estatus FROM solicitudes_bajas WHERE id = ? FOR UPDATE");
             $stmtSolicitud->execute([$id]);
             $solicitud = $stmtSolicitud->fetch(PDO::FETCH_ASSOC);
 
             if (!$solicitud) {
                 throw new RuntimeException('La Solicitud de Baja Especificada no Existe.');
+            }
+            if (($solicitud['estatus'] ?? '') !== 'Pendiente') {
+                throw new RuntimeException('La Solicitud de Baja ya Fue Procesada.');
             }
             $folioSolicitud = $solicitud['folio'];
 
@@ -547,12 +619,26 @@ class AlmacenController
                     }
                 }
 
-                $stmt = $db->prepare("UPDATE solicitudes_bajas SET estatus = 'Aprobada' WHERE id = ?");
+                $stmt = $db->prepare("UPDATE solicitudes_bajas SET estatus = 'Aprobada' WHERE id = ? AND estatus = 'Pendiente'");
                 $stmt->execute([$id]);
-
-                if ($db->inTransaction()) {
-                    $db->commit();
+                if ($stmt->rowCount() !== 1) {
+                    throw new RuntimeException('La Solicitud de Baja ya Fue Procesada.');
                 }
+
+                $db->commit();
+
+                ActivityLogger::registrarCambioEstado(
+                    'almacen',
+                    'solicitud_baja',
+                    $id,
+                    'Aprobada',
+                    'Solicitud de Baja Aprobada y Stock Actualizado',
+                    [
+                        'folio' => $folioSolicitud,
+                        'almacen_id' => (int) $almacen_id,
+                        'lineas' => count($salidaItems),
+                    ]
+                );
 
                 $_SESSION['alerta'] = [
                     'tipo' => 'success',
@@ -592,15 +678,30 @@ class AlmacenController
         $stmt = $db->prepare("
             UPDATE solicitudes_bajas 
             SET estatus = 'Rechazada' 
-            WHERE id = ?");
+            WHERE id = ? AND estatus = 'Pendiente'");
 
         $stmt->execute([$id]);
 
-        $_SESSION['alerta'] = [
-            'tipo' => 'success',
-            'titulo' => 'Solicitud Rechazada',
-            'mensaje' => 'Solicitud de Baja Rechazada Exitosamente.'
-        ];
+        if ($stmt->rowCount() === 1) {
+            ActivityLogger::registrarCambioEstado(
+                'almacen',
+                'solicitud_baja',
+                $id,
+                'Rechazada',
+                'Solicitud de Baja Rechazada'
+            );
+            $_SESSION['alerta'] = [
+                'tipo' => 'success',
+                'titulo' => 'Solicitud Rechazada',
+                'mensaje' => 'Solicitud de Baja Rechazada Exitosamente.'
+            ];
+        } else {
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'Solicitud no Disponible',
+                'mensaje' => 'La Solicitud de Baja no Existe o ya Fue Procesada.'
+            ];
+        }
 
         header('Location: registrar_salida');
         exit();
@@ -618,6 +719,9 @@ class AlmacenController
                 $error = 'Token CSRF inválido.';
             } else {
                 Almacen::create($_POST);
+                ActivityLogger::registrarAlta('almacen', 'almacen', null, 'Almacén Registrado', [
+                    'nombre' => trim((string) ($_POST['nombre'] ?? '')),
+                ]);
                 header('Location: almacenes.php?success=1');
                 exit();
             }
@@ -642,6 +746,9 @@ class AlmacenController
                 $error = 'Token CSRF inválido.';
             } else {
                 Almacen::update($id, $_POST);
+                ActivityLogger::registrarActualizacion('almacen', 'almacen', $id, 'Almacén Actualizado', [
+                    'nombre' => trim((string) ($_POST['nombre'] ?? '')),
+                ]);
                 header('Location: almacenes.php?success=2');
                 exit();
             }
@@ -661,6 +768,7 @@ class AlmacenController
         $almacenId = (int) ($id ?: ($_POST['id'] ?? 0));
         if ($almacenId > 0) {
             Almacen::delete($almacenId);
+            ActivityLogger::registrarBaja('almacen', 'almacen', $almacenId, 'Almacén Eliminado');
             header('Location: almacenes.php?deleted=1');
             exit();
         }
@@ -1048,7 +1156,7 @@ endobj
     private function normalizarLineasEntrada(array $post): array
 {
     $lineas = [];
-    $almacenGeneral = trim((string) ($post['almacen_entrada_id'] ?? ''));
+    $almacenGeneral = trim((string) ($post['almacen_entrada_id'] ?? $post['almacen_id'] ?? ''));
     $folioGeneral   = trim((string) ($post['folio'] ?? ''));
 
     if (! empty($post['lineas_producto_id']) && is_array($post['lineas_producto_id'])) {

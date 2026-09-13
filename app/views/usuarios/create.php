@@ -36,7 +36,7 @@ $breadcrumbs = [
         <?php include __DIR__ . '/../partials/topbar.php'; ?>
         <main class="dashboard-main">
             <div class="usuarios-header-row">
-                <h1>Agregar Usuario</h1>
+                <h1 class="page-title-icon"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Agregar Usuario</h1>
                 <a class="btn-primary" href="usuarios.php"><i class="fa fa-arrow-left"></i> Volver al listado</a>
             </div>
             <div class="form-box">

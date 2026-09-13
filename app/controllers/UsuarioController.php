@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../helpers/Session.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 class UsuarioController
 {
@@ -44,6 +45,12 @@ class UsuarioController
                         'role'            => $role,
                         'activo'          => $activo ? 1 : 0,
                     ]);
+                    $usuarioId = (int) Database::getInstance()->getConnection()->lastInsertId();
+                    ActivityLogger::registrarAlta('administracion', 'usuario', $usuarioId ?: null, 'Usuario Registrado', [
+                        'username' => $username,
+                        'rol' => $role,
+                        'activo' => $activo,
+                    ]);
                     header('Location: usuarios.php?success=1');
                     exit();
                 }
@@ -85,6 +92,12 @@ class UsuarioController
                         'role'            => $role,
                         'activo'          => $activo ? 1 : 0,
                     ]);
+                    ActivityLogger::registrarActualizacion('administracion', 'usuario', $id, 'Usuario Actualizado', [
+                        'username' => $username,
+                        'rol' => $role,
+                        'activo' => $activo,
+                        'password_actualizada' => $password !== '',
+                    ]);
                     header('Location: usuarios.php?success=2');
                     exit();
                 }
@@ -110,6 +123,9 @@ class UsuarioController
 
         try {
             $ok = Usuario::delete($usuarioId);
+            if ($ok) {
+                ActivityLogger::registrarBaja('administracion', 'usuario', $usuarioId, 'Usuario Dado de Baja');
+            }
             header('Location: usuarios.php?' . ($ok ? 'deleted=1' : 'deleted=0'));
         } catch (PDOException $e) {
             header('Location: usuarios.php?deleted=0&error=fk');
@@ -126,6 +142,13 @@ class UsuarioController
         }
 
         Usuario::setActive($id, (int) $active);
+        ActivityLogger::registrarCambioEstado(
+            'administracion',
+            'usuario',
+            $id,
+            (int) $active === 1 ? 'Activo' : 'Inactivo',
+            'Disponibilidad del Usuario Modificada'
+        );
         header('Location: usuarios.php');
         exit();
     }

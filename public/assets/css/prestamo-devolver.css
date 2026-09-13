@@ -1,3 +1,8 @@
+body,
+button, input, select, textarea {
+    font-family: var(--takab-font-ui, 'Segoe UI', Tahoma, Arial, sans-serif);
+}
+
 .devolver-main {
     max-width: 550px;
     margin: 36px auto 0 auto;

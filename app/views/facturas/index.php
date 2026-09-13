@@ -84,7 +84,7 @@ $importeTotal = array_sum(array_map(fn($row) => (float) ($row['total'] ?? 0), $f
         <main class="facturas-main">
             <div class="facturas-header">
                 <div>
-                    <h1>Facturas de compra</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i> Facturas de Compra</h1>
                     <p>Consulta y registra las facturas que ingresan inventario.</p>
                 </div>
                 <?php if (in_array($role, ['Administrador', 'Compras', 'Almacen'], true)): ?>

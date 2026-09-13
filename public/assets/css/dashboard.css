@@ -1,9 +1,17 @@
 @import url("inventory-warehouse-responsive.css");
 
+:root {
+    --takab-font-ui: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
 body, html {
     background: #f8fafc;
     margin: 0;
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: var(--takab-font-ui);
+}
+
+button, input, select, textarea {
+    font-family: var(--takab-font-ui);
 }
 
 .main-layout {

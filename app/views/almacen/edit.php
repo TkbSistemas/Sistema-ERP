@@ -22,7 +22,7 @@ $nombre = $_SESSION['nombre'];
         <?php include __DIR__ . '/../layouts/topbar.php'; ?>
         <main class="dashboard-main">
             <div class="form-card">
-                <div class="form-title">Editar Almacén</div>
+                <div class="form-title"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Editar Almacén</div>
                 <?php if (!empty($error)): ?>
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>

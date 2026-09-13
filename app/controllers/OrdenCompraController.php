@@ -364,8 +364,6 @@ class OrdenCompraController
             'origen'                    => null,
             'stock_inicial'             => 0,
             'imagen_url'                => null,
-            'last_requested_by_user_id' => null,
-            'last_request_date'         => null,
         ], $data);
 
         Producto::create($payload);

@@ -106,7 +106,7 @@ $previewTotal = $previewSubtotal + $previewImpuestos;
         <main class="factura-form">
             <div class="factura-head">
                 <div>
-                    <h1>Registrar factura</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> Registrar Factura</h1>
                     <p>Integra la mercancia recibida al inventario.</p>
                 </div>
                 <a href="facturas.php" class="btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver</a>

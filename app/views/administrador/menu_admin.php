@@ -1,15 +1,13 @@
 <?php
 Session::requireLogin();
-
-// 5 Secciones guardando el color neutro y el vibrante
 $modulos = [
     [
-        'slug'           => 'costos',
+        'slug'           => 'dashboard_compras',
         'titulo'         => 'Costos y Presupuestos',
         'subtitulo'      => 'Cotizaciones y Catálogos',
         'icono'          => 'fa-coins',
-        'color_neutro'   => '#59749e', // Azul neutro/pizarra
-        'color_vibrante' => '#2563eb', // Azul original
+        'color_neutro'   => '#59749e', 
+        'color_vibrante' => '#2563eb', 
         'sombra'         => 'rgba(37, 99, 235, 0.4)'
     ],
     [
@@ -17,8 +15,8 @@ $modulos = [
         'titulo'         => 'Gestión de Proyectos',
         'subtitulo'      => 'Licitaciones y Entregables',
         'icono'          => 'fa-diagram-project',
-        'color_neutro'   => '#7b6b94', // Púrpura desaturado
-        'color_vibrante' => '#7c3aed', // Púrpura original
+        'color_neutro'   => '#7b6b94', 
+        'color_vibrante' => '#7c3aed', 
         'sombra'         => 'rgba(124, 58, 237, 0.4)'
     ],
     [
@@ -26,8 +24,8 @@ $modulos = [
         'titulo'         => 'Ingeniería en Campo',
         'subtitulo'      => 'Solicitudes de Materiales',
         'icono'          => 'fa-id-badge',
-        'color_neutro'   => '#c4ae72', // Dorado suave/ocre
-        'color_vibrante' => '#eab308', // Amarillo original
+        'color_neutro'   => '#c4ae72', 
+        'color_vibrante' => '#eab308', 
         'sombra'         => 'rgba(234, 179, 8, 0.4)'
     ],
     [
@@ -35,8 +33,8 @@ $modulos = [
         'titulo'         => 'Almacén',
         'subtitulo'      => 'Entradas, Salidas y Solicitudes',
         'icono'          => 'fa-warehouse',
-        'color_neutro'   => '#56827c', // Verde salvia neutro
-        'color_vibrante' => '#0f766e', // Verde original
+        'color_neutro'   => '#56827c', 
+        'color_vibrante' => '#0f766e', 
         'sombra'         => 'rgba(15, 118, 110, 0.4)'
     ],
     [

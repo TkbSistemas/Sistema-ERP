@@ -76,7 +76,7 @@ $breadcrumbs = [
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1><i class="fa fa-arrow-up"></i>REGISTRAR BAJAS DE INVENTARIO</h1>
+                    <h1 class="page-title-icon"><i class="fa fa-arrow-up" aria-hidden="true"></i> REGISTRAR BAJAS DE INVENTARIO</h1>
                     <p class="form-desc">Salida de Productos por Desecho.</p>
                 </div>
             </div>

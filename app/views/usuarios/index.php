@@ -68,7 +68,7 @@ $csrfToken = Session::csrfToken();
             <?php endif; ?>
 
             <div class="usuarios-header-row2">
-                <h1>Gestión de Usuarios</h1>
+                <h1 class="page-title-icon"><i class="fa-solid fa-users-gear" aria-hidden="true"></i> Gestión de Usuarios</h1>
                 <a class="btn-main" href="usuarios_create.php"><i class="fa fa-plus"></i> Nuevo Usuario</a>
             </div>
 

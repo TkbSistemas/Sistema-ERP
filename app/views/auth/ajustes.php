@@ -68,7 +68,7 @@ $nombre = $_SESSION['nombre'] ?? '';
             <div class="config-page-header">
                 <span class="config-header-icon"><i class="fa-solid fa-gear"></i></span>
                 <div>
-                    <h1 class="config-header-title">Configuración del Sistema</h1>
+                    <h1 class="config-header-title page-title-icon"><i class="fa-solid fa-gears" aria-hidden="true"></i> Configuración del Sistema</h1>
                     <div class="config-header-desc">Administra las configuraciones básicas del sistema de inventario</div>
                 </div>
             </div>

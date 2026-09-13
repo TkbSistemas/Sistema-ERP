@@ -79,7 +79,7 @@ $detalles = $factura['detalles'] ?? [];
         <main class="detalle-main">
             <div class="detalle-head">
                 <div>
-                    <h1>Factura #<?= (int) $factura['id'] ?></h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-file-invoice" aria-hidden="true"></i> Factura #<?= (int) $factura['id'] ?></h1>
                     <p>Registro asociado a <?= htmlspecialchars($factura['proveedor'] ?? 'Proveedor') ?>.</p>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">

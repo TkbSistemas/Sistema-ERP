@@ -118,9 +118,7 @@ class ProductoController
                 }
 
                 if (empty($errors)) {
-                    $payload                              = $data;
-                    $payload['last_requested_by_user_id'] = null;
-                    $payload['last_request_date']         = null;
+                    $payload = $data;
 
                     Producto::create($payload);
                     ActivityLogger::log('producto_creado', 'Se registro el producto ' . $payload['nombre'], [
@@ -183,9 +181,6 @@ class ProductoController
                 }
 
                 if (empty($errors)) {
-                    $data['last_requested_by_user_id'] = $producto['last_requested_by_user_id'] ?? null;
-                    $data['last_request_date']         = $producto['last_request_date'] ?? null;
-
                     Producto::update($id, $data);
                     ActivityLogger::log('producto_actualizado', 'Se actualizo el producto ' . $data['nombre'], [
                         'codigo' => $data['codigo'],
@@ -545,8 +540,6 @@ class ProductoController
                 'ubicacion_fisica'          => trim($rowAssoc['ubicacion_fisica'] ?? ''),
                 'tipo'                      => $tipo,
                 'imagen_url'                => null,
-                'last_requested_by_user_id' => null,
-                'last_request_date'         => null,
                 'activo_id'                 => 1,
             ];
 

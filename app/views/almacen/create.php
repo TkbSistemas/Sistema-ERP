@@ -64,7 +64,7 @@ $nombre = $_SESSION['nombre'];
         </header>
         <main class="dashboard-main">
             <div class="form-card">
-                <div class="form-title"><?= isset($almacen) ? 'Editar' : 'Agregar' ?> Almacén</div>
+                <div class="form-title"><i class="fa-solid <?= isset($almacen) ? 'fa-pen-to-square' : 'fa-square-plus' ?>" aria-hidden="true"></i> <?= isset($almacen) ? 'Editar' : 'Agregar' ?> Almacén</div>
                 <form class="takab-form" method="post" action="">
                     <label>Nombre:</label>
                     <input type="text" name="nombre" value="<?= htmlspecialchars($almacen['nombre'] ?? '') ?>" required>

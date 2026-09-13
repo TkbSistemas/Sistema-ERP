@@ -86,7 +86,7 @@ class SolicitudMaterial {
         }
     }
 
-    public function generarFolioSolicitud(): string {
+    public static function generarFolioSolicitud(): string {
         $db = Database::getInstance()->getConnection();
         $sql = "SELECT MAX(id) AS ultimo_id FROM solicitudes_material";
         $stmt = $db->query($sql);
@@ -117,7 +117,6 @@ class SolicitudMaterial {
         ]);
         $solicitud_id = $db->lastInsertId();
 
-        $updateProducto = $db->prepare("UPDATE productos SET last_requested_by_user_id = ?, last_request_date = NOW() WHERE id = ?");
         foreach ($detalles as $detalle) {
             $sql_det = "INSERT INTO detalle_solicitud (solicitud_id, producto_id, cantidad, observacion) VALUES (?, ?, ?, ?)";
             $stmt_det = $db->prepare($sql_det);
@@ -127,12 +126,6 @@ class SolicitudMaterial {
                 $detalle['cantidad'],
                 isset($detalle['observacion']) ? $detalle['observacion'] : null
             ]);
-            if (!empty($detalle['producto_id'])) {
-                $updateProducto->execute([
-                    $data['usuario_id'],
-                    $detalle['producto_id'],
-                ]);
-            }
         }
         $db->commit();
         return $solicitud_id;
@@ -280,7 +273,10 @@ class SolicitudMaterial {
                             p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
                             um.apodo AS unidad_medida,
                             d.cantidad,
-                            d.observaciones
+                            d.observaciones,
+                            0 AS fuera_catalogo,
+                            NULL AS marca,
+                            NULL AS dimensiones
                         FROM solicitudes_material_detalles d
                         INNER JOIN inventario p ON d.producto_id = p.id
                         LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
@@ -288,15 +284,14 @@ class SolicitudMaterial {
                         UNION ALL
                         SELECT
                             NULL AS nomenclatura,
-                            CONCAT(
-                                nr.nombre,
-                                IF(nr.marca IS NULL OR nr.marca = '', '', CONCAT(' · ', nr.marca)),
-                                IF(nr.dimensiones IS NULL OR nr.dimensiones = '', '', CONCAT(' · ', nr.dimensiones))
-                            ) AS nombre,
-                            'Materiales' AS tipo,
+                            nr.nombre,
+                            'Fuera del Catálogo' AS tipo,
                             nr.unidad_medida,
                             nr.cantidad,
-                            nr.observaciones
+                            nr.observaciones,
+                            1 AS fuera_catalogo,
+                            nr.marca,
+                            nr.dimensiones
                         FROM solicitudes_material_noregistrados nr
                         WHERE nr.solicitud_id = ?
                         ORDER BY tipo ASC, nombre ASC";

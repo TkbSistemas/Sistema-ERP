@@ -84,6 +84,57 @@
             include __DIR__ . '/../views/inventario/dashboard_inventario.php';
     }
 
+        public function imprimirListadoInventario(): void
+        {
+            Session::requireLogin(['Administrador', 'Almacen', 'Inventario']);
+
+            $filtros = [
+                'buscar'           => trim((string) ($_GET['buscar'] ?? ($_GET['q'] ?? ''))),
+                'marca'            => trim((string) ($_GET['marca'] ?? '')),
+                'categoria_id'     => $_GET['categoria_id'] ?? '',
+                'almacen_id'       => $_GET['almacen_id'] ?? '',
+                'tipo'             => $_GET['tipo'] ?? '',
+                'stock_flag'       => $_GET['stock_flag'] ?? '',
+                'valor_min'        => $_GET['valor_min'] ?? '',
+                'valor_max'        => $_GET['valor_max'] ?? '',
+                'fecha_desde'      => $_GET['fecha_desde'] ?? '',
+                'fecha_hasta'      => $_GET['fecha_hasta'] ?? '',
+                'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
+                'codigo_barras'    => trim((string) ($_GET['codigo_barras'] ?? '')),
+            ];
+
+            if (!empty($_GET['cat']) && empty($filtros['categoria_id'])) {
+                $filtros['categoria'] = (string) $_GET['cat'];
+            }
+
+            $porPagina = 10;
+            $pagina = max(1, (int) ($_GET['page'] ?? 1));
+            $offset = ($pagina - 1) * $porPagina;
+            $resultado = Producto::inventarioListado($filtros, $porPagina, $offset);
+            $totalPaginas = max(1, (int) ceil($resultado['total'] / $porPagina));
+
+            if ($pagina > $totalPaginas) {
+                $pagina = $totalPaginas;
+                $offset = ($pagina - 1) * $porPagina;
+                $resultado = Producto::inventarioListado($filtros, $porPagina, $offset);
+            }
+
+            $listado = $resultado['items'];
+            $totalRegistros = $resultado['total'];
+            $mostrarCostos = ($_SESSION['role'] ?? '') !== 'Almacen';
+            $auditor = (string) ($_SESSION['nombre'] ?? '');
+            $fechaImpresion = new DateTimeImmutable('now', new DateTimeZone('America/Mexico_City'));
+
+            ActivityLogger::registrarAccion('inventario', 'impresion_listado', 'Listado de Inventario Generado', [
+                'pagina' => $pagina,
+                'registros_impresos' => count($listado),
+                'total_filtrado' => $totalRegistros,
+                'filtros' => array_filter($filtros, static fn($valor): bool => $valor !== '' && $valor !== null),
+            ]);
+
+            include __DIR__ . '/../templates/lista_inventario.php';
+        }
+
         public function obtenerVistaInventario()
         {
             include __DIR__ . '/../views/inventario/main/actual.php';
@@ -534,6 +585,12 @@
                 if (empty($errors)) {
                     $payload = $data;
                     Producto::create($payload);
+                    ActivityLogger::registrarAlta('inventario', 'producto', null, 'Producto Añadido al Catálogo', [
+                        'sku' => $payload['sku'] ?? null,
+                        'codigo_fabricante' => $payload['codigo_fabricante'] ?? null,
+                        'nombre' => $payload['nombre'] ?? null,
+                        'almacen_id' => $payload['almacen_id'] ?? null,
+                    ]);
                     $_SESSION['alerta'] = [
                         'tipo' => 'success',
                         'titulo' => 'Éxito al Crear',
@@ -1020,8 +1077,6 @@
                 'ubicacion_fisica'          => trim($rowAssoc['ubicacion_fisica'] ?? ''),
                 'tipo'                      => $tipo,
                 'imagen_url'                => null,
-                'last_requested_by_user_id' => null,
-                'last_request_date'         => null,
                 'activo_id'                 => 1,
             ];
 
@@ -1097,10 +1152,9 @@
         }
 
         $db              = Database::getInstance()->getConnection();
-        $categorias      = $db->query('SELECT id, nombre FROM categorias ORDER BY nombre ASC')->fetchAll();
-        $proveedores     = $db->query('SELECT id, nombre FROM proveedores ORDER BY nombre ASC')->fetchAll();
+        $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
         $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
-        $unidades        = $db->query('SELECT id, nombre, abreviacion FROM unidades_medida ORDER BY nombre ASC')->fetchAll();
+        $unidades        = $db->query('SELECT id, nombre, apodo, sistema FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
         $tiposProducto   = Producto::tiposDisponibles();
 
         $errors = [];
@@ -1134,7 +1188,7 @@
                 if (empty($errors)) {
                     Producto::update($id, $data);
                     ActivityLogger::log('producto_actualizado', 'Se actualizo el producto ' . $data['nombre'], [
-                        'codigo' => $data['codigo'],
+                        'codigo' => $data['codigo_fabricante'],
                     ]);
                     $_SESSION['alerta'] = [
                         'tipo' => 'success',
@@ -1200,6 +1254,11 @@
 
                 try {
                     $pdf = $this->buildEtiquetasPdf($labels);
+                    ActivityLogger::registrarAccion('inventario', 'impresion_etiquetas', 'Etiquetas de Producto Generadas', [
+                        'producto_id' => (int) $id,
+                        'almacen_id' => $almacenId,
+                        'cantidad' => $cantidad,
+                    ]);
                     header('Content-Type: application/pdf');
                     header('Content-Disposition: inline; filename=etiquetas_producto_' . preg_replace('/[^A-Za-z0-9_-]/', '', $producto['codigo'] ?? 'producto') . '.pdf');
                     echo $pdf;

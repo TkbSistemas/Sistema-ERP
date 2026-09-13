@@ -90,7 +90,7 @@ $facturasRelacionadas = $facturasRelacionadas ?? [];
         <main class="detalle-main">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
                 <div>
-                    <h1 style="margin:0; font-size:2rem; color:#12305f;">Orden #<?= $ordenId ?></h1>
+                    <h1 class="page-title-icon" style="margin:0; font-size:2rem; color:#12305f;"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Orden #<?= $ordenId ?></h1>
                     <p style="margin:6px 0 0; color:#61729f;">Proveedor: <?= htmlspecialchars($orden['proveedor'] ?? 'Desconocido') ?></p>
                 </div>
                 <div class="actions">

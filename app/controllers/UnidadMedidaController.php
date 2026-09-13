@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/UnidadMedida.php';
 require_once __DIR__ . '/../helpers/Session.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 class UnidadMedidaController
 {
@@ -25,6 +26,10 @@ class UnidadMedidaController
                 UnidadMedida::create([
                     'nombre'      => trim($_POST['nombre']),
                     'abreviacion' => trim($_POST['abreviacion']),
+                ]);
+                ActivityLogger::registrarAlta('configuracion', 'unidad_medida', null, 'Unidad de Medida Registrada', [
+                    'nombre' => trim((string) $_POST['nombre']),
+                    'abreviacion' => trim((string) $_POST['abreviacion']),
                 ]);
                 header('Location: unidades.php?success=1');
                 exit();
@@ -54,6 +59,10 @@ class UnidadMedidaController
                     'nombre'      => trim($_POST['nombre']),
                     'abreviacion' => trim($_POST['abreviacion']),
                 ]);
+                ActivityLogger::registrarActualizacion('configuracion', 'unidad_medida', $id, 'Unidad de Medida Actualizada', [
+                    'nombre' => trim((string) $_POST['nombre']),
+                    'abreviacion' => trim((string) $_POST['abreviacion']),
+                ]);
                 header('Location: unidades.php?success=2');
                 exit();
             }
@@ -73,6 +82,7 @@ class UnidadMedidaController
         $unidadId = (int) ($id ?: ($_POST['id'] ?? 0));
         if ($unidadId > 0) {
             UnidadMedida::delete($unidadId);
+            ActivityLogger::registrarBaja('configuracion', 'unidad_medida', $unidadId, 'Unidad de Medida Eliminada');
             header('Location: unidades.php?deleted=1');
             exit();
         }

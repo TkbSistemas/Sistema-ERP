@@ -38,7 +38,7 @@ $breadcrumbs = [
         <!-- Formulario de edición -->
         <main class="dashboard-main">
             <div class="usuarios-header-row2">
-                <h1>Editar Usuario</h1>
+                <h1 class="page-title-icon"><i class="fa-solid fa-user-pen" aria-hidden="true"></i> Editar Usuario</h1>
                 <a class="btn-main" href="usuarios.php"><i class="fa fa-arrow-left"></i> Volver al listado</a>
             </div>
             <div class="form-box">

@@ -49,6 +49,11 @@ $buildQuery = function(array $overrides = []) {
     }
     return $params ? ('?' . http_build_query($params)) : '?';
 };
+$printParams = array_filter(
+    array_merge($filtros, ['page' => $page]),
+    static fn($value): bool => $value !== '' && $value !== null
+);
+$printUrl = 'imprimir_inventario' . ($printParams ? ('?' . http_build_query($printParams)) : '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -60,7 +65,7 @@ $buildQuery = function(array $overrides = []) {
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesigncss.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <style>
         .inventario-table .col-stock { width: 140px; min-width: 120px; text-align: center; }
         .inventario-table td.col-stock { white-space: nowrap; }
@@ -87,8 +92,11 @@ $buildQuery = function(array $overrides = []) {
         <main class="dashboard-main">
             <div class="dashboard-header-row">
                 <div>
-                    <h1>INVENTARIO GENERAL</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> INVENTARIO GENERAL</h1>
                     <span class="dashboard-desc">Supervisa el Estado del Stock, Ubicaciones y Movimientos de Productos.</span>
+                </div>
+                <div class="productos-header-actions">
+                    <a class="btn-main" id="btnimprimirSeleccion" href="<?= htmlspecialchars($printUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><i class="fa fa-print"></i> Imprimir Selección</a>
                 </div>
             </div>
 
@@ -222,7 +230,7 @@ $buildQuery = function(array $overrides = []) {
 
             <section class="inventario-table-card">
                 <div class="inventario-table-header">
-                    <h2><i class="fa-solid fa-cubes"></i> Resultados</h2>
+                    <h2><i class="fa-solid fa-cubes"></i> Inventario</h2>
                     <span class="inventario-table-sub">Mostrando <?= number_format($desde) ?> - <?= number_format($hasta) ?> de <?= number_format($totalRegistros) ?> productos</span>
                 </div>
                 <div class="inventario-table-wrapper">

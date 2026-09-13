@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/Empleado.php';
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../models/Proyecto.php';
 require_once __DIR__ . '/../models/SolicitudMaterial.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 
 class EmpleadoController{
@@ -159,6 +160,13 @@ class EmpleadoController{
                 AND solicitante_id = {$usuarioId}
             ")->fetchColumn();
 
+            $numSolicitudesEnEntrega = (int) $db->query("
+                SELECT COUNT(*)
+                FROM solicitudes_material
+                WHERE estatus = 'Aprobada'
+                AND solicitante_id = {$usuarioId}
+            ")->fetchColumn();
+
             $totalSeleccionado = $tabActiva === 'historial'
                 ? $numSolicitudesEsteMes
                 : $numSolicitudesPendientes;
@@ -179,6 +187,7 @@ class EmpleadoController{
             $datos['solicitudesEsteMes'] = $solicitudesEsteMes;
             $datos['solicitudesPendientes'] = $solicitudesPendientes;
             $datos['numSolicitudesPendientes'] = $numSolicitudesPendientes;
+            $datos['numSolicitudesEnEntrega'] = $numSolicitudesEnEntrega;
 
             $pagination = [
                 'pagina' => $pagina,
@@ -209,14 +218,39 @@ class EmpleadoController{
         }
 
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("UPDATE solicitudes_material SET estatus = 'Cancelada', comentario_solicitante = :comentario WHERE id = :id");
-        $stmt->execute([':comentario' => $comentario, ':id' => $solicitudId]);
+        $stmt = $db->prepare(
+            "UPDATE solicitudes_material
+                SET estatus = 'Cancelada', comentario_solicitante = :comentario
+              WHERE id = :id
+                AND solicitante_id = :solicitante_id
+                AND estatus IN ('Pendiente', 'Aprobada')"
+        );
+        $stmt->execute([
+            ':comentario' => $comentario,
+            ':id' => $solicitudId,
+            ':solicitante_id' => (int) ($_SESSION['user_id'] ?? 0),
+        ]);
 
-        $_SESSION['alerta'] = [
-            'tipo' => 'success',
-            'titulo' => 'Solicitud Cancelada',
-            'mensaje' => 'La Solicitud ha Sido Cancelada Éxitosamente.'
-        ];
+        if ($stmt->rowCount() === 1) {
+            ActivityLogger::registrarCambioEstado(
+                'empleado',
+                'solicitud_material',
+                $solicitudId,
+                'Cancelada',
+                'Solicitud de Material Cancelada por el Solicitante'
+            );
+            $_SESSION['alerta'] = [
+                'tipo' => 'success',
+                'titulo' => 'Solicitud Cancelada',
+                'mensaje' => 'La Solicitud ha Sido Cancelada Éxitosamente.'
+            ];
+        } else {
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'Solicitud no Disponible',
+                'mensaje' => 'La Solicitud no Existe, no te Pertenece o ya Fue Procesada.'
+            ];
+        }
         header('Location: mis_solicitudes');
         exit;
     }
@@ -278,6 +312,19 @@ class EmpleadoController{
                         'fecha_requerida' => $fechaRequerida,
                         'comentario_solicitante' => $comentario,
                     ], $detalles, $noRegistrados);
+
+                    ActivityLogger::registrarAlta(
+                        'empleado',
+                        'solicitud_material',
+                        $solicitud['id'] ?? null,
+                        'Solicitud de Material Registrada',
+                        [
+                            'folio' => $solicitud['folio'] ?? null,
+                            'proyecto_id' => $proyectoId,
+                            'productos_catalogo' => count($detalles),
+                            'productos_fuera_catalogo' => count($noRegistrados),
+                        ]
+                    );
 
                     $_SESSION['alerta'] = [
                         'tipo' => 'success',

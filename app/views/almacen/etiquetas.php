@@ -49,7 +49,7 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
         <main class="dashboard-main productos-main">
             <div class="productos-header">
                 <div>
-                    <h1>Imprimir etiquetas</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-tags" aria-hidden="true"></i> Imprimir Etiquetas</h1>
                     <p class="productos-header-desc">Genera etiquetas PDF con código de barras para el producto seleccionado.</p>
                 </div>
                 <div class="productos-header-actions">

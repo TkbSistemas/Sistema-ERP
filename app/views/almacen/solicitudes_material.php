@@ -4,6 +4,8 @@ Session::requireLogin(['Administrador', 'Almacen']);
 $role = $_SESSION['role'] ?? '';
 $nombre = $_SESSION['nombre'] ?? '';
 $tab_activa = $_GET['tab'] ?? 'pendientes';
+$alertaSesion = $_SESSION['alerta'] ?? null;
+unset($_SESSION['alerta']);
 
 if (!isset($pagina)) $pagina = 1;
 if (!isset($total_paginas)) $total_paginas = 1;
@@ -43,11 +45,25 @@ $buildTabQuery = function (string $tab): string {
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     <div class="content-area">
         <?php include __DIR__ . '/../layouts/topbar.php'; ?>
-        <main class="prestamos-main">
-        <div class="prestamos-title">
-            <i class="fa-solid fa-toolbox"></i>
-            SOLICITUDES DE MATERIAL
-        </div>
+        <?php if (is_array($alertaSesion)): ?>
+            <script>
+                Swal.fire({
+                    icon: <?= json_encode($alertaSesion['tipo'] ?? 'info', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                    title: <?= json_encode($alertaSesion['titulo'] ?? 'Aviso', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                    text: <?= json_encode($alertaSesion['mensaje'] ?? '', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                    confirmButtonColor: '#3085d6'
+                });
+            </script>
+        <?php endif; ?>
+        <main class="dashboard-main solicitudes-page-main">
+            <div class="dashboard-header-row">
+                <div>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> SOLICITUDES DE MATERIAL</h1>
+                    <span class="dashboard-desc">Revisa, Autoriza y Consulta las Solicitudes Enviadas al Almacén.</span>
+                </div>
+            </div>
+
+            <section class="prestamos-main solicitudes-list-card">
         
             <section class="dashboard-cards-row">
                 <div class="dashboard-card warning">
@@ -96,9 +112,9 @@ $buildTabQuery = function (string $tab): string {
                     <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>"><?= htmlspecialchars($s['estatus']) ?></span></td>
                     <td><?= htmlspecialchars($s['folio']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
-                    <td><?= htmlspecialchars($s['proyecto_id']) ?></td>
+                    <td><?= htmlspecialchars($s['nombre_proyecto'] ?? 'Sin Proyecto') ?></td>
                     <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
-                    <td><?= nl2br($s['materiales_resumen']) ?></td>
+                    <td><?= nl2br(htmlspecialchars((string) ($s['materiales_resumen'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></td>
                     <td>
                         <a class="btn-table" title="Ver" href="ver_solicitud_material?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
                         <?php if ($s['estatus'] === 'Pendiente'): ?>
@@ -167,7 +183,7 @@ $buildTabQuery = function (string $tab): string {
         
         <nav class="module-pagination" aria-label="Paginación de solicitudes">
             <span class="module-pagination-info">
-                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin solicitudes para mostrar' ?>
+                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin Solicitudes para Mostrar' ?>
             </span>
             <div class="module-pagination-controls">
                 <?php if ($pagination['pagina'] > 1): ?>
@@ -179,6 +195,7 @@ $buildTabQuery = function (string $tab): string {
                 <?php endif; ?>
             </div>
         </nav>
+            </section>
         </main>
     </div>
 </div>

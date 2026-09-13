@@ -56,11 +56,15 @@ $buildTabQuery = function (string $tab): string {
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     <div class="content-area">
         <?php include __DIR__ . '/../layouts/topbar.php'; ?>
-        <main class="prestamos-main">
-        <div class="prestamos-title">
-            <i class="fa-solid fa-toolbox"></i>
-            MIS SOLICITUDES
-        </div>
+        <main class="dashboard-main solicitudes-page-main">
+            <div class="dashboard-header-row">
+                <div>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> MIS SOLICITUDES</h1>
+                    <span class="dashboard-desc">Consulta el Estado y Seguimiento de tus Solicitudes de Material.</span>
+                </div>
+            </div>
+
+            <section class="prestamos-main solicitudes-list-card">
             <section class="dashboard-cards-row">
                 <div class="dashboard-card waiting">
                     <div class="card-info">
@@ -75,7 +79,7 @@ $buildTabQuery = function (string $tab): string {
                 <div class="dashboard-card">
                     <div class="card-info">
                         <div class="card-label">Mis Solicitudes</div>
-                        <div class="card-value"><?= number_format($datos[''] ?? 0) ?></div>
+                        <div class="card-value"><?= number_format($datos['numSolicitudesEsteMes'] ?? 0) ?></div>
                         <div class="card-sub">Este Mes</div>
                     </div>
                     <div class="card-icon-container">
@@ -110,7 +114,7 @@ $buildTabQuery = function (string $tab): string {
                     <td><?= htmlspecialchars($s['folio']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_proyecto']) ?></td>
                     <td><?= date('d/m/Y', strtotime($s['fecha_solicitud'])) ?></td>
-                    <td><?= nl2br($s['materiales_resumen']) ?></td>
+                    <td><?= strip_tags((string) ($s['materiales_resumen'] ?? ''), '<br>') ?></td>
                     <td>
                         <?php if (in_array($s['estatus'], ['Pendiente', 'Aprobada'])): ?>
                             <a class="btn-table btn-confirmar" 
@@ -156,7 +160,7 @@ $buildTabQuery = function (string $tab): string {
         
         <nav class="module-pagination" aria-label="Paginación de solicitudes">
             <span class="module-pagination-info">
-                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin solicitudes para mostrar' ?>
+                <?= $pagination['total'] > 0 ? "Mostrando {$pagination['desde']}–{$pagination['hasta']} de " . number_format($pagination['total']) : 'Sin Solicitudes para Mostrar' ?>
             </span>
             <div class="module-pagination-controls">
                 <?php if ($pagination['pagina'] > 1): ?>
@@ -168,6 +172,7 @@ $buildTabQuery = function (string $tab): string {
                 <?php endif; ?>
             </div>
         </nav>
+            </section>
         </main>
     </div>
 </div>

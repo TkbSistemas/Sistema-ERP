@@ -129,7 +129,7 @@ if (empty($ordenDatos['detalles'])) {
         <main class="orden-form">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
                 <div>
-                    <h1 style="margin:0; font-size:2rem; color:#12305f;"><?= htmlspecialchars($titulo) ?></h1>
+                    <h1 class="page-title-icon" style="margin:0; font-size:2rem; color:#12305f;"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> <?= htmlspecialchars($titulo) ?></h1>
                     <p style="margin:6px 0 0; color:#61729f;">Captura los datos principales y los productos comprados.</p>
                 </div>
                 <div>

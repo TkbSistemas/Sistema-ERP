@@ -152,6 +152,12 @@
     text-transform: uppercase;
 }
 
+.solicitudes-list-card {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
 .solicitud-estatus--pendiente {
     color: #7a4b00;
     background: #fff3bf;

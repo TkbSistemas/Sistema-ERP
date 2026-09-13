@@ -46,7 +46,7 @@ $alertas = $datos['alertas'] ?? [];
         <main class="dashboard-main">
             <div class="dashboard-header-row">
                 <div>
-                    <h1><?= $role === 'Administrador' ? 'Dashboard administrativo' : ($role === 'Almacen' ? 'Dashboard almacen' : ($role === 'Compras' ? 'Dashboard compras' : 'Dashboard empleado')) ?></h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> <?= $role === 'Administrador' ? 'Dashboard Administrativo' : ($role === 'Almacen' ? 'Dashboard Almacén' : ($role === 'Compras' ? 'Dashboard Compras' : 'Dashboard Empleado')) ?></h1>
                     <span class="dashboard-desc">
                         <?php if ($role === 'Administrador'): ?>Resumen general del sistema de inventario TAKAB.
                         <?php elseif ($role === 'Almacen'): ?>Panel para gestión de inventario y solicitudes.

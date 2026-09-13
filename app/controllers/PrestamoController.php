@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../models/Prestamo.php';
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../helpers/Session.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 class PrestamoController
 {
@@ -37,6 +38,9 @@ class PrestamoController
                 $estado_devolucion = $_POST['estado_devolucion'] ?? '';
                 $observaciones     = trim($_POST['observaciones'] ?? '');
                 Prestamo::devolver($id, $estado_devolucion, $observaciones);
+                ActivityLogger::registrarCambioEstado('almacen', 'prestamo_herramienta', $id, 'Devuelto', 'Devolución de Herramienta Registrada', [
+                    'estado_devolucion' => $estado_devolucion,
+                ]);
                 $msg = 'Devolucion registrada correctamente.';
                 // Recargar prestamo actualizado
                 $prestamo = Prestamo::find($id);

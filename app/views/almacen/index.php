@@ -65,7 +65,7 @@ $nombre = $_SESSION['nombre'];
         <main class="dashboard-main">
             <div class="main-table-card">
                 <div class="main-table-header-row">
-                    <div class="main-table-title">Gestión de Almacenes</div>
+                    <div class="main-table-title"><i class="fa-solid fa-warehouse" aria-hidden="true"></i> Gestión de Almacenes</div>
                     <a class="btn-main" href="almacenes_create.php"><i class="fa fa-plus"></i> Agregar Almacén</a>
                 </div>
                 <?php if (isset($_GET['success'])) echo "<div class='form-success'>Operación exitosa.</div>"; ?>

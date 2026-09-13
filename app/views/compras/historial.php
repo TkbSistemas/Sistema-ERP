@@ -91,7 +91,7 @@ $buildQuery = function(array $overrides = []) {
         <main class="dashboard-main compras-main">
             <div class="compras-header">
                 <div>
-                    <h1>Historial de compras</h1>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Historial de Compras</h1>
                     <p class="reportes-desc">Consulta las órdenes de compra registradas por proveedor y periodo.</p>
                 </div>
                 <div class="section-actions">

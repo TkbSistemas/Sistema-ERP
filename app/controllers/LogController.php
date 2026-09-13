@@ -27,7 +27,7 @@ class LogController
         $total        = $resultado['total'];
         $totalPaginas = max(1, (int) ceil($total / $porPagina));
 
-        $usuarios = $db->query('SELECT id, nombre_completo FROM usuarios ORDER BY nombre_completo ASC')->fetchAll();
+        $usuarios = $db->query('SELECT id, nombre FROM usuarios ORDER BY nombre ASC')->fetchAll();
 
         include __DIR__ . '/../views/logs/index.php';
     }

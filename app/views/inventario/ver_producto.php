@@ -68,7 +68,7 @@ function format_stock($value) {
 		<main class="dashboard-main productos-main">
 			<div class="productos-header">
 				<div>
-					<h1>DETALLES DEL PRODUCTO</h1>
+					<h1 class="page-title-icon"><i class="fa-solid fa-box-open" aria-hidden="true"></i> DETALLES DEL PRODUCTO</h1>
 					<p class="productos-header-desc">Visualiza Toda la Información del Artículo Seleccionado.</p>
 				</div>
 				<div class="productos-header-actions">
@@ -156,10 +156,6 @@ function format_stock($value) {
 			<section class="productos-detail-card">
 				<h2><i class="fa fa-clock"></i> Historial Interno</h2>
 				<div class="detail-grid">
-					<div class="detail-item">
-						<span class="label">Última Solicitud</span>
-						<span class="value"><?= !empty($producto['last_request_date']) ? date('d/m/Y H:i', strtotime($producto['last_request_date'])) : 'Sin Registros' ?></span>
-					</div>
 					<div class="detail-item">
 						<span class="label">Fecha de Registro</span>
 						<span class="value"><?= !empty($producto['created_at']) ? date('d/m/Y H:i', strtotime($producto['created_at'])) : '-' ?></span>

@@ -61,7 +61,7 @@ $breadcrumbs = [
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1><i class="fa fa-arrow-down"></i> REGISTRO RÁPIDO DE INVENTARIO</h1>
+                    <h1 class="page-title-icon"><i class="fa fa-arrow-down" aria-hidden="true"></i> REGISTRO RÁPIDO DE INVENTARIO</h1>
                     <p class="form-desc">Captura Productos que NO Cuenten con Orden de Compra Asociada.</p>
                 </div>
                 <a class="btn-secondary" href="registrar_entrada"><i class="fa fa-arrow-left"></i> Volver a Entradas</a>
