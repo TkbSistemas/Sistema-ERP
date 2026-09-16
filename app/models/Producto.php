@@ -243,18 +243,6 @@ class Producto
         return $stmt->execute([$codigo, $id]);
     }
 
-    public static function existsCodigoExcept($codigo, $id)
-    {
-        $db = Database::getInstance()->getConnection();
-        $codigo = strtoupper(trim((string) $codigo));
-        if ($codigo === '') {
-            return false;
-        }
-        $stmt = $db->prepare("SELECT * FROM inventario WHERE codigo = ? AND id != ?");
-        $stmt->execute([$codigo, $id]);
-        return $stmt->fetch();
-    }
-
     public static function update($id, $data)
     {
         $db = Database::getInstance()->getConnection();
@@ -311,44 +299,6 @@ class Producto
                 $db->rollBack();
             }
             throw $e;
-        }
-    }
-
-    public static function delete($id)
-    {
-        $db = Database::getInstance()->getConnection();
-        try {
-            $db->beginTransaction();
-
-            self::deleteRelatedRecords($db, (int) $id);
-
-            $stmt = $db->prepare("DELETE FROM inventario WHERE id=?");
-            $stmt->execute([$id]);
-
-            $db->commit();
-            return true;
-        } catch (\PDOException $e) {
-            if ($db->inTransaction()) {
-                $db->rollBack();
-            }
-            return false;
-        }
-    }
-
-    private static function deleteRelatedRecords(\PDO $db, int $productoId): void
-    {
-        $relations = [
-            'detalle_ordenes'        => 'producto_id',
-            'detalle_solicitud'      => 'producto_id',
-            'movimientos_inventario' => 'producto_id',
-            'prestamos'              => 'producto_id',
-            'solicitudes'            => 'producto_id',
-            'stock_almacen'       => 'producto_id',
-        ];
-
-        foreach ($relations as $table => $column) {
-            $stmt = $db->prepare("DELETE FROM {$table} WHERE {$column} = ?");
-            $stmt->execute([$productoId]);
         }
     }
 
@@ -438,93 +388,6 @@ class Producto
         $stmt->execute([$cantidadFloat, (int) $id, (int) $almacenId, $cantidadFloat]);
         return $stmt->rowCount() === 1;
     }
-
-    public static function stockEnAlmacen(int $productoId, int $almacenId): float
-    {
-        $db = Database::getInstance()->getConnection();
-        self::ensureStockTable($db);
-        $stmt = $db->prepare("SELECT stock FROM stock_almacen WHERE producto_id = ? AND almacen_id = ?");
-        $stmt->execute([$productoId, $almacenId]);
-        $row = $stmt->fetch();
-        return (float)($row['stock'] ?? 0);
-    }
-
-    public static function stockTotal(int $productoId): float
-    {
-        $db = Database::getInstance()->getConnection();
-        self::ensureStockTable($db);
-        $stmt = $db->prepare('SELECT COALESCE(SUM(stock), 0) AS total FROM stock_almacen WHERE producto_id = ?');
-        $stmt->execute([$productoId]);
-        return (float) ($stmt->fetchColumn() ?: 0);
-    }
-
-    public static function moverStock(int $productoId, int $origenId, int $destinoId, float $cantidad): bool
-    {
-        if ($cantidad <= 0) return false;
-        $db = Database::getInstance()->getConnection();
-        self::ensureStockTable($db);
-        $db->beginTransaction();
-        try {
-            $disp = self::stockEnAlmacen($productoId, $origenId);
-            if ($cantidad > $disp) {
-                $db->rollBack();
-                return false;
-            }
-            // Restar en origen (no dejar negativo)
-            self::restarStock($productoId, $cantidad, $origenId);
-            // Sumar en destino
-            self::sumarStock($productoId, $cantidad, $destinoId);
-            $db->commit();
-            return true;
-        } catch (\Throwable $e) {
-            $db->rollBack();
-            return false;
-        }
-    }
-
-    public static function actualizarAlmacen(int $id, int $almacenId): bool
-    {
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("UPDATE inventario SET almacen_id = ? WHERE id = ?");
-        return $stmt->execute([$almacenId, $id]);
-    }
-
-    public static function allInventario($filtros = [])
-    {
-        $db = Database::getInstance()->getConnection();
-        $almacenSeleccionado = !empty($filtros['almacen_id']) ? (int) $filtros['almacen_id'] : null;
-        $stockJoin = $almacenSeleccionado
-            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
-            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
-        $sql = "SELECT p.*,
-                       COALESCE(si.stock_actual, 0) AS stock_actual,
-                       c.nombre AS categoria,
-                       u.abreviacion AS unidad,
-                       (p.costo_compra * COALESCE(si.stock_actual, 0)) AS valor_total,
-                       (SELECT MAX(created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento,
-                       p.activo
-                FROM inventario p
-                {$stockJoin}
-                LEFT JOIN categorias c ON p.categoria_id = c.id
-                LEFT JOIN unidades_medida u ON p.unidad_medida_id = u.id
-                WHERE 1=1";
-        $params = [];
-        if (!empty($filtros['q'])) {
-            $sql .= " AND (p.nombre LIKE ? OR p.codigo LIKE ? OR p.codigo_barras LIKE ?)";
-            $params[] = '%' . $filtros['q'] . '%';
-            $params[] = '%' . $filtros['q'] . '%';
-            $params[] = '%' . $filtros['q'] . '%';
-        }
-        if (!empty($filtros['categoria'])) {
-            $sql .= " AND c.nombre = ?";
-            $params[] = $filtros['categoria'];
-        }
-        $sql .= " ORDER BY p.nombre ASC";
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
 
     public static function inventarioListado(array $filtros, ?int $limit = null, int $offset = 0): array
     {
@@ -686,13 +549,6 @@ class Producto
                 'inactivos' => (int) ($totales['inactivos'] ?? 0),
             ],
         ];
-    }
-
-    public static function categorias()
-    {
-        $db = Database::getInstance()->getConnection();
-        $cats = $db->query("SELECT nombre FROM categorias ORDER BY nombre ASC")->fetchAll(PDO::FETCH_COLUMN);
-        return $cats ?: [];
     }
 
     public static function tiposDisponibles(): array

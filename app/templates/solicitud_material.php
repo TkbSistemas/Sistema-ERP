@@ -176,11 +176,10 @@
             word-wrap: break-word;
         }
 
-        .col-no      { width: 6%; text-align: center; }
-        .col-codigo  { width: 18%; }
-        .col-nombre  { width: 52%; }
-        .col-udm     { width: 12%; text-align: center; }
-        .col-cant    { width: 12%; text-align: center; font-weight: bold; }
+        .col-no          { width: 6%; text-align: center; }
+        .col-codigo      { width: 18%; }
+        .col-nombre      { width: 58%; }
+        .col-cant-unidad { width: 18%; text-align: center; font-weight: bold; }
 
         .signatures-container {
             display: flex;
@@ -343,8 +342,7 @@
                             <th class="col-no">No.</th>
                             <th class="col-codigo">Código</th>
                             <th class="col-nombre">Nombre / Descripción del Producto</th>
-                            <th class="col-cant">Cantidad</th>
-                            <th class="col-udm">U. Medida</th>
+                            <th class="col-cant-unidad">Cantidad / Unidad</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -369,8 +367,9 @@
                                         <span class="material-detail"><strong>Observaciones:</strong> <?= htmlspecialchars($prod['observaciones']) ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="col-cant"><?= htmlspecialchars($prod['cantidad'] ?? 1) ?></td>
-                                <td class="col-udm"><?= htmlspecialchars($prod['unidad_medida'] ?? 'Pza') ?></td>
+                                <td class="col-cant-unidad">
+                                    <?= htmlspecialchars(trim((string) ($prod['cantidad'] ?? 1) . ' ' . (string) ($prod['unidad_medida'] ?? 'Pza'))) ?>
+                                </td>
                             </tr>
                         <?php 
                         $num++;

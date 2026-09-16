@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../helpers/Session.php';
-Session::requireLogin(['Administrador', 'Empleado']);
+Session::requireLogin(['Administrador', 'Compras']);
 
 $role = $_SESSION['role'] ?? 'Empleado';
 $nombre = $_SESSION['nombre'] ?? '';
@@ -9,6 +9,7 @@ $productos = is_array($productos ?? null) ? array_values(array_filter(
     static fn(array $producto): bool => !array_key_exists('activo', $producto) || (string) $producto['activo'] === '1'
 )) : [];
 $proyectos = is_array($proyectos ?? null) ? $proyectos : [];
+$proveedores = is_array($proveedores ?? null) ? $proveedores : [];
 $error = $error ?? '';
 $msg = $msg ?? '';
 
@@ -34,21 +35,23 @@ if (is_string($materialesPost) && $materialesPost !== '') {
 
 $alertaSesion = $_SESSION['alerta'] ?? null;
 unset($_SESSION['alerta']);
-$seccion_activa = 'crear_solicitud';
+$seccion_activa = 'ordenes_compra';
+$formStylePath = __DIR__ . '/../../../public/assets/css/inventario_form.css';
+$formStyleVersion = is_file($formStylePath) ? (string) filemtime($formStylePath) : '1';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SOLICITUD DE MATERIAL | TAKAB</title>
+    <title>CREAR ORDEN DE COMPRA | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
-    <link rel="stylesheet" href="assets/css/inventario_form.css">
+    <link rel="stylesheet" href="assets/css/inventario_form.css?v=<?= rawurlencode($formStyleVersion) ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
-<body class="module-inventory-warehouse solicitud-material-page">
+<body class="module-inventory-warehouse solicitud-material-page crear-orden-page">
 <div class="main-layout">
     <button type="button" id="toggleSidebar" class="btn-toggle-sidebar" aria-label="Abrir o Cerrar Menú" aria-expanded="true">
         <i class="fa-solid fa-bars"></i>
@@ -61,8 +64,8 @@ $seccion_activa = 'crear_solicitud';
         <main class="dashboard-main inventario-form-main">
             <div class="inventario-form-header">
                 <div>
-                    <h1 class="page-title-icon"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> SOLICITUD DE MATERIALES</h1>
-                    <p class="form-desc">Agrega Productos del Catálogo o Materiales que todavía no Estén Registrados.</p>
+                    <h1 class="page-title-icon"><i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> CREAR ORDEN DE COMPRA</h1>
+                    <p class="form-desc">Selecciona un Proveedor General y Agrega los Materiales que Formarán Parte de la Orden.</p>
                 </div>
             </div>
 
@@ -75,48 +78,46 @@ $seccion_activa = 'crear_solicitud';
 
             <div class="inventario-form-grid">
                 <section class="inventario-form-card">
-                    <h2><i class="fa-solid fa-clipboard-list"></i> Datos de la Solicitud</h2>
-                    <form action="<?= htmlspecialchars(Session::url('crear_solicitud'), ENT_QUOTES, 'UTF-8') ?>"
+                    <h2><i class="fa-solid fa-clipboard-list"></i> Datos de la Orden</h2>
+                    <form action="<?= htmlspecialchars(Session::url('orden_nueva'), ENT_QUOTES, 'UTF-8') ?>"
                           method="post"
                           autocomplete="off"
                           class="inventario-entry-form"
-                          id="solicitud-form">
+                          id="orden-form">
                         <input type="hidden" name="csrf" value="<?= htmlspecialchars(Session::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="material" id="material" value="">
-                        <input type="hidden" name="comentario" id="comentario" value="">
-                        <input type="hidden" name="observacion" id="observacion" value="">
 
                         <div class="double-field">
                             <div class="form-field">
-                                <label for="proyecto_id">Proyecto o Destino *</label>
-                                <select id="proyecto_id" name="proyecto_id" required>
-                                    <option value="">Selecciona un Proyecto o Destino...</option>
-                                    <?php foreach ($proyectos as $proyecto): ?>
-                                        <option value="<?= (int) ($proyecto['id'] ?? 0) ?>"
-                                            <?= (string) ($_POST['proyecto_id'] ?? '') === (string) ($proyecto['id'] ?? '') ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($proyecto['nombre'] ?? '') ?>
+                                <label for="proveedor_id">Proveedor *</label>
+                                <select id="proveedor_id" name="proveedor_id" required>
+                                    <option value="">Selecciona un Proveedor...</option>
+                                    <?php foreach ($proveedores as $proveedor): ?>
+                                        <option value="<?= (int) ($proveedor['id'] ?? 0) ?>"
+                                            <?= (string) ($_POST['proveedor_id'] ?? '') === (string) ($proveedor['id'] ?? '') ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($proveedor['nombre'] ?? '') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
 
                             <div class="form-field">
-                                <label for="fecha_entrega">Fecha Requerida *</label>
-                                <input type="date" id="fecha_entrega" name="fecha_entrega" min="<?= date('Y-m-d') ?>"
-                                       value="<?= htmlspecialchars($_POST['fecha_entrega'] ?? '') ?>" required>
+                                <label for="fecha_compra">Fecha Requerida *</label>
+                                <input type="date" id="fecha_compra" name="fecha_compra" min="<?= date('Y-m-d') ?>"
+                                       value="<?= htmlspecialchars($_POST['fecha_compra'] ?? '') ?>" required>
                             </div>
-                        </div>
 
-                        <div class="form-field">
-                            <label for="comentario_general">Motivo o Indicaciones Generales</label>
-                            <textarea id="comentario_general" name="comentario_general" rows="3"
-                                      maxlength="255"
-                                      placeholder="Describe Brevemente para qué se Utilizarán los Materiales."><?= htmlspecialchars($_POST['comentario_general'] ?? '') ?></textarea>
-                        </div>
-
-                        <div class="form-field-line">
-                            <input type="checkbox" id="toggle_fuera_catalogo">
-                            <label for="toggle_fuera_catalogo">El Material no Está en el Catálogo</label>
+                            <div class="form-field">
+                                <label for="metodo_entrega">Método de Entrega *</label>
+                                <select id="metodo_entrega" name="metodo_entrega" required>
+                                    <option value="">Selecciona un Método de Entrega...</option>
+                                    <?php foreach (['Reparto', 'Recolección', 'Por Confirmar'] as $metodo): ?>
+                                        <option value="<?= htmlspecialchars($metodo) ?>" <?= ($_POST['metodo_entrega'] ?? '') === $metodo ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($metodo) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
 
                         <div id="modo_catalogo">
@@ -162,6 +163,7 @@ $seccion_activa = 'crear_solicitud';
                                                 data-nombre="<?= htmlspecialchars($producto['nombre'] ?? '') ?>"
                                                 data-busqueda="<?= htmlspecialchars($textoBusqueda) ?>"
                                                 data-stock="<?= $stockActual ?>"
+                                                data-precio="<?= htmlspecialchars((string) ($producto['precio_unitario'] ?? '0'), ENT_QUOTES, 'UTF-8') ?>"
                                                 data-unidad="<?= htmlspecialchars($unidadProducto) ?>"
                                                 data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
                                                 data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>">
@@ -172,61 +174,35 @@ $seccion_activa = 'crear_solicitud';
                             </div>
                         </div>
 
-                        <div id="modo_manual" hidden>
-                            <div class="double-field">
-                                <div class="form-field">
-                                    <label for="manual_nombre">Nombre del Material *</label>
-                                    <input type="text" id="manual_nombre" maxlength="100" placeholder="Ej. Broca de Cobalto 1/2">
-                                </div>
-                                <div class="form-field">
-                                    <label for="manual_marca">Marca o Modelo Sugerido</label>
-                                    <input type="text" id="manual_marca" maxlength="100" placeholder="Ej. Truper o DeWalt">
-                                </div>
-                                <div class="form-field">
-                                    <label for="manual_tamano">Dimensiones o Especificación</label>
-                                    <input type="text" id="manual_tamano" maxlength="50" placeholder="Ej. 1/2 Pulgada">
-                                </div>
-                                <div class="form-field">
-                                    <label for="manual_unidad">Unidad de Medida *</label>
-                                    <select id="manual_unidad">
-                                        <option value="Pieza">Pieza</option>
-                                        <option value="Metro">Metro</option>
-                                        <option value="Litro">Litro</option>
-                                        <option value="Kilogramo">Kilogramo</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="double-field">
                             <div class="form-field">
                                 <label for="cantidad">Cantidad Necesaria *</label>
                                 <input type="number" id="cantidad" min="0.01" step="0.01" placeholder="Ej. 25">
                             </div>
                             <div class="form-field">
-                                <label for="observaciones">Observaciones del Material</label>
-                                <textarea id="observaciones" rows="2" maxlength="255" placeholder="Características o Indicaciones Específicas."></textarea>
+                                <label for="precio_unitario">Precio Unitario *</label>
+                                <input type="number" id="precio_unitario" min="0.01" step="0.01" placeholder="Ej. 25">
                             </div>
                         </div>
 
                         <div class="entry-batch-actions">
-                            <button type="button" class="btn-secondary" id="agregar-material"><i class="fa fa-plus"></i> Agregar a la Solicitud</button>
+                            <button type="button" class="btn-secondary" id="agregar-material"><i class="fa fa-plus"></i> Agregar a la Orden</button>
                             <button type="button" class="btn-ghost" id="limpiar-captura"><i class="fa fa-eraser"></i> Vaciar Lista</button>
-                            <button type="submit" class="btn-main"><i class="fa fa-paper-plane"></i> Enviar Solicitud</button>
+                            <button type="submit" class="btn-main"><i class="fa fa-save"></i> Registrar Orden</button>
                         </div>
 
                         <section class="entry-items-panel" aria-live="polite">
                             <div class="entry-items-header">
-                                <h3><i class="fa fa-list-check"></i> Materiales Solicitados</h3>
+                                <h3><i class="fa fa-list-check"></i> Materiales Seleccionados</h3>
                                 <span id="items-count">0 Materiales</span>
                             </div>
                             <div class="inventario-empty entry-items-empty" id="items-empty">
                                 <i class="fa fa-box-open"></i>
-                                <p>Agrega Productos del Catálogo o Materiales Externos.</p>
+                                <p>Agrega Productos del Catálogo para Construir la Orden.</p>
                             </div>
                             <div class="entry-items-table-wrapper" id="items-wrapper" hidden>
                                 <table class="entry-items-table">
-                                    <thead><tr><th>Origen</th><th>Material</th><th>Cantidad</th><th>Observaciones</th><th>Acción</th></tr></thead>
+                                    <thead><tr><th>Material</th><th>Cantidad</th><th>Precio Unitario</th><th>Subtotal</th><th>Acción</th></tr></thead>
                                     <tbody id="items-body"></tbody>
                                 </table>
                             </div>
@@ -237,16 +213,15 @@ $seccion_activa = 'crear_solicitud';
                 </section>
 
                 <aside class="inventario-form-card form-summary">
-                    <h2><i class="fa fa-circle-info"></i> Resumen de la Solicitud</h2>
+                    <h2><i class="fa fa-circle-info"></i> Resumen de la Orden</h2>
                     <div class="summary-placeholder" id="summary-placeholder">
                         <i class="fa fa-box"></i>
                         <p>Agrega un Material para Consultar el Resumen.</p>
                     </div>
                     <div class="summary-content" id="summary-content" hidden>
-                        <div class="summary-item"><span class="label">Total</span><span class="value" id="summary-total">0</span></div>
-                        <div class="summary-item"><span class="label">Del Catálogo</span><span class="value" id="summary-catalogo">0</span></div>
-                        <div class="summary-item"><span class="label">Fuera del Catálogo</span><span class="value" id="summary-externos">0</span></div>
-                        <div class="summary-item"><span class="label">Proyecto</span><span class="value" id="summary-proyecto">Sin Seleccionar</span></div>
+                        <div class="summary-item"><span class="label">Partidas</span><span class="value" id="summary-total">0</span></div>
+                        <div class="summary-item"><span class="label">Total Estimado</span><span class="value" id="summary-importe">$0.00</span></div>
+                        <div class="summary-item"><span class="label">Proveedor General</span><span class="value" id="summary-proveedor">Sin Seleccionar</span></div>
                         <div class="summary-item"><span class="label">Fecha Requerida</span><span class="value" id="summary-fecha">Sin Seleccionar</span></div>
                     </div>
                 </aside>
@@ -259,20 +234,12 @@ $seccion_activa = 'crear_solicitud';
 (() => {
     'use strict';
 
-    const form = document.getElementById('solicitud-form');
-    const toggleManual = document.getElementById('toggle_fuera_catalogo');
-    const modoCatalogo = document.getElementById('modo_catalogo');
-    const modoManual = document.getElementById('modo_manual');
+    const form = document.getElementById('orden-form');
     const productoSelect = document.getElementById('producto_id');
     const cantidadInput = document.getElementById('cantidad');
-    const observacionesInput = document.getElementById('observaciones');
-    const manualNombre = document.getElementById('manual_nombre');
-    const manualMarca = document.getElementById('manual_marca');
-    const manualTamano = document.getElementById('manual_tamano');
-    const manualUnidad = document.getElementById('manual_unidad');
-    const proyectoSelect = document.getElementById('proyecto_id');
-    const fechaEntrega = document.getElementById('fecha_entrega');
-    const comentarioGeneral = document.getElementById('comentario_general');
+    const precioUnitarioInput = document.getElementById('precio_unitario');
+    const proveedorSelect = document.getElementById('proveedor_id');
+    const fechaCompra = document.getElementById('fecha_compra');
     const filtroTexto = document.getElementById('filtro_texto');
     const filtroTipo = document.getElementById('filtro_tipo');
     const filtroCategoria = document.getElementById('filtro_categoria');
@@ -283,8 +250,6 @@ $seccion_activa = 'crear_solicitud';
     const itemsCount = document.getElementById('items-count');
     const lineasInputs = document.getElementById('lineas-inputs');
     const materialInput = document.getElementById('material');
-    const comentarioInput = document.getElementById('comentario');
-    const observacionInput = document.getElementById('observacion');
     const summaryPlaceholder = document.getElementById('summary-placeholder');
     const summaryContent = document.getElementById('summary-content');
 
@@ -296,16 +261,16 @@ $seccion_activa = 'crear_solicitud';
         const productoId = String(item.producto_id ?? '').trim();
         const nombreMaterial = String(item.producto_nombre ?? item.nombre ?? '').trim();
         const cantidad = Number.parseFloat(item.cantidad ?? 0);
-        if ((!productoId && !nombreMaterial) || !Number.isFinite(cantidad) || cantidad <= 0) return null;
+        const precioUnitario = Number.parseFloat(item.precio_unitario ?? 0);
+        if (!productoId || !nombreMaterial || !Number.isFinite(cantidad) || cantidad <= 0
+            || !Number.isFinite(precioUnitario) || precioUnitario <= 0) return null;
         return {
-            tipo: String(item.tipo || (productoId ? 'Consumible' : 'Extra')),
-            producto_id: productoId || null,
-            producto_nombre: nombreMaterial || `Producto #${productoId}`,
+            tipo: String(item.tipo || 'Consumible'),
+            producto_id: productoId,
+            producto_nombre: nombreMaterial,
             cantidad,
-            observacion: String(item.observacion ?? item.observaciones ?? '').trim(),
-            unidad: String(item.unidad ?? '').trim(),
-            marca_modelo: String(item.marca_modelo ?? '').trim(),
-            tamano: String(item.tamano ?? '').trim()
+            precio_unitario: precioUnitario,
+            unidad: String(item.unidad ?? '').trim()
         };
     }
 
@@ -330,6 +295,18 @@ $seccion_activa = 'crear_solicitud';
         return item.unidad ? `${cantidad} ${item.unidad}` : cantidad;
     }
 
+    function textoMoneda(valor) {
+        return Number(valor).toLocaleString('es-MX', {
+            style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+    }
+
+    function textoFecha(valor) {
+        if (!valor) return 'Sin Seleccionar';
+        const partes = valor.split('-');
+        return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : valor;
+    }
+
     function renderMateriales() {
         itemsBody.replaceChildren();
         lineasInputs.replaceChildren();
@@ -339,7 +316,12 @@ $seccion_activa = 'crear_solicitud';
 
         materiales.forEach((item, index) => {
             const row = document.createElement('tr');
-            [item.producto_id ? 'Catálogo' : 'Fuera del Catálogo', item.producto_nombre, textoCantidad(item), item.observacion || '-'].forEach((valor) => {
+            [
+                item.producto_nombre,
+                textoCantidad(item),
+                textoMoneda(item.precio_unitario),
+                textoMoneda(item.cantidad * item.precio_unitario)
+            ].forEach((valor) => {
                 const cell = document.createElement('td');
                 cell.textContent = valor;
                 row.appendChild(cell);
@@ -356,14 +338,9 @@ $seccion_activa = 'crear_solicitud';
             row.appendChild(actionCell);
             itemsBody.appendChild(row);
 
-            crearInputOculto('lineas_tipo[]', item.tipo);
             crearInputOculto('lineas_producto_id[]', item.producto_id || '');
-            crearInputOculto('lineas_producto_nombre[]', item.producto_nombre);
             crearInputOculto('lineas_cantidad[]', item.cantidad);
-            crearInputOculto('lineas_observaciones[]', item.observacion);
-            crearInputOculto('lineas_unidad[]', item.unidad);
-            crearInputOculto('lineas_marca_modelo[]', item.marca_modelo);
-            crearInputOculto('lineas_tamano[]', item.tamano);
+            crearInputOculto('lineas_precio_unitario[]', item.precio_unitario);
         });
 
         materialInput.value = JSON.stringify(materiales);
@@ -372,27 +349,29 @@ $seccion_activa = 'crear_solicitud';
 
     function actualizarResumen() {
         const total = materiales.length;
-        const catalogo = materiales.filter((item) => item.producto_id).length;
+        const importe = materiales.reduce((suma, item) => suma + (item.cantidad * item.precio_unitario), 0);
         summaryPlaceholder.hidden = total > 0;
         summaryContent.hidden = total === 0;
         document.getElementById('summary-total').textContent = String(total);
-        document.getElementById('summary-catalogo').textContent = String(catalogo);
-        document.getElementById('summary-externos').textContent = String(total - catalogo);
-        document.getElementById('summary-proyecto').textContent = proyectoSelect.selectedOptions[0]?.value ? proyectoSelect.selectedOptions[0].textContent.trim() : 'Sin Seleccionar';
-        document.getElementById('summary-fecha').textContent = fechaEntrega.value || 'Sin Seleccionar';
+        document.getElementById('summary-importe').textContent = textoMoneda(importe);
+        document.getElementById('summary-proveedor').textContent = proveedorSelect.selectedOptions[0]?.value
+            ? proveedorSelect.selectedOptions[0].textContent.trim() : 'Sin Seleccionar';
+        document.getElementById('summary-fecha').textContent = textoFecha(fechaCompra.value);
     }
 
     function limpiarBorrador() {
         productoSelect.value = '';
-        manualNombre.value = '';
-        manualMarca.value = '';
-        manualTamano.value = '';
-        manualUnidad.value = 'Pieza';
         cantidadInput.value = '';
-        observacionesInput.value = '';
+        precioUnitarioInput.value = '';
     }
 
     function agregarMaterial() {
+        if (!proveedorSelect.value) {
+            avisar('Proveedor Requerido', 'Selecciona el Proveedor General Antes de Agregar Materiales.');
+            proveedorSelect.focus();
+            return;
+        }
+
         const cantidad = Number.parseFloat(cantidadInput.value);
         if (!Number.isFinite(cantidad) || cantidad <= 0) {
             avisar('Cantidad Inválida', 'Captura una Cantidad Mayor a Cero.');
@@ -400,39 +379,26 @@ $seccion_activa = 'crear_solicitud';
             return;
         }
 
-        let material;
-        if (toggleManual.checked) {
-            const nombreMaterial = manualNombre.value.trim();
-            if (!nombreMaterial) {
-                avisar('Material Incompleto', 'Escribe el Nombre del Material que no Está en el Catálogo.');
-                manualNombre.focus();
-                return;
-            }
-            material = {
-                tipo: 'Extra', producto_id: null,
-                producto_nombre: nombreMaterial,
-                cantidad, observacion: observacionesInput.value.trim(), unidad: manualUnidad.value,
-                marca_modelo: manualMarca.value.trim(), tamano: manualTamano.value.trim()
-            };
-        } else {
-            const option = productoSelect.selectedOptions[0];
-            if (!option?.value) {
-                avisar('Producto Incompleto', 'Selecciona un Producto del Catálogo.');
-                productoSelect.focus();
-                return;
-            }
-            const stockDisponible = Number.parseFloat(option.dataset.stock || '0');
-            if (Number.isFinite(stockDisponible) && cantidad > stockDisponible
-                && !window.confirm(`Solicitas ${cantidad} y hay ${stockDisponible} Disponibles. ¿Deseas Continuar?`)) {
-                return;
-            }
-            material = {
-                tipo: option.dataset.tipo || 'Consumible', producto_id: option.value,
-                producto_nombre: option.dataset.nombre || option.textContent.trim(), cantidad,
-                observacion: observacionesInput.value.trim(), unidad: option.dataset.unidad || '',
-                marca_modelo: '', tamano: ''
-            };
+        const precioUnitario = Number.parseFloat(precioUnitarioInput.value);
+        if (!Number.isFinite(precioUnitario) || precioUnitario <= 0) {
+            avisar('Precio Inválido', 'Captura un Precio Unitario Mayor a Cero.');
+            precioUnitarioInput.focus();
+            return;
         }
+
+        const option = productoSelect.selectedOptions[0];
+        if (!option?.value) {
+            avisar('Producto Incompleto', 'Selecciona un Producto del Catálogo.');
+            productoSelect.focus();
+            return;
+        }
+
+        const material = {
+            tipo: option.dataset.tipo || 'Consumible', producto_id: option.value,
+            producto_nombre: option.dataset.nombre || option.textContent.trim(), cantidad,
+            precio_unitario: precioUnitario,
+            unidad: option.dataset.unidad || ''
+        };
 
         materiales.push(material);
         limpiarBorrador();
@@ -458,13 +424,6 @@ $seccion_activa = 'crear_solicitud';
         filtroResultados.textContent = String(visibles);
     }
 
-    function alternarModo() {
-        modoCatalogo.hidden = toggleManual.checked;
-        modoManual.hidden = !toggleManual.checked;
-        productoSelect.value = '';
-        manualNombre.value = '';
-    }
-
     document.getElementById('agregar-material').addEventListener('click', agregarMaterial);
     document.getElementById('limpiar-captura').addEventListener('click', () => {
         materiales.length = 0;
@@ -477,38 +436,39 @@ $seccion_activa = 'crear_solicitud';
         materiales.splice(Number(button.dataset.index), 1);
         renderMateriales();
     });
-    toggleManual.addEventListener('change', alternarModo);
     filtroTexto.addEventListener('input', aplicarFiltros);
     filtroTipo.addEventListener('change', aplicarFiltros);
     filtroCategoria.addEventListener('change', aplicarFiltros);
-    proyectoSelect.addEventListener('change', actualizarResumen);
-    fechaEntrega.addEventListener('change', actualizarResumen);
+    proveedorSelect.addEventListener('change', actualizarResumen);
+    fechaCompra.addEventListener('input', actualizarResumen);
+    fechaCompra.addEventListener('change', actualizarResumen);
+    productoSelect.addEventListener('change', () => {
+        const precioSugerido = Number.parseFloat(productoSelect.selectedOptions[0]?.dataset.precio || '0');
+        precioUnitarioInput.value = precioSugerido > 0 ? precioSugerido.toFixed(2) : '';
+    });
 
     form.addEventListener('submit', (event) => {
         event.preventDefault();
         if (!form.reportValidity()) return;
         if (materiales.length === 0) {
-            avisar('Solicitud Vacía', 'Agrega al Menos un Producto o Material Externo.');
+            avisar('Orden Vacía', 'Agrega al Menos un Producto a la Orden.');
             return;
         }
-        comentarioInput.value = proyectoSelect.selectedOptions[0]?.textContent.trim() || '';
-        observacionInput.value = comentarioGeneral.value.trim();
         materialInput.value = JSON.stringify(materiales);
 
         const enviar = () => HTMLFormElement.prototype.submit.call(form);
         if (!window.Swal) {
-            if (window.confirm('¿Deseas Enviar esta Solicitud de Materiales?')) enviar();
+            if (window.confirm('¿Deseas Registrar esta Orden de Compra?')) enviar();
             return;
         }
         Swal.fire({
-            title: '¿Enviar Solicitud?', text: `Se Enviarán ${materiales.length} Materiales en su Solicitud.`,
+            title: '¿Registrar Orden?', text: `Se Registrarán ${materiales.length} Partidas con el Proveedor Seleccionado.`,
             icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Sí, Enviar', cancelButtonText: 'Cancelar', reverseButtons: true
+            confirmButtonText: 'Sí, Registrar', cancelButtonText: 'Cancelar', reverseButtons: true
         }).then((result) => { if (result.isConfirmed) enviar(); });
     });
 
     aplicarFiltros();
-    alternarModo();
     renderMateriales();
 
     const alertaSesion = <?= json_encode($alertaSesion, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;

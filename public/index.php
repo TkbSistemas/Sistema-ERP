@@ -156,19 +156,10 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->rechazarSolicitudBaja();
         break;
-    case 'reportes':
-        require_once __DIR__ . '/../app/controllers/ReporteController.php';
-        (new ReporteController())->index();
+    case 'procesar_solicitud':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->procesarSolicitud();
         break;
-    case 'revisar_solicitudes':
-        require_once __DIR__ . '/../app/controllers/SolicitudMaterialController.php';
-        (new SolicitudMaterialController())->revisar();
-        break;
-    case 'gestion_usuarios':
-        require_once __DIR__ . '/../app/controllers/UsuarioController.php';
-        (new UsuarioController())->index();
-        break;
-    case 'logs':
     case 'logs.php':
         require_once __DIR__ . '/../app/controllers/LogController.php';
         (new LogController())->index();
@@ -180,7 +171,19 @@ switch ($route) {
         break;
     case 'ordenes_compra':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->obtenerOrdenesCompra();
+        break;
+    case 'orden_nueva':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->crearOrdenCompra();
+        break;
+    case 'ver_orden_compra':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->verOrdenCompra((int) ($_GET['id'] ?? 0));
+        break;
+    case 'procesar_compra':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->procesarCompra();
         break;
     case 'proveedores':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';

@@ -131,7 +131,7 @@ $buildTabQuery = function (string $tab): string {
                         <?php if ($s['estatus'] === 'Aprobada'): ?>
                             <a class="btn-table btn-entrega" 
                             title="Procesar Entrega" 
-                            href="construccion">
+                            href="procesar_solicitud?id=<?= $s['id'] ?>">
                                 <i class="fa fa-circle-arrow-up"></i>
                             </a>
                         <?php endif; ?>

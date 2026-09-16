@@ -83,33 +83,6 @@ class AuthController
         exit();
     }
 
-    private function routeByModule(string $module): string{
-        switch ($module) {
-            case 'nomina':
-                return 'nomina.php';
-            case 'rh':
-                return 'rh.php';
-            case 'gestion_usuarios':
-                return 'gestion_usuarios.php';
-            case 'contabilidad':
-                return 'contabilidad.php';
-            case 'bancos':
-                return 'bancos.php';
-            case 'compras':
-                return 'compras.php';
-            case 'ventas':
-                return 'ventas.php';
-            case 'proyectos':
-                return 'proyectos.php';
-            case 'inventario':
-                return 'inventario.php';
-            case 'clientes':
-                return 'clientes.php';
-            default:
-                return 'dashboard.php';
-        }
-    }
-
     public function enConstruccion(){
         include __DIR__ . '/../views/auth/construction.php';
     }
@@ -176,22 +149,4 @@ class AuthController
         include __DIR__ . '/../views/inicio_sesion/inicio.php';
     }
 
-    public function obtenerDashboardAdmin(){
-        include __DIR__ . '/../views/administrador/dashboard_admin.php';
-    }
-
-    public function forgotPassword(){
-        $mensaje = '';
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $username = trim($_POST['username'] ?? '');
-            $user = Usuario::findByUsername($username);
-            if ($user) {
-                $mensaje = 'Por favor contacta al administrador para restablecer tu contraseña.';
-            } else {
-                $mensaje = 'Usuario no encontrado.';
-            }
-        }
-
-        include __DIR__ . '/../views/auth/forgot.php';
-    }
 }

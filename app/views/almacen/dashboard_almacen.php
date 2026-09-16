@@ -43,24 +43,24 @@ $alertas = $datos['alertas'] ?? [];
             </div>
 
             <section class="dashboard-cards-row">
-                <div class="dashboard-card">
-                    <div class="card-info">
-                        <div class="card-label">Productos Registrados</div>
-                        <div class="card-value"><?= number_format($datos['productosAlmacen'] ?? 0) ?></div>
-                        <div class="card-sub">En este Almacén</div>
-                    </div>
-                    <div class="card-icon-container">
-                        <span class="mdi mdi-shape-outline"></span>
-                    </div>
-                </div>
                 <div class="dashboard-card warning">
                     <div class="card-info">
-                        <div class="card-label">Solicitudes de Entrega</div>
+                        <div class="card-label">Solicitudes de Material</div>
                         <div class="card-value"><?= number_format($datos['solicitudesAlmacen'] ?? 0) ?></div>
                         <div class="card-sub">Pendientes de Atención</div>
                     </div>
                     <div class="card-icon-container">
                         <span class="mdi mdi-file-document-outline"></span>
+                    </div>
+                </div>
+                <div class="dashboard-card waiting">
+                    <div class="card-info">
+                        <div class="card-label">Ordenes en Entrega</div>
+                        <div class="card-value"><?= number_format($datos['ordenesEntrega'] ?? 0) ?></div>
+                        <div class="card-sub">Compras en Proceso</div>
+                    </div>
+                    <div class="card-icon-container">
+                        <span class="mdi mdi-truck-delivery-outline"></span>
                     </div>
                 </div>
                 <div class="dashboard-card caution">

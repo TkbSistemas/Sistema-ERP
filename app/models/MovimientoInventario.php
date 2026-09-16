@@ -27,30 +27,6 @@ class MovimientoInventario {
     }
 }
 
-    public static function movimientos($filtros = []) {
-        $db = Database::getInstance()->getConnection();
-        $sql = "SELECT m.*, p.nombre AS producto, a.nombre AS almacen_origen, ad.nombre AS almacen_destino, u.nombre_completo AS responsable
-                FROM movimientos_inventario m
-                LEFT JOIN productos p ON m.producto_id = p.id
-                LEFT JOIN almacenes a ON m.almacen_entrada_id = a.id
-                LEFT JOIN usuarios u ON m.responsable_id = u.id
-                WHERE 1=1";
-        $params = [];
-        if (!empty($filtros['tipo'])) {
-            $sql .= " AND m.tipo = ?";
-            $params[] = $filtros['tipo'];
-        }
-        if (!empty($filtros['producto_id'])) {
-            $sql .= " AND m.producto_id = ?";
-            $params[] = $filtros['producto_id'];
-        }
-        $sql .= " ORDER BY m.fecha DESC";
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-
     public static function ultimos($tipo = null, $limit = 5)
     {
         $db = Database::getInstance()->getConnection();

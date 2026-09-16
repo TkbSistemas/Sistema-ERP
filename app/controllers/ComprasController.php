@@ -8,8 +8,7 @@ require_once __DIR__ . '/../models/Almacen.php';
 require_once __DIR__ . '/../models/Proyecto.php';
 require_once __DIR__ . '/../models/Proveedor.php';
 
-class ComprasController
-{
+class ComprasController{
 
     public function obtenerDashboardCompras(): void{
         Session::requireLogin(['Administrador', 'Compras']);
@@ -41,102 +40,285 @@ class ComprasController
     }
 
 
-     public function crearOrdenCompra(): void {
+    public function obtenerOrdenesCompra(): void {
         Session::requireLogin(['Administrador', 'Compras']);
 
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
         $nombre = $_SESSION['nombre'] ?? '';
         $role   = $_SESSION['role'] ?? '';
-        $error  = '';
-        $msg    = '';
+        $tabActiva = ($_GET['tab'] ?? 'pendientes') === 'historial' ? 'historial' : 'pendientes';
+        $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+        $porPagina = 8;
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $errores = [];
-            if (!Session::checkCsrf($_POST['csrf'] ?? '')) {
-                $errores[] = 'La Sesión del Formulario Expiró. Recarga la Página e Intenta Nuevamente.';
-            }
+        $todasLasOrdenes = OrdenCompra::all();
+        $ordenesPendientes = array_values(array_filter(
+            $todasLasOrdenes,
+            static fn(array $orden): bool => ($orden['estatus'] ?? '') === 'Pendiente'
+        ));
+        $ordenesEnEntrega = array_values(array_filter(
+            $todasLasOrdenes,
+            static fn(array $orden): bool => in_array(($orden['estatus'] ?? ''), ['Aprobada', 'Parcial'], true)
+        ));
+        $mesActual = date('Y-m');
+        $ordenesEsteMes = array_values(array_filter(
+            $todasLasOrdenes,
+            static fn(array $orden): bool => str_starts_with((string) ($orden['fecha_compra'] ?? ''), $mesActual)
+        ));
 
-            $proyectoId = (int) ($_POST['proyecto_id'] ?? 0);
-            if ($proyectoId <= 0) {
-                $errores[] = 'Selecciona un Proyecto o Destino.';
-            } else {
-                $db = Database::getInstance()->getConnection();
-                $stmtProyecto = $db->prepare('SELECT COUNT(*) FROM proyectos WHERE id = ?');
-                $stmtProyecto->execute([$proyectoId]);
-                if ((int) $stmtProyecto->fetchColumn() === 0) {
-                    $errores[] = 'El Proyecto o Destino Seleccionado no Existe.';
-                }
-            }
+        $ordenesTab = $tabActiva === 'pendientes' ? $ordenesPendientes : $todasLasOrdenes;
+        $totalRegistros = count($ordenesTab);
+        $totalPaginas = max(1, (int) ceil($totalRegistros / $porPagina));
+        $pagina = min($pagina, $totalPaginas);
+        $offset = ($pagina - 1) * $porPagina;
+        $ordenesCompra = array_slice($ordenesTab, $offset, $porPagina);
 
-            $fechaRequerida = trim((string) ($_POST['fecha_compra'] ?? ''));
-            $fechaValida = preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaRequerida) === 1;
-            if ($fechaValida) {
-                [$anio, $mes, $dia] = array_map('intval', explode('-', $fechaRequerida));
-                $fechaValida = checkdate($mes, $dia, $anio);
-            }
-            if (!$fechaValida) {
-                $errores[] = 'Captura una Fecha Requerida Válida.';
-            } elseif ($fechaRequerida < date('Y-m-d')) {
-                $errores[] = 'La Fecha Requerida no Puede ser Anterior a Hoy.';
-            }
-
-            $comentario = trim((string) ($_POST['comentario_general'] ?? $_POST['observacion'] ?? ''));
-            if (mb_strlen($comentario) > 255) {
-                $errores[] = 'El Motivo o las Indicaciones Generales no Pueden Superar 255 Caracteres.';
-            }
-
-            [$detalles, $noRegistrados] = $this->normalizarMaterialesSolicitud(
-                (string) ($_POST['material'] ?? ''),
-                $errores
-            );
-
-            if (!$errores) {
-                try {
-                    $solicitud = SolicitudMaterial::crearSolicitudCompleta([
-                        'solicitante_id' => $userId,
-                        'proyecto_id' => $proyectoId,
-                        'fecha_requerida' => $fechaRequerida,
-                        'comentario_solicitante' => $comentario,
-                    ], $detalles, $noRegistrados);
-
-                    ActivityLogger::registrarAlta('compras', 'solicitud_compra', $solicitud['id'] ?? null, 'Solicitud de Compra Registrada', [
-                        'folio' => $solicitud['folio'] ?? null,
-                        'proyecto_id' => $proyectoId,
-                        'productos_catalogo' => count($detalles),
-                        'productos_fuera_catalogo' => count($noRegistrados),
-                    ]);
-
-                    $_SESSION['alerta'] = [
-                        'tipo' => 'success',
-                        'titulo' => 'Solicitud Registrada',
-                        'mensaje' => 'La Solicitud ' . $solicitud['folio'] . ' se Registró Correctamente.',
-                    ];
-                    header('Location: ' . Session::url('crear_solicitud'));
-                    exit;
-                } catch (InvalidArgumentException | RuntimeException $e) {
-                    $errores[] = $e->getMessage();
-                } catch (Throwable $e) {
-                    error_log('Error al crear solicitud de material: ' . $e->getMessage());
-                    $errores[] = 'No Fue Posible Registrar la Solicitud. Revisa los Datos e Intenta Nuevamente.';
-                }
-            }
-
-            $error = implode(' ', $errores);
-        }
-
-        $productos            = Producto::all();
-        $almacenes            = Almacen::all();
-        $proyectos            = Proyecto::all();
+        $pagination = [
+            'pagina' => $pagina,
+            'total_paginas' => $totalPaginas,
+            'por_pagina' => $porPagina,
+            'total' => $totalRegistros,
+            'desde' => $totalRegistros > 0 ? $offset + 1 : 0,
+            'hasta' => min($offset + $porPagina, $totalRegistros),
+        ];
 
         $datos = [
             'nombre' => $nombre,
             'role' => $role,
-            'last_update' => date('d/m/Y, h:i:s a')
+            'last_update' => date('d/m/Y, h:i:s a'),
+            'numOrdenesPendientes' => count($ordenesPendientes),
+            'numOrdenesEnEntrega' => count($ordenesEnEntrega),
+            'numOrdenesEsteMes' => count($ordenesEsteMes),
         ];
 
         include __DIR__ . '/../views/compras/ordenes_compra.php';
     }
 
+    public function verOrdenCompra(int $id): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        $orden = OrdenCompra::find($id);
+        if ($orden === null) {
+            http_response_code(404);
+            echo 'Orden de Compra no Encontrada.';
+            return;
+        }
+
+        $fechaImpresion = new DateTimeImmutable('now', new DateTimeZone('America/Mexico_City'));
+        ActivityLogger::registrarAccion('compras', 'impresion_orden_compra', 'Formato de Orden de Compra Generado', [
+            'orden_id' => $id,
+            'folio' => $orden['folio'] ?? null,
+            'total_estimado' => $orden['total_estimado'] ?? 0,
+        ]);
+
+        include __DIR__ . '/../templates/orden_compra.php';
+    }
+
+    public function crearOrdenCompra(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        $nombre = $_SESSION['nombre'] ?? '';
+        $role = $_SESSION['role'] ?? '';
+        $productos = Producto::All();
+        $proyectos = Proyecto::all();
+        $proveedores = Proveedor::all();
+        $error = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $proveedorId = $this->validarProveedorActivo((int) ($_POST['proveedor_id'] ?? 0));
+                $proyectoId = null;
+                if (trim((string) ($_POST['proyecto_id'] ?? '')) !== '') {
+                    $proyectoId = (int) $_POST['proyecto_id'];
+                    $proyectosValidos = array_column($proyectos, null, 'id');
+                    if ($proyectoId <= 0 || !isset($proyectosValidos[$proyectoId])) {
+                        throw new InvalidArgumentException('El Proyecto Seleccionado no es Válido.');
+                    }
+                }
+
+                $fechaCompra = trim((string) ($_POST['fecha_compra'] ?? ''));
+                $fechaValida = DateTimeImmutable::createFromFormat('!Y-m-d', $fechaCompra);
+                if (!$fechaValida || $fechaValida->format('Y-m-d') !== $fechaCompra) {
+                    throw new InvalidArgumentException('Selecciona una Fecha Válida para la Orden.');
+                }
+
+                $metodoEntrega = trim((string) ($_POST['metodo_entrega'] ?? ''));
+                if (!in_array($metodoEntrega, ['Reparto', 'Recolección', 'Por Confirmar'], true)) {
+                    throw new InvalidArgumentException('Selecciona un Método de Entrega Válido.');
+                }
+
+                $materiales = json_decode((string) ($_POST['material'] ?? ''), true);
+                if (!is_array($materiales) || $materiales === []) {
+                    throw new InvalidArgumentException('Agrega al Menos un Material a la Orden.');
+                }
+                if (count($materiales) > 100) {
+                    throw new InvalidArgumentException('La Orden no Puede Contener más de 100 Partidas.');
+                }
+
+                $productosValidos = [];
+                foreach ($productos as $producto) {
+                    $productosValidos[(int) ($producto['id'] ?? 0)] = $producto;
+                }
+
+                $detalles = [];
+                foreach ($materiales as $indice => $material) {
+                    $productoId = (int) ($material['producto_id'] ?? 0);
+                    $cantidad = filter_var($material['cantidad'] ?? null, FILTER_VALIDATE_FLOAT);
+                    $precioUnitario = filter_var($material['precio_unitario'] ?? null, FILTER_VALIDATE_FLOAT);
+
+                    if ($productoId <= 0 || !isset($productosValidos[$productoId])) {
+                        throw new InvalidArgumentException('El Producto de la Partida ' . ($indice + 1) . ' no es Válido.');
+                    }
+                    if ($cantidad === false || $cantidad <= 0) {
+                        throw new InvalidArgumentException('La Cantidad de la Partida ' . ($indice + 1) . ' Debe ser Mayor a Cero.');
+                    }
+                    if ($precioUnitario === false || $precioUnitario <= 0) {
+                        throw new InvalidArgumentException('El Precio Unitario de la Partida ' . ($indice + 1) . ' Debe ser Mayor a Cero.');
+                    }
+
+                    $detalles[] = [
+                        'producto_id' => $productoId,
+                        'cantidad' => round((float) $cantidad, 2),
+                        'precio_unitario' => round((float) $precioUnitario, 2),
+                    ];
+                }
+
+                $resultado = OrdenCompra::crearOrden([
+                    'proyecto_id' => $proyectoId,
+                    'proveedor_id' => $proveedorId,
+                    'fecha_compra' => $fechaCompra,
+                    'metodo_entrega' => $metodoEntrega,
+                    'created_by' => (int) ($_SESSION['user_id'] ?? 0),
+                ], $detalles);
+
+                ActivityLogger::registrarAlta('compras', 'orden_compra', $resultado['id'], 'Orden de Compra Registrada', [
+                    'folio' => $resultado['folio'],
+                    'proveedor_id' => $proveedorId,
+                    'proyecto_id' => $proyectoId,
+                    'partidas' => count($detalles),
+                ]);
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Orden Registrada',
+                    'mensaje' => 'La Orden de Compra ' . $resultado['folio'] . ' se Registró Correctamente.',
+                ];
+                header('Location: ' . Session::url('ordenes_compra'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al crear orden de compra: ' . $e->getMessage());
+                $error = 'No Fue Posible Registrar la Orden. Revisa los Datos e Intenta Nuevamente.';
+            }
+        }
+
+        $msg = '';
+        include __DIR__ . '/../views/compras/crear_orden.php';
+    }
+
+
+    public function procesarCompra(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        $nombre = $_SESSION['nombre'] ?? '';
+        $role = $_SESSION['role'] ?? '';
+        $ordenId = (int) ($_POST['orden_id'] ?? $_GET['id'] ?? 0);
+        $orden = OrdenCompra::find($ordenId);
+
+        if ($orden === null) {
+            http_response_code(404);
+            echo 'Orden de Compra no Encontrada.';
+            return;
+        }
+
+        if (!in_array((string) ($orden['estatus'] ?? ''), ['Aprobada', 'Parcial'], true)) {
+            $_SESSION['alerta'] = [
+                'tipo' => 'warning',
+                'titulo' => 'Orden no Disponible',
+                'mensaje' => 'Solo las Órdenes Aprobadas o Parciales Pueden Procesarse.',
+            ];
+            header('Location: ' . Session::url('ordenes_compra'));
+            exit;
+        }
+
+        $error = '';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $entrada = $_POST['detalles'] ?? null;
+                if (!is_array($entrada)) {
+                    throw new InvalidArgumentException('No se Recibieron los Materiales de la Orden.');
+                }
+
+                $detallesConfirmados = [];
+                foreach ($orden['detalles'] as $indice => $detalle) {
+                    $detalleId = (int) ($detalle['id'] ?? 0);
+                    $valores = $entrada[$detalleId] ?? null;
+                    if (!is_array($valores)) {
+                        throw new InvalidArgumentException('Faltan los Datos de la Partida ' . ($indice + 1) . '.');
+                    }
+
+                    $cantidad = filter_var($valores['cantidad_confirmada'] ?? null, FILTER_VALIDATE_FLOAT);
+                    $precio = filter_var($valores['precio_confirmado'] ?? null, FILTER_VALIDATE_FLOAT);
+                    $cantidadSolicitada = (float) ($detalle['cantidad_solicitada'] ?? 0);
+
+                    if ($cantidad === false || $cantidad < 0 || $cantidad > $cantidadSolicitada) {
+                        throw new InvalidArgumentException(
+                            'La Cantidad Confirmada de la Partida ' . ($indice + 1)
+                            . ' Debe Estar entre Cero y ' . $cantidadSolicitada . '.'
+                        );
+                    }
+                    if ($precio === false || $precio <= 0) {
+                        throw new InvalidArgumentException(
+                            'El Precio Confirmado de la Partida ' . ($indice + 1) . ' Debe ser Mayor a Cero.'
+                        );
+                    }
+
+                    $detallesConfirmados[] = [
+                        'id' => $detalleId,
+                        'cantidad_confirmada' => round((float) $cantidad, 2),
+                        'precio_confirmado' => round((float) $precio, 2),
+                    ];
+                }
+
+                $estatus = OrdenCompra::confirmarCompra($ordenId, $detallesConfirmados);
+                ActivityLogger::registrarActualizacion(
+                    'compras',
+                    'orden_compra',
+                    $ordenId,
+                    'Recepción de Orden de Compra Confirmada',
+                    [
+                        'folio' => $orden['folio'] ?? null,
+                        'estatus' => $estatus,
+                        'partidas' => count($detallesConfirmados),
+                    ]
+                );
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Compra Procesada',
+                    'mensaje' => 'La Orden ' . ($orden['folio'] ?? '') . ' quedó con Estatus ' . $estatus . '.',
+                ];
+                header('Location: ' . Session::url('ordenes_compra'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al procesar orden de compra: ' . $e->getMessage());
+                $error = 'No Fue Posible Procesar la Compra. Revisa los Datos e Intenta Nuevamente.';
+            }
+        }
+
+        include __DIR__ . '/../views/compras/procesar_compra.php';
+    }
 
     public function obtenerProveedores(): void {
         Session::requireLogin(['Administrador', 'Compras']);
@@ -450,51 +632,4 @@ class ComprasController
         exit;
     }
 
-    public function historial(): void{
-        Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
-
-        $filtros = [
-            'proveedor_id' => $_GET['proveedor_id'] ?? '',
-            'desde'        => $_GET['desde'] ?? date('Y-m-01'),
-            'hasta'        => $_GET['hasta'] ?? date('Y-m-d'),
-        ];
-
-        if ($filtros['desde'] > $filtros['hasta']) {
-            [$filtros['desde'], $filtros['hasta']] = [$filtros['hasta'], $filtros['desde']];
-        }
-
-        $db          = Database::getInstance()->getConnection();
-        $proveedores = $db->query("SELECT id, nombre FROM proveedores ORDER BY nombre ASC")->fetchAll();
-
-        $historial = OrdenCompra::historial($filtros);
-
-        if (isset($_GET['export']) && $_GET['export'] === 'csv') {
-            ActivityLogger::log('compras_export', 'Descarga de historial de compras', [
-                'proveedor_id' => $filtros['proveedor_id'] ?: null,
-                'desde'        => $filtros['desde'],
-                'hasta'        => $filtros['hasta'],
-            ]);
-            $filename = 'compras_proveedor_' . date('Ymd_His') . '.csv';
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename=' . $filename);
-            $out = fopen('php://output', 'w');
-            fputs($out, chr(239) . chr(187) . chr(191));
-            fputcsv($out, ['Orden', 'Fecha', 'Proveedor', 'Estado', 'Productos', 'Importe detalle', 'Importe total']);
-            foreach ($historial['ordenes'] as $orden) {
-                fputcsv($out, [
-                    $orden['id'],
-                    $orden['fecha'],
-                    $orden['proveedor'],
-                    $orden['estado'],
-                    number_format((float) ($orden['total_items'] ?? 0), 2, '.', ''),
-                    number_format((float) ($orden['subtotal'] ?? 0), 2, '.', ''),
-                    number_format((float) ($orden['total'] ?? $orden['subtotal'] ?? 0), 2, '.', ''),
-                ]);
-            }
-            fclose($out);
-            return;
-        }
-
-        include __DIR__ . '/../views/compras/historial.php';
-    }
 }

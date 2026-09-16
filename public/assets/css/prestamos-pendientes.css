@@ -169,3 +169,85 @@
     background: #dbeafe;
     border: 1px solid #60a5fa;
 }
+
+.solicitud-estatus--parcial {
+    color: #6b3e00;
+    background: #ffedd5;
+    border: 1px solid #fb923c;
+}
+
+.solicitud-estatus--completa {
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #4ade80;
+}
+
+.solicitud-estatus--cancelada,
+.solicitud-estatus--rechazada {
+    color: #991b1b;
+    background: #fee2e2;
+    border: 1px solid #f87171;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.table-empty {
+    padding: 2.5rem 1rem !important;
+    color: #64748b !important;
+    text-align: center !important;
+}
+
+.table-secondary-text {
+    display: block;
+    margin-top: 0.2rem;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.orden-materiales-resumen {
+    display: block;
+    min-width: 190px;
+    line-height: 1.45;
+}
+
+.orden-total-estimado {
+    min-width: 112px;
+    text-align: right !important;
+    font-weight: 800;
+    color: #163a75 !important;
+    white-space: nowrap;
+}
+
+.orden-alerta-resumen { text-align: left; }
+.orden-alerta-resumen p { margin: 0.45rem 0; }
+.orden-alerta-resumen ul {
+    max-height: 270px;
+    margin: 1rem 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    border-top: 1px solid #e2e8f0;
+}
+.orden-alerta-resumen li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.orden-alerta-resumen li span:first-child {
+    display: flex;
+    flex-direction: column;
+}
+.orden-alerta-resumen li small { color: #64748b; }
+.orden-alerta-resumen .sin-detalles {
+    color: #64748b;
+    justify-content: center;
+}
+.orden-alerta-total {
+    padding-top: 0.5rem;
+    text-align: right;
+}

@@ -53,34 +53,6 @@ class EmpleadoController{
         return $datos;
     }
 
-    public function misSolicitudes(): void {
-        Session::requireLogin(['Administrador', 'Empleado']);
-
-        $role   = $_SESSION['role'] ?? '';
-        $nombre = $_SESSION['nombre'] ?? '';
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
-
-        $solicitudesPendientes = Empleado::obtenerSolicitudesPendientes($userId);
-        $solicitudesEnEntrega  = Empleado::obtenerSolicitudesEnEntrega($userId);
-        $misSolicitudes        = Empleado::obtenerMisSolicitudes($userId);
-        $numSolicitudesEsteMes = Empleado::obtenerSolicitudesEsteMes($userId);
-
-        $datos = [
-            'nombre' => $nombre,
-            'role' => $role,
-            'last_update' => date('d/m/Y, h:i:s a'),
-            'numSolicitudesPendientes' => count($solicitudesPendientes),
-            'numSolicitudesEnEntrega' => count($solicitudesEnEntrega),
-            'numMisSolicitudes' => count($misSolicitudes),
-            'numSolicitudesEsteMes' => $numSolicitudesEsteMes,
-            'solicitudesPendientes' => $solicitudesPendientes,
-            'solicitudesEnEntrega' => $solicitudesEnEntrega,
-            'misSolicitudes' => $misSolicitudes
-        ];
-
-        include __DIR__ . '/../views/empleado/mis_solicitudes.php';
-    }
-
     public function obtenerSolicitudesEmpleado(){
             Session::requireLogin(['Administrador', 'Empleado']);
 

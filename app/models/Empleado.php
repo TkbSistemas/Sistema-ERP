@@ -24,13 +24,6 @@ class Empleado{
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function obtenerSolicitudesEsteMes($userId) {
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT COUNT(*) FROM solicitudes_material WHERE solicitante_id = ? AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())");
-        $stmt->execute([$userId]);
-        return $stmt->fetchColumn();
-    }
-
     public static function obtenerUltimasSolicitudes($userId, $limit = 5) {
         $db = Database::getInstance()->getConnection();
         // PDO con emulación activada requiere vincular el LIMIT explícitamente como entero

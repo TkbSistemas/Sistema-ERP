@@ -174,6 +174,28 @@ class AlmacenController
         include __DIR__ . '/../templates/solicitud_material.php';
     }
 
+    public function procesarSolicitud(): void
+    {
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        $id = max(0, (int) ($_GET['id'] ?? 0));
+        $solicitud = $id > 0 ? SolicitudMaterial::obtenerSolicitudConDetalles($id) : null;
+
+        if (!$solicitud) {
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'Solicitud no Encontrada',
+                'mensaje' => 'No Fue Posible Cargar la Solicitud Seleccionada.',
+            ];
+            header('Location: solicitudes_material');
+            exit();
+        }
+
+        $role = $_SESSION['role'] ?? '';
+        $nombre = $_SESSION['nombre'] ?? '';
+        include __DIR__ . '/../views/almacen/procesar_solicitud.php';
+    }
+
     public function aprobarSolicitud(): void {
         Session::requireLogin(['Administrador', 'Almacen']);
 
@@ -708,75 +730,6 @@ class AlmacenController
     }
 
 
-    public function create(): void
-    {
-        Session::requireLogin(['Administrador', 'Almacen']);
-        $usuarios = Usuario::all();
-        $error    = '';
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
-                $error = 'Token CSRF inválido.';
-            } else {
-                Almacen::create($_POST);
-                ActivityLogger::registrarAlta('almacen', 'almacen', null, 'Almacén Registrado', [
-                    'nombre' => trim((string) ($_POST['nombre'] ?? '')),
-                ]);
-                header('Location: almacenes.php?success=1');
-                exit();
-            }
-        }
-
-        include __DIR__ . '/../views/almacenes/create.php';
-    }
-
-    public function edit($id): void
-    {
-        Session::requireLogin(['Administrador', 'Almacen']);
-        $almacen  = Almacen::find($id);
-        $usuarios = Usuario::all();
-        $error    = '';
-
-        if (! $almacen) {
-            die('Almacén no encontrado.');
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
-                $error = 'Token CSRF inválido.';
-            } else {
-                Almacen::update($id, $_POST);
-                ActivityLogger::registrarActualizacion('almacen', 'almacen', $id, 'Almacén Actualizado', [
-                    'nombre' => trim((string) ($_POST['nombre'] ?? '')),
-                ]);
-                header('Location: almacenes.php?success=2');
-                exit();
-            }
-        }
-
-        include __DIR__ . '/../views/almacenes/edit.php';
-    }
-
-    public function delete($id): void
-    {
-        Session::requireLogin(['Administrador', 'Almacen']);
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ! Session::checkCsrf($_POST['csrf'] ?? '')) {
-            header('Location: almacenes.php?error=csrf');
-            exit();
-        }
-
-        $almacenId = (int) ($id ?: ($_POST['id'] ?? 0));
-        if ($almacenId > 0) {
-            Almacen::delete($almacenId);
-            ActivityLogger::registrarBaja('almacen', 'almacen', $almacenId, 'Almacén Eliminado');
-            header('Location: almacenes.php?deleted=1');
-            exit();
-        }
-
-        header('Location: almacenes.php?error=not_found');
-        exit();
-    }
-
     private function datosAlmacen($db): array{
         $datos = $this->datosGenerales($db);
 
@@ -826,46 +779,6 @@ class AlmacenController
         return $alertas;
     }
 
-    private function alertasPrestamosVencidos($db): array
-    {
-        $stmt = $db->query("SELECT p.nombre AS producto, pr.fecha_estimada_devolucion, u.nombre_completo AS empleado
-                             FROM prestamos pr
-                             LEFT JOIN inventario p ON pr.producto_id = p.id
-                             LEFT JOIN usuarios u ON pr.empleado_id = u.id
-                             WHERE pr.estatus = 'Prestado'
-                               AND pr.fecha_estimada_devolucion IS NOT NULL
-                               AND pr.fecha_estimada_devolucion < NOW()
-                             ORDER BY pr.fecha_estimada_devolucion ASC
-                             LIMIT 5");
-        $rows    = $stmt->fetchAll() ?: [];
-        $alertas = [];
-        foreach ($rows as $r) {
-            $fecha     = date('d/m/Y', strtotime($r['fecha_estimada_devolucion']));
-            $alertas[] = [
-                'Préstamo vencido: ' . ($r['producto'] ?? 'Herramienta') . ' (' . ($r['empleado'] ?? 'Empleado') . ')',
-                $fecha,
-                'alta',
-            ];
-        }
-        return $alertas;
-    }
-
-    private function ultimasActualizaciones($db): array
-    {
-        $stmt = $db->query("SELECT p.nombre,
-                                    m.tipo,
-                                    m.fecha,
-                                    m.cantidad,
-                                    a.nombre_almacen AS almacen
-                             FROM movimientos_inventario m
-                             LEFT JOIN inventario p ON m.producto_id = p.id
-                             LEFT JOIN almacenes a ON m.almacen_origen_id = a.id
-                             LEFT JOIN almacenes ad ON m.almacen_destino_id = ad.id
-                             ORDER BY m.fecha DESC
-                             LIMIT 5");
-        return $stmt->fetchAll();
-    }
-
     private function expuestosMovimientos($db): array{
         $stmt = $db->query("SELECT p.nombre,
                                     p.nomenclatura,
@@ -901,30 +814,6 @@ class AlmacenController
             'hasta' => min($pagina * $limite, $totalRegistros),
         ];
         include __DIR__ . '/../views/almacen/prestamos_herramientas.php';
-    }
-
-    public function obtenerSolicitudes()
-    {
-            Session::requireLogin(['Almacen']);
-            
-            $filtros = [
-                'estatus'       => $_GET['estatus'] ?? '',
-                'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
-                'fecha_fin'    => $_GET['fecha_fin'] ?? '',
-                'search'       => $_GET['search'] ?? ''
-            ];
-            
-            $solicitudes = SolicitudMaterial::historialPorUsuario($_SESSION['user_id'], $filtros);
-            include __DIR__ . '/../views/almacen/solicitudes_material.php';
-    }
-
-    public function crearSalida(){
-
-        $productos = Producto::All();
-        $almacenes = Almacen::all();
-        Session::requireLogin(['Administrador', 'Almacen']);
-            include __DIR__ . '/../views/almacen/registrar_salida.php';
-
     }
 
     public function crearEtiquetas($id)
@@ -990,104 +879,6 @@ class AlmacenController
 
         include __DIR__ . '/../views/almacen/etiquetas.php';
     }
-
-    public function crearEntrada(){
-            Session::requireLogin(['Administrador', 'Almacen']);
-
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $entradaItems = $this->normalizarLineasEntrada($_POST);
-
-                if (! Session::checkCsrf($_POST['csrf'] ?? '')) {
-                    $_SESSION['alerta'] = [
-                        'tipo' => 'error',
-                        'titulo' => 'Seguridad',
-                        'mensaje' => 'Token CSRF inválido.'
-                    ];
-                    header("Location: " . $_SERVER['REQUEST_URI']);
-                    exit;
-                } elseif (empty($entradaItems)) {
-                    $_SESSION['alerta'] = [
-                        'tipo' => 'warning',
-                        'titulo' => 'Captura Vacía',
-                        'mensaje' => 'Agrega al menos un producto a la captura de entrada.'
-                    ];
-                    header("Location: " . $_SERVER['REQUEST_URI']);
-                    exit;
-                } else {
-                    $db = Database::getInstance()->getConnection();
-
-                    try {
-                        $db->beginTransaction();
-    
-                        foreach ($entradaItems as $indice => $linea) {
-                            $productoId = (int) ($linea['producto_id'] ?? 0);
-                            $almacenId  = (int) ($linea['almacen_id'] ?? 0);
-                            $cantidad   = isset($linea['cantidad']) ? (float) $linea['cantidad'] : 0;
-
-                            if ($productoId <= 0 || $almacenId <= 0 || $cantidad <= 0) {
-                                throw new RuntimeException('La linea ' . ($indice + 1) . ' es invalida.');
-                            }
-
-                            $data = [
-                                'producto_id'        => $productoId,
-                                'tipo'               => 'Entrada',
-                                'cantidad'           => $cantidad,
-                                'usuario_id'         => $_SESSION['id'],
-                                'almacen_destino_id' => $almacenId,
-                                'observaciones'      => trim((string) ($linea['observaciones'] ?? '')),
-                                'folio'              => trim((string) ($linea['folio'] ?? '')),
-                            ];
-
-                            if (! MovimientoInventario::registrar($data)) {
-                                throw new RuntimeException('No fue posible registrar la linea ' . ($indice + 1) . '.');
-                            }
-
-                            Producto::sumarStock($productoId, $cantidad, $almacenId);
-                            /*ActivityLogger::log('inventario_entrada', 'Entrada de inventario registrada', [
-                                'producto_id' => $productoId,
-                                'almacen_id'  => $almacenId,
-                                'cantidad'    => $cantidad,
-                                'linea'       => $indice + 1,
-                            ]);*/
-                        }
-
-                        $db->commit();
-
-                        $totalLineas = count($entradaItems);
-                        $_SESSION['alerta'] = [
-                            'tipo' => 'success',
-                            'titulo' => 'Registro Creado',
-                            'mensaje' => $totalLineas === 1 
-                                ? 'Entrada registrada Correctamente.' 
-                                : 'Se registraron ' . $totalLineas . ' Productos Correctamente.'
-                        ];
-
-            // REDIRECCIÓN DE ÉXITO: Limpia los datos de envío y cambia la petición a GET
-            header("Location: " . $_SERVER['REQUEST_URI']);
-            exit;
-                    } catch (\Throwable $e) {
-                        if ($db->inTransaction()) {
-                            $db->rollBack();
-                        }
-                        $_SESSION['alerta'] = [
-                            'tipo' => 'error',
-                            'titulo' => 'Error de Registro',
-                            'mensaje' => 'No fue posible registrar la entrada. Revisa los datos.'
-                        ];
-                        
-                        header("Location: " . $_SERVER['REQUEST_URI']);
-                        exit;
-                    }
-                }
-            }
-
-            $productos            = Producto::all();
-            $almacenes            = Almacen::all();
-            $movimientosRecientes = MovimientoInventario::ultimos('Entrada', 6);
-            $entradaItems         = [];
-
-            include __DIR__ . '/../views/almacen/registrar_entrada.php';
-        }
 
     private function buildEtiquetasPdf(array $labels): string
     {

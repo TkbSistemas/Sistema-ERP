@@ -113,14 +113,10 @@ $buildQuery = function(array $overrides = []) {
                 <div>
                     <h1 class="page-title-icon"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> CATÁLOGO DE PRODUCTOS</h1>
                     <p class="productos-header-desc">Administra el Catálogo de Materiales y Herramientas.</p>
-                   </div>
+                </div>
                 <div class="productos-header-actions">
-                    <form class="productos-import-form" id="importForm" action="importar_catalogo" method="post" enctype="multipart/form-data">
-                        <input type="file" id="csvFileInput" name="productos_archivo" accept=".csv,text/csv" style="display: none;" required>
-                    </form>
                     <a class="btn-main" href="producto_nuevo"><i class="fa fa-plus"></i> Nuevo Producto</a>
                 </div>
-                <p class="productos-import-note mobile-only">Usa la plantilla para cargar múltiples productos. Los valores deben corresponder con los IDs de catálogos ya registrados (categorías, proveedores, almacenes, unidades).</p>
             </div>
 
             <section class="inventario-filters-card">
