@@ -29,6 +29,7 @@ class AlmacenController
             ['slug' => 'construccion', 'label' => 'Etiquetas', 'icon' => 'fa-solid fa-tags', 'role' => 'Todos'],
             //['slug' => 'reportes_inventario', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
             ['slug' => 'inventario', 'label' => 'Ir a Inventario', 'icon' => 'fa-solid fa-warehouse', 'role' => 'Todos'],
+            ['slug' => 'configuracion_almacen', 'label' => 'Configuración', 'icon' => 'fa-solid fa-gear', 'role' => 'Todos'],
             ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
         ];
 
@@ -44,6 +45,52 @@ class AlmacenController
         $datos = array_merge($datos, $this->datosAlmacen($db));
 
         include __DIR__ . '/../views/almacen/dashboard_almacen.php';
+    }
+
+    public function configuracionAlmacen(): void
+    {
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        $role = $_SESSION['role'] ?? '';
+        $nombre = $_SESSION['nombre'] ?? '';
+        $usuarioId = (int) ($_SESSION['user_id'] ?? 0);
+        $error = '';
+
+        if (Usuario::findById($usuarioId) === null) {
+            Session::logout();
+            header('Location: ' . Session::url('login'));
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                Usuario::cambiarPassword(
+                    $usuarioId,
+                    (string) ($_POST['password_actual'] ?? ''),
+                    (string) ($_POST['password_nueva'] ?? ''),
+                    (string) ($_POST['password_confirmacion'] ?? '')
+                );
+                ActivityLogger::registrarActualizacion('almacen', 'usuario', $usuarioId, 'Contraseña de Usuario Actualizada');
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Contraseña Actualizada',
+                    'mensaje' => 'Tu Contraseña se Cambió Correctamente.',
+                ];
+                header('Location: ' . Session::url('configuracion_almacen'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al cambiar contraseña de almacén: ' . $e->getMessage());
+                $error = 'No Fue Posible Actualizar la Contraseña. Intenta Nuevamente.';
+            }
+        }
+
+        include __DIR__ . '/../views/almacen/configuracion_almacen.php';
     }
 
     public function obtenerSolicitudesMaterial(){
@@ -178,7 +225,7 @@ class AlmacenController
     {
         Session::requireLogin(['Administrador', 'Almacen']);
 
-        $id = max(0, (int) ($_GET['id'] ?? 0));
+        $id = max(0, (int) ($_POST['solicitud_id'] ?? $_GET['id'] ?? 0));
         $solicitud = $id > 0 ? SolicitudMaterial::obtenerSolicitudConDetalles($id) : null;
 
         if (!$solicitud) {
@@ -191,8 +238,68 @@ class AlmacenController
             exit();
         }
 
+        if (($solicitud['estatus'] ?? '') !== 'Aprobada') {
+            $_SESSION['alerta'] = [
+                'tipo' => 'warning',
+                'titulo' => 'Solicitud no Disponible',
+                'mensaje' => 'Solo las Solicitudes Aprobadas Pueden Procesarse.',
+            ];
+            header('Location: ' . Session::url('solicitudes_material'));
+            exit();
+        }
+
         $role = $_SESSION['role'] ?? '';
         $nombre = $_SESSION['nombre'] ?? '';
+        $error = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $cantidadesDetalles = $_POST['detalles'] ?? [];
+                $cantidadesNoRegistrados = $_POST['no_registrados'] ?? [];
+                if (!is_array($cantidadesDetalles) || !is_array($cantidadesNoRegistrados)) {
+                    throw new InvalidArgumentException('No se Recibieron Correctamente los Materiales de la Solicitud.');
+                }
+
+                $resultado = SolicitudMaterial::entregarSolicitud(
+                    $id,
+                    (int) ($_SESSION['user_id'] ?? 0),
+                    $cantidadesDetalles,
+                    $cantidadesNoRegistrados
+                );
+
+                ActivityLogger::registrarCambioEstado(
+                    'almacen',
+                    'solicitud_material',
+                    $id,
+                    'Entregada',
+                    'Solicitud de Material Entregada y Stock Actualizado',
+                    [
+                        'folio' => $resultado['folio'],
+                        'partidas_entregadas' => $resultado['partidas_entregadas'],
+                        'cantidad_total' => $resultado['cantidad_total'],
+                        'movimientos_inventario' => $resultado['movimientos'],
+                    ]
+                );
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Solicitud Entregada',
+                    'mensaje' => 'La Solicitud ' . $resultado['folio'] . ' fue Entregada y el Stock se Actualizó Correctamente.',
+                ];
+                header('Location: ' . Session::url('solicitudes_material'));
+                exit();
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al entregar solicitud de material: ' . $e->getMessage());
+                $error = 'No Fue Posible Registrar la Entrega. Revisa los Datos e Intenta Nuevamente.';
+            }
+        }
+
         include __DIR__ . '/../views/almacen/procesar_solicitud.php';
     }
 
@@ -735,9 +842,19 @@ class AlmacenController
 
         $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
         $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus IN ('Pendiente','Aprobada')")->fetchColumn();
+        $stmtOrdenesEntrega = $db->query(
+            "SELECT oc.folio, oc.estatus, oc.metodo_entrega, cp.nombre AS proveedor_nombre
+             FROM ordenes_compra oc
+             LEFT JOIN catalogo_proveedores cp ON cp.id = oc.proveedor_id
+             WHERE oc.estatus IN ('Aprobada', 'Parcial')
+             ORDER BY oc.fecha_compra DESC, oc.id DESC"
+        );
+        $ordenesEnEntrega = $stmtOrdenesEntrega->fetchAll(\PDO::FETCH_ASSOC);
         
         $datos['productosAlmacen']   = $productosAlmacen;
         $datos['solicitudesAlmacen'] = $solicitudesPorGestionar;
+        $datos['ordenesEntrega']     = count($ordenesEnEntrega);
+        $datos['ordenesEnEntrega']   = $ordenesEnEntrega;
         $datos['ultimosMovimientos'] = $this->expuestosMovimientos($db);
 
         return $datos;
@@ -745,7 +862,11 @@ class AlmacenController
 
      private function datosGenerales($db): array{
         $totalProductos        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
-        $stockBajo             = (int) $db->query('SELECT COUNT(*) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id WHERE COALESCE(si.stock_actual, 0) < p.stock_minimo')->fetchColumn();
+        $stockBajo             = (int) $db->query("SELECT COUNT(*)
+                                                    FROM inventario p
+                                                    LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
+                                                    WHERE p.activo = '1'
+                                                      AND COALESCE(si.stock_actual, 0) < p.stock_minimo")->fetchColumn();
         $valorTotal            = (float) $db->query('SELECT SUM(COALESCE(si.stock_actual, 0) * p.precio_iva) FROM inventario p LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id')->fetchColumn();
         $prestamosVencidos     = (int) $db->query("SELECT COUNT(*) FROM solicitudes_herramienta WHERE estatus = 'Activa' AND fecha_fin IS NOT NULL AND fecha_devolucion < NOW()")->fetchColumn();
 
@@ -760,10 +881,11 @@ class AlmacenController
 
     private function alertasInventario($db): array
     {
-        $stmt = $db->query("SELECT p.nombre, COALESCE(si.stock_actual, 0) AS stock_actual, p.stock_minimo, DATE_FORMAT(p.created_at, '%d/%m/%Y') AS fecha
+        $stmt = $db->query("SELECT p.nombre, COALESCE(si.stock_actual, 0) AS stock_actual, p.stock_minimo
                              FROM inventario p
                              LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
-                             WHERE COALESCE(si.stock_actual, 0) < p.stock_minimo
+                             WHERE p.activo = '1'
+                               AND COALESCE(si.stock_actual, 0) < p.stock_minimo
                              ORDER BY COALESCE(si.stock_actual, 0) ASC
                              LIMIT 5");
         $productos = $stmt->fetchAll();
@@ -772,7 +894,6 @@ class AlmacenController
         foreach ($productos as $p) {
             $alertas[] = [
                 $p['nombre'] . ' por Debajo del Stock Mínimo',
-                $p['fecha'],
                 'Alta',
             ];
         }

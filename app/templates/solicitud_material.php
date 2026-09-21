@@ -1,8 +1,12 @@
+<?php
+$esEntrega = ($solicitud['estatus'] ?? '') === 'Entregada';
+$tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIALES';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>SOLICITUD DE MATERIALES | TAKAB</title>
+    <title><?= $tituloDocumento ?> | TAKAB</title>
     <style>
         * {
             box-sizing: border-box;
@@ -274,7 +278,7 @@
         }
     ?>
 
-    <button class="btn-print" onclick="window.print();">🖨️ Imprimir Solicitud</button>
+    <button class="btn-print" onclick="window.print();">🖨️ Imprimir <?= $esEntrega ? 'Entrega' : 'Solicitud' ?></button>
 
     <div class="pdf24_02">
         
@@ -282,7 +286,7 @@
             <div class="header-top-row">
                 <img class="logo-takab" src="assets/images/logo.png" alt="TAKAB Logo" />
                 
-                <h1 class="doc-title">SOLICITUD DE MATERIALES</h1>
+                <h1 class="doc-title"><?= $tituloDocumento ?></h1>
                 
                 <div class="doc-code"><?= htmlspecialchars($solicitud['folio'] ?? 'Sin Folio') ?></div>
             </div>
@@ -313,10 +317,19 @@
                 <span class="info-value"><?= !empty($solicitud['fecha_entrega']) ? date('d/m/Y', strtotime($solicitud['fecha_entrega'])) : 'N/A' ?></span>
             </div>
 
-            <?php if ($requiereDevolucion): ?>
+            <?php if ($esEntrega): ?>
+                <div class="info-item">
+                    <span class="info-label">Fecha de Entrega</span>
+                    <span class="info-value"><?= !empty($solicitud['fecha_entregado']) ? date('d/m/Y', strtotime($solicitud['fecha_entregado'])) : '________' ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Entregado por</span>
+                    <span class="info-value"><?= htmlspecialchars($solicitud['responsable'] ?? 'Sin Registro') ?></span>
+                </div>
+            <?php elseif ($requiereDevolucion): ?>
                 <div class="info-item">
                     <span class="info-label">Fecha de Devolución</span>
-                    <span class="info-value"><?= !empty($solicitud['fecha_entregado']) ? date('d/m/Y', strtotime($solicitud['fecha_entregado'])) : '________' ?></span>
+                    <span class="info-value">________</span>
                 </div>
             <?php endif; ?>
 
@@ -399,8 +412,8 @@
             
             <div class="signature-box">
                 <div class="signature-line"></div>
-                <strong>AUTORIZADO / RECIBIDO</strong><br>
-                <span>Firma de Conformidad Almacén</span>
+                <strong><?= $esEntrega ? 'ENTREGADO POR' : 'AUTORIZADO / RECIBIDO' ?></strong><br>
+                <span><?= $esEntrega ? htmlspecialchars($solicitud['responsable'] ?? 'Firma de Conformidad Almacén') : 'Firma de Conformidad Almacén' ?></span>
             </div>
         </div>
 

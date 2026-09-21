@@ -4,10 +4,64 @@ require_once __DIR__ . '/../models/Empleado.php';
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../models/Proyecto.php';
 require_once __DIR__ . '/../models/SolicitudMaterial.php';
+require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 
 class EmpleadoController{
+
+    public function configuracionEmpleado(): void
+    {
+        Session::requireLogin(['Administrador', 'Empleado']);
+
+        $role = $_SESSION['role'] ?? '';
+        $nombre = $_SESSION['nombre'] ?? '';
+        $usuarioId = (int) ($_SESSION['user_id'] ?? 0);
+        $usuario = Usuario::findById($usuarioId);
+        $error = '';
+
+        if ($usuario === null) {
+            Session::logout();
+            header('Location: ' . Session::url('login'));
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                Usuario::cambiarPassword(
+                    $usuarioId,
+                    (string) ($_POST['password_actual'] ?? ''),
+                    (string) ($_POST['password_nueva'] ?? ''),
+                    (string) ($_POST['password_confirmacion'] ?? '')
+                );
+
+                ActivityLogger::registrarActualizacion(
+                    'empleado',
+                    'usuario',
+                    $usuarioId,
+                    'Contraseña de Usuario Actualizada'
+                );
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Contraseña Actualizada',
+                    'mensaje' => 'Tu Contraseña se Cambió Correctamente.',
+                ];
+                header('Location: ' . Session::url('configuracion_empleado'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al cambiar contraseña: ' . $e->getMessage());
+                $error = 'No Fue Posible Actualizar la Contraseña. Intenta Nuevamente.';
+            }
+        }
+
+        include __DIR__ . '/../views/empleado/configuracion_empleado.php';
+    }
 
     public function obtenerDashboardEmpleado(): void{
         Session::requireLogin(['Administrador', 'Empleado']);
@@ -19,6 +73,7 @@ class EmpleadoController{
        $_SESSION['menu_items'] = [
             ['slug' => 'crear_solicitud', 'label' => 'Solicitar Material', 'icon' => 'fa-solid fa-file-signature', 'role' => 'Todos'],
             ['slug' => 'mis_solicitudes', 'label' => 'Mis Solicitudes', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
+            ['slug' => 'configuracion_empleado', 'label' => 'Configuración', 'icon' => 'fa-solid fa-gear', 'role' => 'Todos'],
             ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
         ];
 

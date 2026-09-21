@@ -10,14 +10,12 @@ class Producto
         $db = Database::getInstance()->getConnection();
         $almacenSeleccionado = !empty($filtros['almacen_id']) ? (int) $filtros['almacen_id'] : null;
         $stockJoin = $almacenSeleccionado
-            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
-            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
-        $almacenJoin = $almacenSeleccionado
-            ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
-            : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
-        $sql = "SELECT p.*, COALESCE(si.stock_actual, 0) AS stock_actual,
+            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual, 1 AS almacenes_count FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+            : ' LEFT JOIN (SELECT producto_id, MIN(almacen_id) AS almacen_id, SUM(stock) AS stock_actual, COUNT(*) AS almacenes_count FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+        $almacenJoin = ' LEFT JOIN almacenes a ON a.id = si.almacen_id';
+        $sql = "SELECT p.*, si.almacen_id, COALESCE(si.stock_actual, 0) AS stock_actual,
                        c.nombre AS categoria,
-                       a.nombre AS almacen,
+                       CASE WHEN COALESCE(si.almacenes_count, 0) > 1 THEN 'Varios Almacenes' ELSE a.nombre END AS almacen,
                        um.nombre AS unidad_medida_nombre,
                        um.apodo AS unidad_abreviacion
                 FROM inventario p
@@ -135,17 +133,17 @@ class Producto
         $db = Database::getInstance()->getConnection();
         self::ensureStockTable($db);
         $sql = "INSERT INTO inventario (
-            sku, codigo_fabricante, num_serie, codigo_sat, codigos_barras, nombre, descripcion, tipo, categoria_id, 
+            sku, nomenclatura, codigo_fabricante, num_serie, codigo_sat, codigos_barras, nombre, descripcion, tipo, categoria_id,
             marca, modelo, unidad_medida_id, precio_unitario, precio_iva, precio_beneficio, pais_origen, stock_minimo,
-            color, almacen_id, imagen_url
+            color, imagen_url
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $db->beginTransaction();
         try {
         $stmt->execute([ //Regresa true o false dependiendo si se pudo ejecutar la consulta
-            $data['sku'], $data['codigo_fabricante'], self::encodeNumeroSerie($data['num_serie'] ?? null), $data['codigo_sat'], $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
+            $data['sku'], $data['nomenclatura'] ?? null, $data['codigo_fabricante'], self::encodeNumeroSerie($data['num_serie'] ?? null), $data['codigo_sat'] ?? null, $data['codigos_barras'], $data['nombre'], $data['descripcion'], $data['tipo'], $data['categoria_id'],
             $data['marca'], $data['modelo'], $data['unidad_medida_id'], $data['precio_unitario'], $data['precio_unitario']*1.16, $data['precio_unitario']*1.508, $data['pais_origen'], $data['stock_minimo'],
-            $data['color'], $data['almacen_id'], $data['imagen_url'] ?? null
+            $data['color'], $data['imagen_url'] ?? null
         ]);
         $productoId = (int) $db->lastInsertId();
         $stockInicial = max(0, (float) ($data['stock_inicial'] ?? ($data['stock_actual'] ?? 0)));
@@ -170,18 +168,22 @@ class Producto
 
     public static function find($id){
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT p.*, p.codigos_barras AS codigo_barras, COALESCE(si.stock_actual, 0) AS stock_actual,
+        $stmt = $db->prepare("SELECT p.*, si.almacen_id, p.codigos_barras AS codigo_barras, COALESCE(si.stock_actual, 0) AS stock_actual,
                                     c.nombre AS categoria,
-                                    a.nombre AS almacen,
+                                    CASE WHEN COALESCE(si.almacenes_count, 0) > 1 THEN 'Varios Almacenes' ELSE a.nombre END AS almacen,
                                     um.nombre AS unidad_medida_nombre,
                                     um.apodo AS unidad_apodo,
                                     um.sistema,
                                     sa.ubicacion_fisica
                             FROM inventario p
-                            LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id
+                            LEFT JOIN (
+                                SELECT producto_id, MIN(almacen_id) AS almacen_id, SUM(stock) AS stock_actual, COUNT(*) AS almacenes_count
+                                FROM stock_almacen
+                                GROUP BY producto_id
+                            ) si ON si.producto_id = p.id
                             LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id
-                            LEFT JOIN almacenes a ON p.almacen_id = a.id
-                            LEFT JOIN stock_almacen sa ON sa.producto_id = p.id AND sa.almacen_id = p.almacen_id
+                            LEFT JOIN almacenes a ON a.id = si.almacen_id
+                            LEFT JOIN stock_almacen sa ON sa.producto_id = p.id AND sa.almacen_id = si.almacen_id
                             LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                             WHERE p.id = ?");
         $stmt->execute([(int) $id]);
@@ -204,6 +206,70 @@ class Producto
         $stmt = $db->prepare("SELECT * FROM inventario WHERE codigo_fabricante = ?");
         $stmt->execute([$codigo]);
         return $stmt->fetch();
+    }
+
+    public static function codigoFabricanteExiste(string $codigo, ?int $exceptId = null): bool
+    {
+        $codigo = strtoupper(trim($codigo));
+        if ($codigo === '') {
+            return false;
+        }
+
+        $db = Database::getInstance()->getConnection();
+        if ($exceptId !== null) {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM inventario WHERE codigo_fabricante = ? AND id <> ?');
+            $stmt->execute([$codigo, $exceptId]);
+        } else {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM inventario WHERE codigo_fabricante = ?');
+            $stmt->execute([$codigo]);
+        }
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public static function skuExiste(string $sku): bool
+    {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare('SELECT COUNT(*) FROM inventario WHERE sku = ?');
+        $stmt->execute([strtoupper(trim($sku))]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public static function nomenclaturaExiste(string $nomenclatura, ?int $exceptId = null): bool
+    {
+        $nomenclatura = strtoupper(trim($nomenclatura));
+        if ($nomenclatura === '') {
+            return false;
+        }
+
+        $db = Database::getInstance()->getConnection();
+        if ($exceptId !== null) {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM inventario WHERE nomenclatura = ? AND id <> ?');
+            $stmt->execute([$nomenclatura, $exceptId]);
+        } else {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM inventario WHERE nomenclatura = ?');
+            $stmt->execute([$nomenclatura]);
+        }
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public static function coloresDisponibles(): array
+    {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->query("SHOW COLUMNS FROM inventario LIKE 'color'");
+        $columna = $stmt->fetch(PDO::FETCH_ASSOC);
+        $tipo = (string) ($columna['Type'] ?? '');
+
+        if (!preg_match('/^enum\\((.*)\\)$/i', $tipo, $coincidencias)) {
+            return [];
+        }
+
+        preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'/", $coincidencias[1], $valores);
+        return array_map(
+            static fn(string $valor): string => str_replace(["\\'", "\\\\"], ["'", "\\"], $valor),
+            $valores[1] ?? []
+        );
     }
 
     public static function findByCodigoBarras(string $codigoBarras)
@@ -251,7 +317,7 @@ class Producto
                     codigo_fabricante = ?, codigos_barras = ?, num_serie = ?, codigo_sat = ?, nombre = ?, descripcion = ?, tipo = ?,
                     categoria_id = ?, marca = ?, modelo = ?, unidad_medida_id = ?, precio_unitario = ?,
                     precio_iva = ?, precio_beneficio = ?, pais_origen = ?, stock_minimo = ?, color = ?,
-                    almacen_id = ?, imagen_url = ?
+                    imagen_url = ?
                 WHERE id = ?";
         $codigoFabricante = strtoupper(trim((string) ($data['codigo_fabricante'] ?? '')));
         $codigoBarras = trim((string) ($data['codigos_barras'] ?? ''));
@@ -279,7 +345,6 @@ class Producto
                 $data['pais_origen'] ?? null,
                 (float) ($data['stock_minimo'] ?? 0),
                 $data['color'] ?? null,
-                $data['almacen_id'],
                 $data['imagen_url'] ?? null,
                 (int) $id,
             ]);
@@ -492,11 +557,9 @@ class Producto
 
         $almacenSeleccionado = !empty($filtros['almacen_id']) ? (int) $filtros['almacen_id'] : null;
         $stockJoin = $almacenSeleccionado
-            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
-            : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
-        $almacenJoin = $almacenSeleccionado
-            ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
-            : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
+            ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual, 1 AS almacenes_count FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
+            : ' LEFT JOIN (SELECT producto_id, MIN(almacen_id) AS almacen_id, SUM(stock) AS stock_actual, COUNT(*) AS almacenes_count FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+        $almacenJoin = ' LEFT JOIN almacenes a ON a.id = si.almacen_id';
         $joins = $stockJoin
                . " LEFT JOIN catalogo_categorias_inventario c ON p.categoria_id = c.id"
                . $almacenJoin
@@ -519,8 +582,8 @@ class Producto
         $totales = $stmtTotales->fetch() ?: [];
 
         $selectSql = "SELECT p.id, p.nomenclatura, p.nomenclatura AS codigo, p.codigo_fabricante, p.codigos_barras, p.nombre, p.descripcion, p.tipo, COALESCE(si.stock_actual, 0) AS stock_actual, p.stock_minimo,"
-                    . " p.precio_unitario, p.precio_beneficio, p.almacen_id, p.activo, p.created_at,"
-                    . " c.nombre AS categoria, a.nombre AS almacen, um.nombre AS unidad_medida_nombre,"
+                    . " p.precio_unitario, p.precio_beneficio, si.almacen_id, p.activo, p.created_at,"
+                    . " c.nombre AS categoria, CASE WHEN COALESCE(si.almacenes_count, 0) > 1 THEN 'Varios Almacenes' ELSE a.nombre END AS almacen, um.nombre AS unidad_medida_nombre,"
                     . " um.apodo AS unidad_abreviacion, p.imagen_url, p.marca, p.modelo,"
                     . " (p.precio_unitario * COALESCE(si.stock_actual, 0)) AS valor_total,"
                     . " (SELECT MAX(m.created_at) FROM movimientos_inventario m WHERE m.producto_id = p.id) AS ultimo_movimiento"

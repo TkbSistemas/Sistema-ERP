@@ -8,7 +8,7 @@ if (!empty($alerta['success'])) {
         ? 'Producto actualizado correctamente.'
         : 'Producto registrado correctamente.';
 }
-$mensajeEliminado = !empty($alerta['deleted']) ? 'Producto eliminado correctamente.' : null;
+$mensajeEliminado = !empty($alerta['deleted']) ? 'Producto Eliminado Correctamente.' : null;
 $mensajeError = null;
 $errorCode = $_GET['error'] ?? '';
 if ($errorCode === 'relaciones') {
@@ -127,19 +127,13 @@ $buildQuery = function(array $overrides = []) {
                             <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, nomenclatura, SKU, fabricante o número de serie" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Nomenclatura, SKU, Fabricante o Número de Serie" value="<?= htmlspecialchars($filtros['buscar']) ?>" style="width: 100% !important;">
                             </div>
                         </div>
                         <div class="filter-field">
-                            <label for="almacen_id">Almacén</label>
-                            <select id="almacen_id" name="almacen_id">
-                                <option value="">Todos</option>
-                                <?php foreach ($almacenes as $almacen): ?>
-                                    <option value="<?= $almacen['id'] ?>" <?= $filtros['almacen_id'] == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="codigo_barras">Código de Barras</label>
+                            <input type="text" id="codigo_barras" name="codigo_barras" value="<?= htmlspecialchars($filtros['codigo_barras'] ?? '') ?>" placeholder="Escanea o Escribe Código">
                         </div>
-
                         <div class="filter-field">
                             <label for="fecha_desde">Fecha de Alta (Desde)</label>
                             <input type="date" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
@@ -151,10 +145,6 @@ $buildQuery = function(array $overrides = []) {
                     </div>
 
                     <div class="filter-row">
-                        <div class="filter-field">
-                            <label for="codigo">Código Barras:</label>
-                            <input type="text" id="codigo" name="codigo" value="<?= htmlspecialchars($filtros['codigo']) ?>" placeholder="Ej. 1156161">
-                        </div>
                         <div class="filter-field">
                             <label for="tipo">Tipo:</label>
                             <select id="tipo" name="tipo">
@@ -259,7 +249,7 @@ $buildQuery = function(array $overrides = []) {
                 <div class="productos-pagination-info">
                     <?= $totalRegistros > 0
                         ? "Mostrando $desde - $hasta de " . number_format($totalRegistros) . " registros"
-                        : "Sin registros disponibles" ?>
+                        : "Sin Registros Disponibles" ?>
                 </div>
                 <div class="productos-pagination-controls">
                     <?php if ($page > 1): ?>

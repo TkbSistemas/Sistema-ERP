@@ -48,6 +48,10 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->imprimirListadoInventario();
         break;
+    case 'auditar_inventario':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->auditarInventario();
+        break;
     case 'catalogo_productos':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->obtenerCatalogo();
@@ -67,6 +71,10 @@ switch ($route) {
     case 'producto_nuevo':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
         (new InventarioController())->crearProducto();
+        break;
+    case 'buscar_catalogo_sat':
+        require_once __DIR__ . '/../app/controllers/InventarioController.php';
+        (new InventarioController())->buscarCatalogoSat();
         break;
     case 'ver_producto':
         require_once __DIR__ . '/../app/controllers/InventarioController.php';
@@ -99,6 +107,10 @@ switch ($route) {
     case 'dashboard_almacen':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->obtenerDashboardAlmacen();
+        break;
+    case 'configuracion_almacen':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->configuracionAlmacen();
         break;
     case 'solicitudes_material':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
@@ -169,6 +181,10 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->obtenerDashboardCompras();
         break;
+    case 'configuracion_compras':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->configuracionCompras();
+        break;
     case 'ordenes_compra':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->obtenerOrdenesCompra();
@@ -210,6 +226,11 @@ switch ($route) {
     case 'crear_solicitud':
         require_once __DIR__ . '/../app/controllers/EmpleadoController.php';
         (new EmpleadoController())->crearSolicitudMaterial();
+        break;
+    case 'configuracion':
+    case 'configuracion_empleado':
+        require_once __DIR__ . '/../app/controllers/EmpleadoController.php';
+        (new EmpleadoController())->configuracionEmpleado();
         break;
     default:
         // Si la ruta no existe, mandamos un error 404

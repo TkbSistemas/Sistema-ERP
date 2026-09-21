@@ -110,7 +110,7 @@ class SolicitudMaterial {
         $sql = "SELECT s.*, u.nombre AS solicitante
                 FROM solicitudes_bajas s
                 LEFT JOIN usuarios u ON s.solicitante_id = u.id
-                WHERE s.estatus IN ('Rechazada', 'Aprobada')
+                WHERE s.estatus IN ('Rechazada', 'Aprobada', 'Auditoría')
                 ORDER BY s.created_at DESC, s.id DESC
                 LIMIT :limite OFFSET :offset";
 
@@ -153,7 +153,7 @@ class SolicitudMaterial {
 
         $sql = "SELECT COUNT(*) 
                 FROM solicitudes_bajas 
-                WHERE estatus IN ('Rechazada', 'Aprobada')";
+                WHERE estatus IN ('Rechazada', 'Aprobada', 'Auditoría')";
 
         $stmt = $db->query($sql);
 
@@ -180,14 +180,18 @@ class SolicitudMaterial {
                             s.id, 
                             s.folio,
                             s.solicitante_id,
+                            s.estatus,
                             s.fecha_solicitud, 
                             s.fecha_requerida AS fecha_entrega,
-                            s.fecha_entregado, 
+                            s.fecha_entregado,
+                            s.responsable_id,
                             s.comentario_solicitante AS comentarios,
                             u.nombre AS solicitante,
+                            ur.nombre AS responsable,
                             pr.nombre AS proyecto
                         FROM solicitudes_material s
                         LEFT JOIN usuarios u ON s.solicitante_id = u.id
+                        LEFT JOIN usuarios ur ON s.responsable_id = ur.id
                         LEFT JOIN proyectos pr ON s.proyecto_id = pr.id
                         WHERE s.id = ?";
         
@@ -200,6 +204,8 @@ class SolicitudMaterial {
         }
 
         $sqlDetalles = "SELECT 
+                            d.id AS item_id,
+                            d.producto_id,
                             p.nomenclatura,
                             p.nombre,
                             p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
@@ -214,13 +220,16 @@ class SolicitudMaterial {
                         INNER JOIN inventario p ON d.producto_id = p.id
                         LEFT JOIN catalogo_unidades_medida um ON p.unidad_medida_id = um.id
                         LEFT JOIN (
-                            SELECT producto_id, SUM(stock) AS stock_actual
-                            FROM stock_almacen
-                            GROUP BY producto_id
+                            SELECT sa.producto_id, SUM(sa.stock) AS stock_actual
+                            FROM stock_almacen sa
+                            INNER JOIN almacenes a ON a.id = sa.almacen_id AND a.activo = 1
+                            GROUP BY sa.producto_id
                         ) si ON si.producto_id = p.id
                         WHERE d.solicitud_id = ?
                         UNION ALL
                         SELECT
+                            nr.id AS item_id,
+                            NULL AS producto_id,
                             NULL AS nomenclatura,
                             nr.nombre,
                             'Fuera del Catálogo' AS tipo,
@@ -240,6 +249,212 @@ class SolicitudMaterial {
         $solicitud['items'] = $stmtDetalles->fetchAll();
 
         return $solicitud;
+    }
+
+    public static function entregarSolicitud(
+        int $solicitudId,
+        int $responsableId,
+        array $cantidadesDetalles,
+        array $cantidadesNoRegistrados
+    ): array {
+        if ($solicitudId <= 0 || $responsableId <= 0) {
+            throw new InvalidArgumentException('La Solicitud y el Responsable son Obligatorios.');
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $gestionaTransaccion = !$db->inTransaction();
+        if ($gestionaTransaccion) {
+            $db->beginTransaction();
+        }
+
+        try {
+            $stmtSolicitud = $db->prepare(
+                'SELECT folio, estatus FROM solicitudes_material WHERE id = ? FOR UPDATE'
+            );
+            $stmtSolicitud->execute([$solicitudId]);
+            $solicitud = $stmtSolicitud->fetch(PDO::FETCH_ASSOC);
+
+            if (!$solicitud) {
+                throw new RuntimeException('La Solicitud de Material no Existe.');
+            }
+            if (($solicitud['estatus'] ?? '') !== 'Aprobada') {
+                throw new RuntimeException('La Solicitud ya no Está Disponible para Entrega.');
+            }
+
+            $stmtDetalles = $db->prepare(
+                'SELECT id, producto_id, cantidad
+                 FROM solicitudes_material_detalles
+                 WHERE solicitud_id = ?
+                 ORDER BY id
+                 FOR UPDATE'
+            );
+            $stmtDetalles->execute([$solicitudId]);
+            $detalles = $stmtDetalles->fetchAll(PDO::FETCH_ASSOC);
+
+            $stmtNoRegistrados = $db->prepare(
+                'SELECT id, cantidad
+                 FROM solicitudes_material_noregistrados
+                 WHERE solicitud_id = ?
+                 ORDER BY id
+                 FOR UPDATE'
+            );
+            $stmtNoRegistrados->execute([$solicitudId]);
+            $noRegistrados = $stmtNoRegistrados->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($detalles === [] && $noRegistrados === []) {
+                throw new RuntimeException('La Solicitud no Tiene Materiales para Entregar.');
+            }
+
+            $normalizarCantidad = static function (array $cantidades, int $itemId, float $cantidadSolicitada, int $partida): float {
+                if (!array_key_exists($itemId, $cantidades) || !is_numeric($cantidades[$itemId])) {
+                    throw new InvalidArgumentException('Falta la Cantidad de la Partida ' . $partida . '.');
+                }
+
+                $cantidad = round((float) $cantidades[$itemId], 2);
+                if ($cantidad < 0 || $cantidad > $cantidadSolicitada + 0.00001) {
+                    throw new InvalidArgumentException(
+                        'La Cantidad de la Partida ' . $partida . ' Debe Estar entre Cero y '
+                        . rtrim(rtrim(number_format($cantidadSolicitada, 2, '.', ''), '0'), '.') . '.'
+                    );
+                }
+
+                return $cantidad;
+            };
+
+            $actualizarDetalle = $db->prepare(
+                'UPDATE solicitudes_material_detalles SET cantidad = ? WHERE id = ? AND solicitud_id = ?'
+            );
+            $actualizarNoRegistrado = $db->prepare(
+                'UPDATE solicitudes_material_noregistrados SET cantidad = ? WHERE id = ? AND solicitud_id = ?'
+            );
+            $buscarStock = $db->prepare(
+                'SELECT sa.almacen_id, sa.stock
+                 FROM stock_almacen sa
+                 INNER JOIN almacenes a ON a.id = sa.almacen_id AND a.activo = 1
+                 WHERE sa.producto_id = ? AND sa.stock > 0
+                 ORDER BY a.principal DESC, sa.almacen_id ASC
+                 FOR UPDATE'
+            );
+            $descontarStock = $db->prepare(
+                'UPDATE stock_almacen
+                 SET stock = stock - ?
+                 WHERE producto_id = ? AND almacen_id = ? AND stock >= ?'
+            );
+            $registrarMovimiento = $db->prepare(
+                "INSERT INTO movimientos_inventario
+                    (producto_id, tipo, cantidad, responsable_id, almacen_id, observaciones, folio_solicitud)
+                 VALUES (?, 'Salida', ?, ?, ?, ?, ?)"
+            );
+
+            $partida = 0;
+            $partidasEntregadas = 0;
+            $cantidadTotal = 0.0;
+            $movimientos = 0;
+
+            foreach ($detalles as $detalle) {
+                $partida++;
+                $detalleId = (int) $detalle['id'];
+                $productoId = (int) $detalle['producto_id'];
+                $solicitado = (float) $detalle['cantidad'];
+                $cantidad = $normalizarCantidad($cantidadesDetalles, $detalleId, $solicitado, $partida);
+
+                if ($cantidad > 0) {
+                    $buscarStock->execute([$productoId]);
+                    $existencias = $buscarStock->fetchAll(PDO::FETCH_ASSOC);
+                    $disponible = array_reduce(
+                        $existencias,
+                        static fn(float $total, array $fila): float => $total + (float) $fila['stock'],
+                        0.0
+                    );
+
+                    if ($disponible + 0.00001 < $cantidad) {
+                        throw new RuntimeException('Stock Insuficiente para la Partida ' . $partida . '.');
+                    }
+
+                    $pendiente = $cantidad;
+                    foreach ($existencias as $existencia) {
+                        if ($pendiente <= 0.00001) {
+                            break;
+                        }
+
+                        $almacenId = (int) $existencia['almacen_id'];
+                        $descuento = min($pendiente, (float) $existencia['stock']);
+                        $descuento = round($descuento, 2);
+                        if ($descuento <= 0) {
+                            continue;
+                        }
+
+                        $descontarStock->execute([$descuento, $productoId, $almacenId, $descuento]);
+                        if ($descontarStock->rowCount() !== 1) {
+                            throw new RuntimeException('El Stock Cambió Mientras se Procesaba la Partida ' . $partida . '.');
+                        }
+
+                        $registrarMovimiento->execute([
+                            $productoId,
+                            $descuento,
+                            $responsableId,
+                            $almacenId,
+                            'Entrega de Solicitud de Material',
+                            $solicitud['folio'],
+                        ]);
+                        $movimientos++;
+                        $pendiente = round($pendiente - $descuento, 2);
+                    }
+
+                    if ($pendiente > 0.00001) {
+                        throw new RuntimeException('No Fue Posible Completar el Descuento de la Partida ' . $partida . '.');
+                    }
+
+                    $partidasEntregadas++;
+                    $cantidadTotal += $cantidad;
+                }
+
+                $actualizarDetalle->execute([$cantidad, $detalleId, $solicitudId]);
+            }
+
+            foreach ($noRegistrados as $material) {
+                $partida++;
+                $materialId = (int) $material['id'];
+                $solicitado = (float) $material['cantidad'];
+                $cantidad = $normalizarCantidad($cantidadesNoRegistrados, $materialId, $solicitado, $partida);
+                $actualizarNoRegistrado->execute([$cantidad, $materialId, $solicitudId]);
+
+                if ($cantidad > 0) {
+                    $partidasEntregadas++;
+                    $cantidadTotal += $cantidad;
+                }
+            }
+
+            if ($partidasEntregadas === 0) {
+                throw new InvalidArgumentException('Debes Entregar una Cantidad Mayor a Cero en al Menos una Partida.');
+            }
+
+            $actualizarSolicitud = $db->prepare(
+                "UPDATE solicitudes_material
+                 SET estatus = 'Entregada', responsable_id = ?, fecha_entregado = CURDATE(), updated_at = NOW()
+                 WHERE id = ? AND estatus = 'Aprobada'"
+            );
+            $actualizarSolicitud->execute([$responsableId, $solicitudId]);
+            if ($actualizarSolicitud->rowCount() !== 1) {
+                throw new RuntimeException('La Solicitud Cambió de Estado Durante el Proceso.');
+            }
+
+            if ($gestionaTransaccion) {
+                $db->commit();
+            }
+
+            return [
+                'folio' => (string) $solicitud['folio'],
+                'partidas_entregadas' => $partidasEntregadas,
+                'cantidad_total' => round($cantidadTotal, 2),
+                'movimientos' => $movimientos,
+            ];
+        } catch (Throwable $e) {
+            if ($gestionaTransaccion && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function obtenerBajaConDetalles($solicitudId) {

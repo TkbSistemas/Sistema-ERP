@@ -142,25 +142,25 @@ $printUrl = 'imprimir_inventario' . ($printParams ? ('?' . http_build_query($pri
                             <label for="buscar">Búsqueda Global</label>
                             <div class="filter-input-icon">
                                 <i class="fa fa-search"></i>
-                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, nomenclatura, SKU, fabricante o número de serie" value="<?= $buscar ?>">
+                                <input type="text" id="buscar" name="buscar" placeholder="Nombre, Nomenclatura, SKU, Fabricante o Número de Serie" value="<?= $buscar ?>">
                             </div>
                         </div>
 
                         <div class="inv-filter-field">
                             <label for="almacen_id">Almacén</label>
                             <select id="almacen_id" name="almacen_id">
-                                <option value="">Todos los almacenes</option>
+                                <option value="">Todos los Almacenes</option>
                                 <?php foreach ($almacenes as $almacen): ?>
                                     <option value="<?= $almacen['id'] ?>" <?= $almacenId == $almacen['id'] ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="inv-filter-field">
-                            <label for="fecha_desde">Fecha de Alta (desde)</label>
+                            <label for="fecha_desde">Fecha de Alta (Desde)</label>
                             <input type="date" id="fecha_desde" name="fecha_desde" value="<?= $fechaDesde ?>">
                         </div>
                         <div class="inv-filter-field">
-                            <label for="fecha_hasta">Fecha de Alta (hasta)</label>
+                            <label for="fecha_hasta">Fecha de Alta (Hasta)</label>
                             <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?= $fechaHasta ?>">
                         </div>
                     </div>
@@ -237,7 +237,7 @@ $printUrl = 'imprimir_inventario' . ($printParams ? ('?' . http_build_query($pri
                     <?php if (empty($productos)): ?>
                         <div class="inventario-empty">
                             <i class="fa fa-box-open"></i>
-                            <p>No se encontraron productos con los filtros aplicados.</p>
+                            <p>No se Encontraron Productos.</p>
                         </div>
                     <?php else: ?>
                         <table class="inventario-table">
@@ -300,7 +300,7 @@ $printUrl = 'imprimir_inventario' . ($printParams ? ('?' . http_build_query($pri
                 <div class="inventario-pagination-info">
                     <?= $totalRegistros > 0
                         ? "Mostrando $desde - $hasta de " . number_format($totalRegistros) . " registros"
-                        : "Sin registros disponibles" ?>
+                        : "Sin Registros Disponibles" ?>
                 </div>
                 <div class="inventario-pagination-controls">
                     <?php if ($page > 1): ?>

@@ -2,10 +2,13 @@
     require_once __DIR__ . '/../models/MovimientoInventario.php';
     require_once __DIR__ . '/../models/Producto.php';
     require_once __DIR__ . '/../models/Almacen.php';
+    require_once __DIR__ . '/../models/AuditoriaInventario.php';
+    require_once __DIR__ . '/../models/CatalogoSat.php';
     require_once __DIR__ . '/../helpers/Session.php';
     require_once __DIR__ . '/../helpers/Database.php';
     require_once __DIR__ . '/../helpers/ActivityLogger.php';
     require_once __DIR__ . '/../helpers/BarcodeGenerator.php';
+    require_once __DIR__ . '/../helpers/AuditoriaInventarioPdf.php';
 
     class InventarioController
     {
@@ -19,7 +22,7 @@
                 ['slug' => 'construccion', 'label' => 'Inventario de Merma', 'icon' => 'fa-solid fa-recycle', 'role' => 'Todos'],
                 ['slug' => 'construccion', 'label' => 'Rotación de Inventario', 'icon' => 'fa-solid fa-arrows-rotate', 'role' => 'Todos'],
                 ['slug' => 'construccion', 'label' => 'Reportes de Inventario', 'icon' => 'fa-solid fa-chart-pie', 'role' => 'Administrador'],
-                ['slug' => 'construccion', 'label' => 'Auditar Inventario', 'icon' => 'fa-solid fa-house-circle-exclamation', 'role' => 'Todos'],
+                ['slug' => 'auditar_inventario', 'label' => 'Auditar Inventario', 'icon' => 'fa-solid fa-house-circle-exclamation', 'role' => 'Todos'],
                 ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-grip', 'role' => 'Almacen'],
                 ['slug' => 'construccion', 'label' => 'Ir a Dashboard', 'icon' => 'fa-solid fa-grip', 'role' => 'Administrador'],
                 ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
@@ -83,6 +86,126 @@
 
             include __DIR__ . '/../views/inventario/dashboard_inventario.php';
     }
+
+        public function auditarInventario(): void
+        {
+            Session::requireLogin(['Administrador', 'Almacen', 'Inventario']);
+
+            $role = $_SESSION['role'] ?? '';
+            $nombre = $_SESSION['nombre'] ?? '';
+            $db = Database::getInstance()->getConnection();
+            $almacenes = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
+            $categorias = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
+            $tiposProducto = Producto::tiposDisponibles();
+            $entrada = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
+            $esAjax = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+            $error = '';
+
+            $filtros = [
+                'almacen_id' => max(0, (int) ($entrada['almacen_id'] ?? 0)),
+                'categoria_id' => max(0, (int) ($entrada['categoria_id'] ?? 0)),
+                'tipo' => trim((string) ($entrada['tipo'] ?? '')),
+            ];
+            if (!in_array($filtros['tipo'], $tiposProducto, true)) {
+                $filtros['tipo'] = '';
+            }
+
+            $almacenesPorId = array_column($almacenes, null, 'id');
+            $categoriasPorId = array_column($categorias, null, 'id');
+            if (!isset($almacenesPorId[$filtros['almacen_id']])) {
+                $filtros['almacen_id'] = 0;
+            }
+            if (!isset($categoriasPorId[$filtros['categoria_id']])) {
+                $filtros['categoria_id'] = 0;
+            }
+
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                try {
+                    if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                        throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                    }
+                    if ($filtros['almacen_id'] <= 0 || $filtros['categoria_id'] <= 0) {
+                        throw new InvalidArgumentException('Selecciona un Almacén y una Categoría Válidos.');
+                    }
+
+                    $conteosFisicos = $_POST['stock_fisico'] ?? null;
+                    if (!is_array($conteosFisicos)) {
+                        throw new InvalidArgumentException('Captura el Conteo Físico de los Productos.');
+                    }
+
+                    $auditoria = AuditoriaInventario::registrar(
+                        $filtros['almacen_id'],
+                        $filtros['categoria_id'],
+                        $filtros['tipo'],
+                        (int) ($_SESSION['user_id'] ?? 0),
+                        $conteosFisicos
+                    );
+                    $pdf = AuditoriaInventarioPdf::generar(
+                        $auditoria,
+                        $nombre,
+                        __DIR__ . '/../../public/assets/images/icono_takab.png'
+                    );
+
+                    ActivityLogger::registrarAlta(
+                        'inventario',
+                        'auditoria',
+                        $auditoria['recepcion_id'],
+                        'Auditoría de Inventario Registrada',
+                        [
+                            'folio' => $auditoria['folio'],
+                            'almacen_id' => $filtros['almacen_id'],
+                            'categoria_id' => $filtros['categoria_id'],
+                            'tipo' => $filtros['tipo'] !== '' ? $filtros['tipo'] : null,
+                            'partidas' => $auditoria['total_partidas'],
+                            'faltantes' => $auditoria['faltantes'],
+                            'sobrantes' => $auditoria['sobrantes'],
+                            'movimientos' => $auditoria['movimientos'],
+                            'solicitud_baja_id' => $auditoria['solicitud_baja_id'],
+                        ]
+                    );
+
+                    $nombreArchivo = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $auditoria['folio']);
+                    header('Content-Type: application/pdf');
+                    header('Content-Disposition: attachment; filename="auditoria_' . $nombreArchivo . '.pdf"');
+                    header('Content-Length: ' . strlen($pdf));
+                    header('Cache-Control: private, no-store, max-age=0');
+                    header('X-Audit-Folio: ' . $auditoria['folio']);
+                    echo $pdf;
+                    exit;
+                } catch (InvalidArgumentException | RuntimeException $e) {
+                    $error = $e->getMessage();
+                } catch (Throwable $e) {
+                    error_log('Error al registrar auditoría de inventario: ' . $e->getMessage());
+                    $error = 'No Fue Posible Guardar la Auditoría. Revisa los Datos e Intenta Nuevamente.';
+                }
+
+                if ($esAjax) {
+                    http_response_code(422);
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(
+                        ['ok' => false, 'mensaje' => $error],
+                        JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+                    );
+                    exit;
+                }
+            }
+
+            $mostrarListado = $filtros['almacen_id'] > 0 && $filtros['categoria_id'] > 0;
+            $productos = [];
+            if ($mostrarListado) {
+                $resultado = Producto::inventarioListado([
+                    'almacen_id' => $filtros['almacen_id'],
+                    'categoria_id' => $filtros['categoria_id'],
+                    'tipo' => $filtros['tipo'],
+                ]);
+                $productos = $resultado['items'];
+            }
+
+            $almacenSeleccionado = $almacenesPorId[$filtros['almacen_id']] ?? null;
+            $categoriaSeleccionada = $categoriasPorId[$filtros['categoria_id']] ?? null;
+
+            include __DIR__ . '/../views/inventario/auditar_inventario.php';
+        }
 
         public function imprimirListadoInventario(): void
         {
@@ -276,7 +399,6 @@
             'codigo'           => trim($_GET['codigo'] ?? ''),
             'tipo'             => $_GET['tipo'] ?? '',
             'categoria_id'     => $_GET['categoria_id'] ?? '',
-            'almacen_id'       => $_GET['almacen_id'] ?? '',
             'stock_flag'       => $_GET['stock_flag'] ?? '',
             'unidad_medida_id' => $_GET['unidad_medida_id'] ?? '',
             'codigo_barras'    => trim($_GET['codigo_barras'] ?? ''),
@@ -309,7 +431,6 @@
 
         $db              = Database::getInstance()->getConnection();
         $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
-        $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, apodo FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
         $tiposProducto   = Producto::tiposDisponibles();
 
@@ -339,9 +460,9 @@
 
         $db              = Database::getInstance()->getConnection();
         $categorias      = $db->query('SELECT id, nombre FROM catalogo_categorias_inventario ORDER BY nombre ASC')->fetchAll();
-        $almacenes       = $db->query('SELECT id, nombre FROM almacenes ORDER BY nombre ASC')->fetchAll();
         $unidades        = $db->query('SELECT id, nombre, apodo, sistema FROM catalogo_unidades_medida ORDER BY nombre ASC')->fetchAll();
         $tiposProducto   = Producto::tiposDisponibles();
+        $colores         = Producto::coloresDisponibles();
 
         $errors = [];
         $data   = [];
@@ -358,18 +479,20 @@
 
                 $codigoFabricante = $data['codigo_fabricante'] ?? '';
                 $codigoBarras     = $data['codigos_barras'] ?? '';
-                $numSerie         = $data['num_serie'] ?? '';
+
+                if (($data['codigo_sat'] ?? '') !== '') {
+                    try {
+                        if (CatalogoSat::obtenerVigente($data['codigo_sat']) === null) {
+                            $errors[] = 'Selecciona un Concepto Vigente del Catálogo SAT.';
+                        }
+                    } catch (Throwable $e) {
+                        error_log('Error al validar el catálogo SAT: ' . $e->getMessage());
+                        $errors[] = 'No Fue Posible Validar el Concepto del Catálogo SAT.';
+                    }
+                }
 
                 if (empty($codigoFabricante) && empty($codigoBarras)) {
                     $errors[] = 'Debes proporcionar al Menos uno de los Siguientes Identificadores: Código del Fabricante o Código de Barras.';
-                }
-
-                if (!empty($data['codigo_fabricante']) && Producto::findByCodigo($data['codigo_fabricante'])) {
-                    $errors[] = 'Ya Existe un Producto con Ese Código de Fabricante.';
-                }
-
-                if (!empty($data['codigos_barras']) && Producto::findByCodigoBarras($data['codigos_barras'])) {
-                    $errors[] = 'Ya Existe un Producto con Ese Código de Barras.';
                 }
 
                 $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors);
@@ -385,9 +508,9 @@
                     Producto::create($payload);
                     ActivityLogger::registrarAlta('inventario', 'producto', null, 'Producto Añadido al Catálogo', [
                         'sku' => $payload['sku'] ?? null,
+                        'nomenclatura' => $payload['nomenclatura'] ?? null,
                         'codigo_fabricante' => $payload['codigo_fabricante'] ?? null,
                         'nombre' => $payload['nombre'] ?? null,
-                        'almacen_id' => $payload['almacen_id'] ?? null,
                     ]);
                     $_SESSION['alerta'] = [
                         'tipo' => 'success',
@@ -408,6 +531,32 @@
             }
         }
         include __DIR__ . '/../views/inventario/crear_producto.php';
+    }
+
+    public function buscarCatalogoSat(): void
+    {
+        Session::requireLogin(['Administrador', 'Almacen', 'Compras']);
+        header('Content-Type: application/json; charset=utf-8');
+
+        $termino = trim((string) ($_GET['q'] ?? ''));
+        if (mb_strlen($termino, 'UTF-8') < 2) {
+            echo json_encode(['ok' => true, 'resultados' => []], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            echo json_encode(
+                ['ok' => true, 'resultados' => CatalogoSat::buscar($termino)],
+                JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+            );
+        } catch (Throwable $e) {
+            error_log('Error al consultar el catálogo SAT: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(
+                ['ok' => false, 'mensaje' => 'No Fue Posible Consultar el Catálogo SAT.'],
+                JSON_UNESCAPED_UNICODE
+            );
+        }
     }
 
     private function generarCodigoBarras(string $codigoBase = '', ?int $ignorarId = null): string
@@ -444,26 +593,56 @@
         return $candidate;
     }
 
-    public static function generarSku()
+    public static function generarSku(): string
     {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->query("SELECT MAX(id) AS max_id FROM inventario");
-        $row = $stmt->fetch();
-        $nextId = (int) ($row['max_id'] ?? 0) + 1; //Genera algo como TAKAB-000001, TAKAB-000002, etc.
-        return 'TAKAB-' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+        $stmt = $db->query("SELECT COALESCE(MAX(CAST(SUBSTRING(sku, 7) AS UNSIGNED)), 0)
+                            FROM inventario
+                            WHERE sku REGEXP '^TAKAB-[0-9]{1,5}$'");
+        $consecutivo = (int) $stmt->fetchColumn() + 1;
+
+        while ($consecutivo <= 99999) {
+            $sku = 'TAKAB-' . str_pad((string) $consecutivo, 5, '0', STR_PAD_LEFT);
+            if (!Producto::skuExiste($sku)) {
+                return $sku;
+            }
+            $consecutivo++;
+        }
+
+        throw new OverflowException('Se Agotaron los Consecutivos Disponibles para el SKU.');
     }
 
 
     private function collectProductoData(array $input, array &$errors, ?int $productoId = null): array
     {
+        $data['nomenclatura'] = strtoupper(trim($input['nomenclatura'] ?? ''));
+        if ($productoId === null && $data['nomenclatura'] === '') {
+            $errors[] = 'La Nomenclatura es Obligatoria.';
+        } elseif (mb_strlen($data['nomenclatura']) > 50) {
+            $errors[] = 'La Nomenclatura es Demasiado Larga.';
+        } elseif ($data['nomenclatura'] !== '' && !preg_match('/^[A-Z0-9][A-Z0-9_.-]*$/', $data['nomenclatura'])) {
+            $errors[] = 'La Nomenclatura Solo Puede Contener Letras, Números, Guion (-), Guion Bajo (_) o Punto (.) Sin Espacios.';
+        } elseif ($data['nomenclatura'] !== '' && Producto::nomenclaturaExiste($data['nomenclatura'], $productoId)) {
+            $errors[] = 'Ya Existe un Producto con Esa Nomenclatura.';
+        }
+
         $data['codigo_fabricante'] = strtoupper(trim($input['codigo_fabricante'] ?? ''));
         if (mb_strlen($data['codigo_fabricante']) > 50) {
             $errors[] = 'El Código es Demasiado Largo.';
         } elseif ($data['codigo_fabricante'] !== '' && ! preg_match('/^[A-Z0-9][A-Z0-9_.-]*$/', $data['codigo_fabricante'])) {
             $errors[] = 'El Código Solo Puede Contener Letras, Números, Guion (-), Guion Bajo (_) o Punto (.) Sin Espacios.';
+        } elseif ($data['codigo_fabricante'] !== '' && Producto::codigoFabricanteExiste($data['codigo_fabricante'], $productoId)) {
+            $errors[] = 'Ya Existe un Producto con Ese Código de Fabricante.';
         }
 
-        $data['sku'] = self::generarSku();
+        $data['sku'] = '';
+        if ($productoId === null) {
+            try {
+                $data['sku'] = self::generarSku();
+            } catch (OverflowException $e) {
+                $errors[] = $e->getMessage();
+            }
+        }
 
         $data['codigos_barras'] = strtoupper(trim($input['codigos_barras'] ?? ''));
         if ($data['codigos_barras'] !== '') {
@@ -508,13 +687,15 @@
                 $errors[] = 'La Unidad de Medida no Corresponde al Sistema Seleccionado.';
             }
         }
-        $data['almacen_id']       = $this->toNullableInt($input['almacen_id'] ?? null);
-        if (empty($data['almacen_id'])) {
-            $errors[] = 'Debes Seleccionar un Almacén Asignado.';
-        }
+        $data['almacen_id'] = $this->toNullableInt($input['almacen_id'] ?? null);
         $data['ubicacion_fisica'] = trim($input['ubicacion_fisica'] ?? '');
-        if (mb_strlen($data['ubicacion_fisica']) > 150) {
-            $errors[] = 'La Ubicación Física es Demasiado Larga.';
+        if ($productoId !== null) {
+            if (empty($data['almacen_id'])) {
+                $errors[] = 'Debes Seleccionar un Almacén Asignado.';
+            }
+            if (mb_strlen($data['ubicacion_fisica']) > 150) {
+                $errors[] = 'La Ubicación Física es Demasiado Larga.';
+            }
         }
 
         $data['marca']                     = trim($input['marca'] ?? '');
@@ -523,6 +704,9 @@
         }
         $data['modelo']                     = trim($input['modelo'] ?? '');
         $data['color']                     = trim($input['color'] ?? '');
+        if ($data['color'] !== '' && !in_array($data['color'], Producto::coloresDisponibles(), true)) {
+            $errors[] = 'Selecciona un Color Válido.';
+        }
         $data['pais_origen']                    = trim($input['pais_origen'] ?? '');
 
 
@@ -531,11 +715,7 @@
             $errors[] = 'El Stock Mínimo Debe Ser un Número Mayor o Igual a Cero.';
         }
 
-        // El stock es propiedad de cada almacén; sólo se acepta como saldo inicial al crear.
-        $data['stock_inicial'] = $this->normalizeDecimal($input['stock_inicial'] ?? 0);
-        if ($data['stock_inicial'] === null || $data['stock_inicial'] < 0) {
-            $errors[] = 'El Stock Inicial Debe Ser un Número Mayor o Igual a Cero.';
-        }
+        $data['stock_inicial'] = 0.0;
 
         $precioMxn = $this->normalizeDecimal($input['precio_unitario'] ?? 0);
         $precioUsd = $this->normalizeDecimal($input['precio_unitario_usd'] ?? 0);
@@ -657,6 +837,7 @@
     {
         return [
             'codigo'                    => '',
+            'nomenclatura'              => '',
             'codigo_fabricante'         => '',
             'codigos_barras'            => '',
             'num_serie'                 => '',
@@ -964,16 +1145,6 @@
             } else {
                 $data = $this->collectProductoData($_POST, $errors, (int) $id);
 
-                $existente = Producto::findByCodigo($data['codigo_fabricante'] ?? '');
-                if ($existente && (int) $existente['id'] !== (int) $id) {
-                    $errors[] = 'Ya Existe Otro Producto con ese Código de Fabricante.';
-                }
-
-                $existente = Producto::findByCodigoBarras($data['codigos_barras'] ?? '');
-                if ($existente && (int) $existente['id'] !== (int) $id) { // Verificamos si el producto existente no es el mismo que estamos editando
-                    $errors[] = 'Ya Existe Otro Producto con ese Código de Barras.';
-                }
-
                 $nuevaImagen = $this->handleImagenUpload($_FILES['imagen_url'] ?? null, $errors, $producto['imagen_url'] ?? null);
                 if ($nuevaImagen === false) {
                     $errors[] = 'No Fue Posible Procesar la Imagen Adjunta.';
@@ -1221,10 +1392,8 @@ endobj
     $almacenSeleccionado = $almacenId !== '' ? (int) $almacenId : null;
     $stockJoin = $almacenSeleccionado
         ? " INNER JOIN (SELECT producto_id, almacen_id, stock AS stock_actual FROM stock_almacen WHERE almacen_id = {$almacenSeleccionado}) si ON si.producto_id = p.id"
-        : ' LEFT JOIN (SELECT producto_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
-    $almacenJoin = $almacenSeleccionado
-        ? ' LEFT JOIN almacenes a ON a.id = si.almacen_id'
-        : ' LEFT JOIN almacenes a ON p.almacen_id = a.id';
+        : ' LEFT JOIN (SELECT producto_id, MIN(almacen_id) AS almacen_id, SUM(stock) AS stock_actual FROM stock_almacen GROUP BY producto_id) si ON si.producto_id = p.id';
+    $almacenJoin = ' LEFT JOIN almacenes a ON a.id = si.almacen_id';
 
     // 1. Construcción y ejecución de la consulta base
     $sql = "SELECT p.id,

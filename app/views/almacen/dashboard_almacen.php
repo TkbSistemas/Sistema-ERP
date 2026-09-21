@@ -17,6 +17,7 @@ $alertas = $datos['alertas'] ?? [];
     <title>TAKAB - ALMÁCEN</title>
     <link rel="stylesheet" href="assets/css/dashboard.css"> 
     <link rel="stylesheet" href="assets/css/dashboard_custom.css">
+    <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 </head>
@@ -76,6 +77,46 @@ $alertas = $datos['alertas'] ?? [];
             </section>
 
             <section class="dashboard-widget">
+                <div class="widget-title sky">
+                    <i class="fa-solid fa-truck-ramp-box" aria-hidden="true"></i>
+                    Órdenes de Compra en Entrega
+                </div>
+                <div class="table-responsive">
+                    <table class="takab-table">
+                        <thead>
+                            <tr>
+                                <th>Folio</th>
+                                <th>Proveedor</th>
+                                <th>Estatus</th>
+                                <th>Tipo de Entrega</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($datos['ordenesEnEntrega'])): ?>
+                                <?php foreach ($datos['ordenesEnEntrega'] as $orden): ?>
+                                    <?php $estatusClase = strtolower(trim((string) ($orden['estatus'] ?? ''))); ?>
+                                    <tr>
+                                        <td><span class="mono"><?= htmlspecialchars($orden['folio'] ?? '-') ?></span></td>
+                                        <td><?= htmlspecialchars($orden['proveedor_nombre'] ?: 'Sin Proveedor') ?></td>
+                                        <td>
+                                            <span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>">
+                                                <?= htmlspecialchars($orden['estatus'] ?? '-') ?>
+                                            </span>
+                                        </td>
+                                        <td><?= htmlspecialchars($orden['metodo_entrega'] ?: 'Por Confirmar') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4" class="table-empty">No hay Órdenes Aprobadas o Parciales por Recibir.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="dashboard-widget">
                 <div class="widget-title sky"><i class="fa-solid fa-history"></i> Movimientos Recientes</div>
                 <?php if (!empty($datos['ultimosMovimientos'])): ?>
                     <table class="dashboard-mini-table">
@@ -104,8 +145,7 @@ $alertas = $datos['alertas'] ?? [];
                         <?php foreach ($alertas as $alerta): ?>
                             <div class="alerta-row">
                                 <span class="alerta-text"><?= htmlspecialchars($alerta[0] ?? '-') ?></span>
-                                <span class="alerta-date"><?= htmlspecialchars($alerta[1] ?? '-') ?></span>
-                                <span class="alerta-badge <?= htmlspecialchars($alerta[2] ?? 'alta') ?>"><?= htmlspecialchars($alerta[2] ?? 'alta') ?></span>
+                                <span class="alerta-badge <?= htmlspecialchars($alerta[1] ?? 'alta') ?>"><?= htmlspecialchars($alerta[1] ?? 'alta') ?></span>
                             </div>
                         <?php endforeach; ?>
                     </div>

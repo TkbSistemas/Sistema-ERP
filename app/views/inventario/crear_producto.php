@@ -5,6 +5,8 @@ $nombre = $_SESSION['nombre'] ?? '';
 $values = isset($data) && is_array($data) ? $data : [];
 $errors = $errors ?? [];
 $error = $error ?? '';
+$productosCssPath = __DIR__ . '/../../../public/assets/css/productos.css';
+$productosCssVersion = is_file($productosCssPath) ? (string) filemtime($productosCssPath) : '1';
 $breadcrumbs = [
     ['label' => 'Nuevo producto'],
 ];
@@ -17,7 +19,7 @@ $breadcrumbs = [
     <title>NUEVO PRODUCTO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
-    <link rel="stylesheet" href="assets/css/productos.css">
+    <link rel="stylesheet" href="assets/css/productos.css?v=<?= htmlspecialchars($productosCssVersion) ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>
 </head>
@@ -79,6 +81,10 @@ $breadcrumbs = [
                             <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($values['nombre'] ?? '') ?>" placeholder="Nombre Ejemplo Producto" required>
                         </div>
                         <div class="productos-form-field">
+                            <label for="nomenclatura">Nomenclatura *</label>
+                            <input type="text" id="nomenclatura" name="nomenclatura" maxlength="50" value="<?= htmlspecialchars($values['nomenclatura'] ?? '') ?>" placeholder="Ej. PRU-EBA-01" required>
+                        </div>
+                        <div class="productos-form-field">
                             <label for="codigo_fabricante">Código del Fabricante</label>
                             <input type="text" id="codigo_fabricante" name="codigo_fabricante" value="<?= htmlspecialchars($values['codigo_fabricante'] ?? '') ?>" placeholder="Código del Fabricante (Ej. Clave CT, )">
                         </div>
@@ -86,14 +92,6 @@ $breadcrumbs = [
                             <label for="codigos_barras">Código de Barras</label>
                             <input type="text" id="codigos_barras" name="codigos_barras" value="<?= htmlspecialchars($values['codigos_barras'] ?? '') ?>" placeholder="Código de barras">
                             <span class="productos-form-note">Escanea o Captura.</span>
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="num_serie">Número de Serie</label>
-                            <input type="text" id="num_serie" name="num_serie" value="<?= htmlspecialchars($values['num_serie'] ?? '') ?>" placeholder="Número de serie">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="codigo_sat">Código SAT</label>
-                            <input type="text" id="codigo_sat" name="codigo_sat" value="<?= htmlspecialchars($values['codigo_sat'] ?? '') ?>" placeholder="Código SAT">
                         </div>
                         <div class="productos-form-field">
                             <label for="tipo">Tipo *</label>
@@ -112,6 +110,35 @@ $breadcrumbs = [
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="productos-form-field sat-catalog-field">
+                            <label for="codigo_sat_busqueda">Producto o Servicio SAT</label>
+                            <div class="sat-catalog-search" id="satCatalogSearch">
+                                <div class="sat-search-input-wrap">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input
+                                        type="search"
+                                        id="codigo_sat_busqueda"
+                                        placeholder="Busca por Clave o Descripción"
+                                        autocomplete="off"
+                                        role="combobox"
+                                        aria-autocomplete="list"
+                                        aria-controls="codigo_sat_resultados"
+                                        aria-expanded="false"
+                                    >
+                                    <span class="sat-search-spinner" aria-hidden="true" hidden><i class="fa-solid fa-spinner fa-spin"></i></span>
+                                </div>
+                                <input type="hidden" id="codigo_sat" name="codigo_sat" value="<?= htmlspecialchars($values['codigo_sat'] ?? '') ?>">
+                                <div id="codigo_sat_resultados" class="sat-search-results" role="listbox" hidden></div>
+                                <div id="codigo_sat_seleccion" class="sat-selected" hidden>
+                                    <span class="sat-selected-code"></span>
+                                    <span class="sat-selected-text"></span>
+                                    <button type="button" class="sat-selected-clear" aria-label="Quitar Concepto SAT" title="Quitar Selección">
+                                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="productos-form-note">Escribe al Menos dos Caracteres.</span>
+                        </div>
                         <div class="productos-form-field">
                             <label for="marca">Marca *</label>
                             <input type="text" id="marca" name="marca" value="<?= htmlspecialchars($values['marca'] ?? '') ?>" placeholder="Marca del Producto" required>
@@ -121,16 +148,19 @@ $breadcrumbs = [
                             <input type="text" id="modelo" name="modelo" value="<?= htmlspecialchars($values['modelo'] ?? '') ?>" placeholder="Modelo del Producto">
                         </div>
                         <div class="productos-form-field">
+                            <label for="color">Color</label>
+                            <select id="color" name="color">
+                                <option value="">Sin Especificar</option>
+                                <?php foreach ($colores as $color): ?>
+                                    <option value="<?= htmlspecialchars($color) ?>" <?= (($values['color'] ?? '') === $color) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($color) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="productos-form-field">
                             <label for="pais_origen">País de Origen</label>
                             <input type="text" id="pais_origen" name="pais_origen" value="<?= htmlspecialchars($values['pais_origen'] ?? '') ?>" placeholder="País de Origen">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="descripcion">Descripción</label>
-                            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Detalles del Producto"><?= htmlspecialchars($values['descripcion'] ?? '') ?></textarea>
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="color">Color</label>
-                            <input type="text" id="color" name="color" value="<?= htmlspecialchars($values['color'] ?? '') ?>" placeholder="Color del Producto">
                         </div>
                     </div>
                 </section>
@@ -172,26 +202,8 @@ $breadcrumbs = [
                 </section>
 
                 <section class="productos-form-card">
-                    <h2><i class="fa fa-warehouse"></i> Almacén y Costos</h2>
+                    <h2><i class="fa fa-chart-column"></i> Stock y Costos</h2>
                     <div class="productos-form-grid">
-                        <div class="productos-form-field">
-                            <label for="almacen_id">Almacén Asignado *</label>
-                            <select id="almacen_id" name="almacen_id" required>
-                                <option value="">Selecciona un Almacén</option>
-                                <?php foreach ($almacenes as $almacen): ?>
-                                    <option value="<?= $almacen['id'] ?>" <?= (($values['almacen_id'] ?? '') == $almacen['id']) ? 'selected' : '' ?>><?= htmlspecialchars($almacen['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="ubicacion_fisica">Ubicación Física</label>
-                            <input type="text" id="ubicacion_fisica" name="ubicacion_fisica" maxlength="150" value="<?= htmlspecialchars($values['ubicacion_fisica'] ?? '') ?>" placeholder="Ej. Estante A-3">
-                        </div>
-                        <div class="productos-form-field">
-                            <label for="stock_inicial">Stock inicial</label>
-                            <input type="number" step="0.01" id="stock_inicial" name="stock_inicial" min="0" value="<?= htmlspecialchars($values['stock_inicial'] ?? '0') ?>">
-                            <span class="productos-form-note">Se registrará en el almacén asignado.</span>
-                        </div>
                         <div class="productos-form-field">
                             <label for="stock_minimo">Stock Mínimo</label>
                             <input type="number" step="1" id="stock_minimo" name="stock_minimo" min="0" value="<?= htmlspecialchars($values['stock_minimo'] ?? '0') ?>" >
@@ -284,6 +296,168 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     selectSistema.addEventListener('change', filtrarUnidades);
     filtrarUnidades();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const contenedor = document.getElementById('satCatalogSearch');
+    const buscador = document.getElementById('codigo_sat_busqueda');
+    const clave = document.getElementById('codigo_sat');
+    const resultados = document.getElementById('codigo_sat_resultados');
+    const seleccion = document.getElementById('codigo_sat_seleccion');
+    const indicadorCarga = contenedor?.querySelector('.sat-search-spinner');
+    const codigoSeleccionado = seleccion?.querySelector('.sat-selected-code');
+    const textoSeleccionado = seleccion?.querySelector('.sat-selected-text');
+    const limpiar = seleccion?.querySelector('.sat-selected-clear');
+    const formulario = contenedor?.closest('form');
+
+    if (!contenedor || !buscador || !clave || !resultados || !seleccion || !formulario) {
+        return;
+    }
+
+    let temporizador = null;
+    let solicitud = null;
+
+    const establecerCarga = (cargando) => {
+        contenedor.classList.toggle('is-loading', cargando);
+        if (indicadorCarga) {
+            indicadorCarga.hidden = !cargando;
+        }
+    };
+
+    const cerrarResultados = () => {
+        resultados.hidden = true;
+        resultados.replaceChildren();
+        buscador.setAttribute('aria-expanded', 'false');
+    };
+
+    const mostrarMensaje = (mensaje) => {
+        resultados.replaceChildren();
+        const elemento = document.createElement('div');
+        elemento.className = 'sat-search-message';
+        elemento.textContent = mensaje;
+        resultados.appendChild(elemento);
+        resultados.hidden = false;
+        buscador.setAttribute('aria-expanded', 'true');
+    };
+
+    const seleccionarConcepto = (concepto) => {
+        clave.value = concepto.id;
+        buscador.value = concepto.texto;
+        codigoSeleccionado.textContent = concepto.id;
+        textoSeleccionado.textContent = concepto.texto;
+        seleccion.hidden = false;
+        buscador.setCustomValidity('');
+        cerrarResultados();
+    };
+
+    const dibujarResultados = (items) => {
+        resultados.replaceChildren();
+        if (!items.length) {
+            mostrarMensaje('No se Encontraron Conceptos Vigentes.');
+            return;
+        }
+
+        items.forEach((concepto) => {
+            const opcion = document.createElement('button');
+            opcion.type = 'button';
+            opcion.className = 'sat-search-option';
+            opcion.setAttribute('role', 'option');
+
+            const codigo = document.createElement('strong');
+            codigo.textContent = concepto.id;
+            const texto = document.createElement('span');
+            texto.textContent = concepto.texto;
+            opcion.append(codigo, texto);
+            opcion.addEventListener('click', () => seleccionarConcepto(concepto));
+            resultados.appendChild(opcion);
+        });
+
+        resultados.hidden = false;
+        buscador.setAttribute('aria-expanded', 'true');
+    };
+
+    const buscar = async (termino) => {
+        solicitud?.abort();
+        const solicitudActual = new AbortController();
+        solicitud = solicitudActual;
+        establecerCarga(true);
+
+        try {
+            const respuesta = await fetch(`buscar_catalogo_sat?q=${encodeURIComponent(termino)}`, {
+                headers: { 'Accept': 'application/json' },
+                signal: solicitudActual.signal
+            });
+            if (!respuesta.ok) {
+                throw new Error('Respuesta no válida');
+            }
+            const datos = await respuesta.json();
+            dibujarResultados(Array.isArray(datos.resultados) ? datos.resultados : []);
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                mostrarMensaje('No Fue Posible Consultar el Catálogo SAT.');
+            }
+        } finally {
+            if (solicitud === solicitudActual) {
+                solicitud = null;
+                establecerCarga(false);
+            }
+        }
+    };
+
+    buscador.addEventListener('input', () => {
+        clave.value = '';
+        seleccion.hidden = true;
+        buscador.setCustomValidity('');
+        clearTimeout(temporizador);
+
+        const termino = buscador.value.trim();
+        if (termino.length < 2) {
+            solicitud?.abort();
+            solicitud = null;
+            establecerCarga(false);
+            cerrarResultados();
+            return;
+        }
+        temporizador = setTimeout(() => buscar(termino), 300);
+    });
+
+    buscador.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape') {
+            cerrarResultados();
+        }
+    });
+
+    limpiar?.addEventListener('click', () => {
+        clave.value = '';
+        buscador.value = '';
+        seleccion.hidden = true;
+        cerrarResultados();
+        buscador.focus();
+    });
+
+    document.addEventListener('click', (evento) => {
+        if (!contenedor.contains(evento.target)) {
+            cerrarResultados();
+        }
+    });
+
+    formulario.addEventListener('submit', (evento) => {
+        if (buscador.value.trim() !== '' && clave.value === '') {
+            evento.preventDefault();
+            buscador.setCustomValidity('Selecciona un concepto de la lista del Catálogo SAT.');
+            buscador.reportValidity();
+        }
+    });
+
+    if (clave.value !== '') {
+        buscar(clave.value).then(() => {
+            const opcionExacta = Array.from(resultados.querySelectorAll('.sat-search-option'))
+                .find((opcion) => opcion.querySelector('strong')?.textContent === clave.value);
+            opcionExacta?.click();
+        });
+    } else {
+        establecerCarga(false);
+    }
 });
 </script>
 </body>

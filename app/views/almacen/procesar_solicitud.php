@@ -15,6 +15,10 @@ $formatearFecha = static function ($fecha): string {
     $timestamp = strtotime((string) $fecha);
     return $timestamp === false ? (string) $fecha : date('d/m/Y', $timestamp);
 };
+$valorEnviado = static function (bool $fueraCatalogo, int $itemId, float $predeterminado) {
+    $grupo = $fueraCatalogo ? 'no_registrados' : 'detalles';
+    return $_POST[$grupo][$itemId] ?? $predeterminado;
+};
 $totalSolicitado = array_reduce($materiales, static function (float $total, array $material): float {
     return $total + (float) ($material['cantidad'] ?? 0);
 }, 0.0);
@@ -85,7 +89,15 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                 </div>
             </section>
 
-            <div class="process-layout">
+            <form
+                id="delivery-form"
+                method="post"
+                action="<?= htmlspecialchars(Session::url('procesar_solicitud'), ENT_QUOTES, 'UTF-8') ?>"
+                autocomplete="off"
+            >
+                <input type="hidden" name="csrf" value="<?= htmlspecialchars(Session::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="solicitud_id" value="<?= (int) ($solicitud['id'] ?? 0) ?>">
+                <div class="process-layout">
                 <section class="process-card process-materials-card">
                     <div class="process-card-heading">
                         <div>
@@ -101,8 +113,7 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                             <p>Esta Solicitud no Tiene Materiales para Procesar.</p>
                         </div>
                     <?php else: ?>
-                        <form id="delivery-form" autocomplete="off">
-                            <div class="process-table-wrapper">
+                        <div class="process-table-wrapper">
                                 <table class="process-materials-table">
                                     <thead>
                                         <tr>
@@ -120,6 +131,9 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                                         $unidad = trim((string) ($material['unidad_medida'] ?? '')) ?: 'Pza';
                                         $fueraCatalogo = !empty($material['fuera_catalogo']);
                                         $stockActual = max(0, (float) ($material['stock_actual'] ?? 0));
+                                        $itemId = (int) ($material['item_id'] ?? 0);
+                                        $grupoEntrada = $fueraCatalogo ? 'no_registrados' : 'detalles';
+                                        $cantidadEntrega = $valorEnviado($fueraCatalogo, $itemId, $cantidad);
                                         ?>
                                         <tr>
                                             <td>
@@ -161,11 +175,13 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                                                     <input
                                                         class="delivery-quantity"
                                                         type="number"
-                                                        name="materiales[<?= $indice ?>][cantidad]"
-                                                        value="<?= htmlspecialchars((string) $cantidad, ENT_QUOTES, 'UTF-8') ?>"
+                                                        name="<?= $grupoEntrada ?>[<?= $itemId ?>]"
+                                                        value="<?= htmlspecialchars((string) $cantidadEntrega, ENT_QUOTES, 'UTF-8') ?>"
                                                         min="0"
+                                                        max="<?= htmlspecialchars((string) $cantidad, ENT_QUOTES, 'UTF-8') ?>"
                                                         step="0.01"
                                                         data-requested="<?= htmlspecialchars((string) $cantidad, ENT_QUOTES, 'UTF-8') ?>"
+                                                        required
                                                         aria-label="Cantidad a Entregar de <?= htmlspecialchars((string) ($material['nombre'] ?? 'Material'), ENT_QUOTES, 'UTF-8') ?>"
                                                     >
                                                     <button type="button" class="quantity-button quantity-increase" aria-label="Aumentar Cantidad">
@@ -178,8 +194,7 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                                     <?php endforeach; ?>
                                     </tbody>
                                 </table>
-                            </div>
-                        </form>
+                        </div>
                     <?php endif; ?>
                 </section>
 
@@ -201,25 +216,28 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                             <p>Las Partidas con Cantidad Cero se Considerarán como no Entregadas.</p>
                         </div>
                         <div class="delivery-summary-actions">
-                            <button type="button" class="mark-delivered-button" id="mark-delivered" <?= $materiales === [] ? 'disabled' : '' ?>>
+                            <button type="submit" class="mark-delivered-button" id="mark-delivered" <?= $materiales === [] ? 'disabled' : '' ?>>
                                 <i class="fa-solid fa-circle-check"></i>
                                 Marcar como Entregada
                             </button>
                         </div>
                     </div>
                 </section>
-            </div>
+                </div>
+            </form>
         </main>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('delivery-form');
     const toggleButton = document.getElementById('toggleSidebar');
     const sidebar = document.querySelector('.main_sidebar');
     const content = document.querySelector('.content-area');
     const quantityInputs = [...document.querySelectorAll('.delivery-quantity')];
     const deliveredLines = document.getElementById('delivered-lines');
+    let confirmedSubmit = false;
 
     const updateSummary = () => {
         const totalLines = quantityInputs.filter((input) => (Number(input.value) || 0) > 0).length;
@@ -236,7 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     quantityInputs.forEach((input) => {
         input.addEventListener('input', () => {
+            const requested = Math.max(0, Number(input.dataset.requested) || 0);
             if (Number(input.value) < 0) input.value = '0';
+            if (Number(input.value) > requested) input.value = String(requested);
             updateSummary();
         });
     });
@@ -248,21 +268,31 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSummary();
         });
         control.querySelector('.quantity-increase')?.addEventListener('click', () => {
-            input.value = String((Number(input.value) || 0) + 1);
+            const requested = Math.max(0, Number(input.dataset.requested) || 0);
+            input.value = String(Math.min(requested, (Number(input.value) || 0) + 1));
             updateSummary();
         });
     });
 
     updateSummary();
 
-    document.getElementById('mark-delivered')?.addEventListener('click', () => {
-        Swal.fire({
-            icon: 'info',
-            title: 'Interfaz Preparada',
-            text: 'El Registro de la Entrega se Conectará en la Siguiente Etapa de Implementación.',
-            confirmButtonColor: '#2563eb',
-            confirmButtonText: 'Entendido'
+    form?.addEventListener('submit', async (event) => {
+        if (confirmedSubmit || !form.checkValidity()) return;
+        event.preventDefault();
+        const result = await Swal.fire({
+            icon: 'question',
+            title: '¿Confirmar la Entrega?',
+            text: 'Se Actualizará el Stock. Esta Operación no Puede Repetirse.',
+            showCancelButton: true,
+            confirmButtonColor: '#16834a',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Sí, Entregar',
+            cancelButtonText: 'Revisar'
         });
+        if (result.isConfirmed) {
+            confirmedSubmit = true;
+            form.submit();
+        }
     });
 
     toggleButton?.addEventListener('click', () => {
@@ -271,6 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const icon = toggleButton.querySelector('i');
         if (icon) icon.className = sidebar?.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-xmark';
     });
+
+    <?php if ($error !== ''): ?>
+    Swal.fire({
+        icon: 'error',
+        title: 'No Fue Posible Registrar la Entrega',
+        text: <?= json_encode($error, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+        confirmButtonColor: '#2563eb'
+    });
+    <?php endif; ?>
 });
 </script>
 </body>

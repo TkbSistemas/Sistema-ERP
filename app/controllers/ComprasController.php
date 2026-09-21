@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../models/Almacen.php';
 require_once __DIR__ . '/../models/Proyecto.php';
 require_once __DIR__ . '/../models/Proveedor.php';
+require_once __DIR__ . '/../models/Usuario.php';
 
 class ComprasController{
 
@@ -23,6 +24,7 @@ class ComprasController{
             ['slug' => 'construccion', 'label' => 'Facturas de Compra', 'icon' => 'fa-solid fa-file-invoice-dollar', 'role' => 'Todos'],
             ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
             ['slug' => 'proveedores', 'label' => 'Catálogo de Proveedores', 'icon' => 'fa-solid fa-building-user', 'role' => 'Todos'],
+            ['slug' => 'configuracion_compras', 'label' => 'Configuración', 'icon' => 'fa-solid fa-gear', 'role' => 'Todos'],
             ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
         ];
 
@@ -37,6 +39,52 @@ class ComprasController{
 
 
         include __DIR__ . '/../views/compras/dashboard_compras.php';
+    }
+
+    public function configuracionCompras(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        $role = $_SESSION['role'] ?? '';
+        $nombre = $_SESSION['nombre'] ?? '';
+        $usuarioId = (int) ($_SESSION['user_id'] ?? 0);
+        $error = '';
+
+        if (Usuario::findById($usuarioId) === null) {
+            Session::logout();
+            header('Location: ' . Session::url('login'));
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                Usuario::cambiarPassword(
+                    $usuarioId,
+                    (string) ($_POST['password_actual'] ?? ''),
+                    (string) ($_POST['password_nueva'] ?? ''),
+                    (string) ($_POST['password_confirmacion'] ?? '')
+                );
+                ActivityLogger::registrarActualizacion('compras', 'usuario', $usuarioId, 'Contraseña de Usuario Actualizada');
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Contraseña Actualizada',
+                    'mensaje' => 'Tu Contraseña se Cambió Correctamente.',
+                ];
+                header('Location: ' . Session::url('configuracion_compras'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al cambiar contraseña de compras: ' . $e->getMessage());
+                $error = 'No Fue Posible Actualizar la Contraseña. Intenta Nuevamente.';
+            }
+        }
+
+        include __DIR__ . '/../views/compras/configuracion_compras.php';
     }
 
 
