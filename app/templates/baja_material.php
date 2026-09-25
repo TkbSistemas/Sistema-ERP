@@ -1,8 +1,11 @@
+<?php
+$folioDocumento = trim((string) ($solicitud['folio'] ?? '')) ?: 'baja_material';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Baja de Inventario - TAKAB</title>
+    <title><?= htmlspecialchars($folioDocumento, ENT_QUOTES, 'UTF-8') ?></title>
     <style>
         * {
             box-sizing: border-box;
@@ -35,14 +38,15 @@
         }
 
         .header-top-row {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
             width: 100%;
         }
 
         .logo-takab {
             height: 3.5em;
+            max-width: 9em;
             width: auto;
             object-fit: contain;
         }
@@ -54,15 +58,15 @@
             font-weight: bold;
             margin: 0;
             text-align: center;
-            flex-grow: 1;
         }
 
         .doc-code {
             font-size: 0.95em;
             color: #000;
             font-weight: bold;
-            white-space: nowrap;
+            white-space: normal;
             text-align: right;
+            overflow-wrap: anywhere;
         }
 
         .company-name {
@@ -88,8 +92,8 @@
             border: 1px solid #c0c0c0;
             border-radius: 4px;
             padding: 0.8em 1em;
-            margin-bottom: 1.5em;
-            font-size: 0.8em;
+            margin-bottom: 1.2em;
+            font-size: 0.78em;
         }
 
         .info-item {
@@ -123,42 +127,43 @@
         .baja-table th {
             background-color: #f2f2f2;
             border: 1px solid #c0c0c0;
-            padding: 8px 6px;
+            padding: 6px 4px;
             font-weight: bold;
             text-align: center;
         }
 
         .baja-table td {
             border: 1px solid #c0c0c0;
-            padding: 6px;
+            padding: 5px 4px;
             vertical-align: top;
             white-space: normal;
             word-wrap: break-word;
         }
 
         .col-no          { width: 5%; text-align: center; }
-        .col-cod-fab     { width: 20%; }
-        .col-nombre      { width: 38%; }
-        .col-cant        { width: 10%; text-align: center; font-weight: bold; }
-        .col-notas       { width: 27%; }
+        .col-cod-fab     { width: 16%; }
+        .col-nombre      { width: 25%; }
+        .col-marca       { width: 13%; }
+        .col-modelo      { width: 13%; }
+        .col-cant        { width: 9%; text-align: center; font-weight: bold; }
+        .col-notas       { width: 19%; }
 
         .signatures-container {
             display: flex;
-            justify-content: space-between;
-            margin-top: 4em;
+            justify-content: space-around;
+            margin-top: 3em;
             page-break-inside: avoid;
-            padding: 0 2em;
         }
 
         .signature-box {
-            width: 40%;
+            width: 38%;
             text-align: center;
-            font-size: 0.78em;
+            font-size: 0.75em;
         }
 
         .signature-line {
             border-top: 1px solid #002060;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .btn-print {
@@ -225,6 +230,8 @@
                     <th class="col-no">No.</th>
                     <th class="col-cod-fab">Código Fabricante</th>
                     <th class="col-nombre">Nombre / Descripción</th>
+                    <th class="col-marca">Marca</th>
+                    <th class="col-modelo">Modelo</th>
                     <th class="col-cant">Cantidad</th>
                     <th class="col-notas">Notas / Motivo</th>
                 </tr>
@@ -239,7 +246,11 @@
                             <td class="col-no"><?= $num ?></td>
                             <td class="col-cod-fab"><?= htmlspecialchars($item['nomenclatura'] ?? ($item['codigo'] ?? 'N/A')) ?></td>
                             <td class="col-nombre"><?= htmlspecialchars($item['nombre'] ?? '-') ?></td>
-                            <td class="col-cant"><?= htmlspecialchars($item['cantidad'] ?? 1) ?></td>
+                            <td class="col-marca"><?= htmlspecialchars(trim((string) ($item['marca'] ?? '')) ?: '-') ?></td>
+                            <td class="col-modelo"><?= htmlspecialchars(trim((string) ($item['modelo'] ?? '')) ?: '-') ?></td>
+                            <td class="col-cant">
+                                <?= htmlspecialchars(trim((string) ($item['cantidad'] ?? 1) . ' ' . (string) ($item['unidad_medida'] ?? 'Pza'))) ?>
+                            </td>
                             <td class="col-notas"><?= htmlspecialchars($item['notas'] ?? ($item['motivo'] ?? '-')) ?></td>
                         </tr>
                 <?php 
@@ -248,7 +259,7 @@
                 else: 
                 ?>
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 1.5em; color: #64748b;">
+                        <td colspan="7" style="text-align: center; padding: 1.5em; color: #64748b;">
                             No Hay Productos Registrados en esta Solicitud.
                         </td>
                     </tr>

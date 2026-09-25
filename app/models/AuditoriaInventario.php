@@ -3,6 +3,43 @@ require_once __DIR__ . '/../helpers/Database.php';
 
 class AuditoriaInventario
 {
+    public static function obtenerProductos(int $almacenId, int $categoriaId, string $tipo = ''): array
+    {
+        if ($almacenId <= 0 || $categoriaId <= 0) {
+            return [];
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $sql = "SELECT
+                    p.id,
+                    p.nomenclatura,
+                    p.nombre,
+                    p.marca,
+                    p.modelo,
+                    p.tipo,
+                    COALESCE(sa.stock, 0) AS stock_actual,
+                    um.nombre AS unidad_medida_nombre,
+                    um.apodo AS unidad_abreviacion
+                FROM inventario p
+                LEFT JOIN stock_almacen sa
+                    ON sa.producto_id = p.id AND sa.almacen_id = ?
+                LEFT JOIN catalogo_unidades_medida um ON um.id = p.unidad_medida_id
+                WHERE p.categoria_id = ?
+                  AND p.activo = 1";
+        $parametros = [$almacenId, $categoriaId];
+
+        if ($tipo !== '') {
+            $sql .= ' AND p.tipo = ?';
+            $parametros[] = $tipo;
+        }
+
+        $sql .= ' ORDER BY p.nombre ASC, p.id ASC';
+        $stmt = $db->prepare($sql);
+        $stmt->execute($parametros);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public static function registrar(
         int $almacenId,
         int $categoriaId,
@@ -53,12 +90,13 @@ class AuditoriaInventario
                                 p.modelo,
                                 p.tipo,
                                 COALESCE(um.apodo, um.nombre, '') AS unidad,
-                                sa.stock AS stock_teorico
+                                COALESCE(sa.stock, 0) AS stock_teorico
                              FROM inventario p
-                             INNER JOIN stock_almacen sa
+                             LEFT JOIN stock_almacen sa
                                 ON sa.producto_id = p.id AND sa.almacen_id = ?
                              LEFT JOIN catalogo_unidades_medida um ON um.id = p.unidad_medida_id
-                             WHERE p.categoria_id = ?";
+                             WHERE p.categoria_id = ?
+                               AND p.activo = 1";
             $parametrosProductos = [$almacenId, $categoriaId];
             if ($tipo !== '') {
                 $sqlProductos .= ' AND p.tipo = ?';
@@ -165,8 +203,10 @@ class AuditoriaInventario
                 }
             }
 
-            $actualizarStock = $db->prepare(
-                'UPDATE stock_almacen SET stock = ? WHERE producto_id = ? AND almacen_id = ?'
+            $guardarStock = $db->prepare(
+                'INSERT INTO stock_almacen (producto_id, almacen_id, stock)
+                 VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE stock = VALUES(stock)'
             );
             $registrarMovimiento = $db->prepare(
                 'INSERT INTO movimientos_inventario
@@ -180,14 +220,11 @@ class AuditoriaInventario
                     continue;
                 }
 
-                $actualizarStock->execute([
-                    $linea['stock_fisico'],
+                $guardarStock->execute([
                     $linea['producto_id'],
                     $almacenId,
+                    $linea['stock_fisico'],
                 ]);
-                if ($actualizarStock->rowCount() > 1) {
-                    throw new RuntimeException('No Fue Posible Actualizar Correctamente el Stock Auditado.');
-                }
 
                 $tipoMovimiento = $linea['diferencia'] > 0 ? 'Entrada' : 'Salida';
                 $registrarMovimiento->execute([

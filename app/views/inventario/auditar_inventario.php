@@ -52,7 +52,7 @@ $formatearStock = static function ($valor): string {
                 <div class="audit-section-heading">
                     <div>
                         <h2><i class="fa-solid fa-filter"></i> Selección del Conteo</h2>
-                        <p>Primero Selecciona el Almacén y la Categoría. El Tipo de Producto es Opcional.</p>
+                        <p>Selecciona el Almacén para Consultar su Stock. La Categoría y el Tipo Definen los Productos del Listado.</p>
                     </div>
                     <span class="audit-step">Paso 1</span>
                 </div>
@@ -358,7 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pdf = await response.blob();
                 const disposition = response.headers.get('Content-Disposition') || '';
                 const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
-                const filename = filenameMatch?.[1] || 'auditoria_inventario.pdf';
+                const folio = (response.headers.get('X-Audit-Folio') || 'auditoria_inventario')
+                    .replace(/[^A-Za-z0-9_-]/g, '_');
+                const filename = filenameMatch?.[1] || `${folio}.pdf`;
                 const downloadUrl = URL.createObjectURL(pdf);
                 const link = document.createElement('a');
                 link.href = downloadUrl;

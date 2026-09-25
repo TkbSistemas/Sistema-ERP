@@ -147,7 +147,6 @@ $seccion_activa = 'crear_solicitud';
                                     <?php foreach ($productos as $producto): ?>
                                         <?php
                                         $codigo = $producto['nomenclatura'] ?? $producto['codigo_fabricante'] ?? '';
-                                        $stockActual = (float) ($producto['stock_actual'] ?? 0);
                                         $unidadProducto = $producto['unidad_medida_nombre'] ?? $producto['unidad_abreviacion'] ?? '';
                                         $textoBusqueda = implode(' ', [
                                             $producto['nombre'] ?? '',
@@ -161,7 +160,6 @@ $seccion_activa = 'crear_solicitud';
                                         <option value="<?= (int) ($producto['id'] ?? 0) ?>"
                                                 data-nombre="<?= htmlspecialchars($producto['nombre'] ?? '') ?>"
                                                 data-busqueda="<?= htmlspecialchars($textoBusqueda) ?>"
-                                                data-stock="<?= $stockActual ?>"
                                                 data-unidad="<?= htmlspecialchars($unidadProducto) ?>"
                                                 data-tipo="<?= htmlspecialchars($producto['tipo'] ?? '') ?>"
                                                 data-categoria="<?= htmlspecialchars($producto['categoria'] ?? '') ?>">
@@ -419,11 +417,6 @@ $seccion_activa = 'crear_solicitud';
             if (!option?.value) {
                 avisar('Producto Incompleto', 'Selecciona un Producto del Catálogo.');
                 productoSelect.focus();
-                return;
-            }
-            const stockDisponible = Number.parseFloat(option.dataset.stock || '0');
-            if (Number.isFinite(stockDisponible) && cantidad > stockDisponible
-                && !window.confirm(`Solicitas ${cantidad} y hay ${stockDisponible} Disponibles. ¿Deseas Continuar?`)) {
                 return;
             }
             material = {

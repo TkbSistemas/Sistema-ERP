@@ -166,7 +166,7 @@
 
                     $nombreArchivo = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $auditoria['folio']);
                     header('Content-Type: application/pdf');
-                    header('Content-Disposition: attachment; filename="auditoria_' . $nombreArchivo . '.pdf"');
+                    header('Content-Disposition: attachment; filename="' . $nombreArchivo . '.pdf"');
                     header('Content-Length: ' . strlen($pdf));
                     header('Cache-Control: private, no-store, max-age=0');
                     header('X-Audit-Folio: ' . $auditoria['folio']);
@@ -193,12 +193,11 @@
             $mostrarListado = $filtros['almacen_id'] > 0 && $filtros['categoria_id'] > 0;
             $productos = [];
             if ($mostrarListado) {
-                $resultado = Producto::inventarioListado([
-                    'almacen_id' => $filtros['almacen_id'],
-                    'categoria_id' => $filtros['categoria_id'],
-                    'tipo' => $filtros['tipo'],
-                ]);
-                $productos = $resultado['items'];
+                $productos = AuditoriaInventario::obtenerProductos(
+                    $filtros['almacen_id'],
+                    $filtros['categoria_id'],
+                    $filtros['tipo']
+                );
             }
 
             $almacenSeleccionado = $almacenesPorId[$filtros['almacen_id']] ?? null;

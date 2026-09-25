@@ -11,22 +11,22 @@ $formatearFecha = static function (?string $fecha): string {
     $timestamp = strtotime($fecha);
     return $timestamp === false ? $fecha : date('d/m/Y', $timestamp);
 };
-$rutaLogo = Session::url('assets/images/icono_takab.png');
+$folioDocumento = trim((string) ($orden['folio'] ?? '')) ?: (string) ($orden['id'] ?? 'orden_compra');
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Orden de Compra <?= htmlspecialchars((string) ($orden['folio'] ?: $orden['id']), ENT_QUOTES, 'UTF-8') ?> | TAKAB</title>
+    <title><?= htmlspecialchars($folioDocumento, ENT_QUOTES, 'UTF-8') ?></title>
     <style>
         * { box-sizing: border-box; }
         body {
             margin: 0;
             padding: 0;
-            font-family: Tahoma, Arial, sans-serif;
+            font-family: "TJEWVM+Tahoma", Arial, sans-serif;
             color: #002060;
-            background: #eef2f7;
+            background: #f9f9f9;
         }
         .print-actions {
             display: flex;
@@ -35,106 +35,125 @@ $rutaLogo = Session::url('assets/images/icono_takab.png');
             margin: 15px auto;
         }
         .btn-print {
-            padding: 9px 18px;
-            border: 0;
-            border-radius: 5px;
-            background: #0070c0;
-            color: #fff;
-            font-weight: 700;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #0070C0;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
         }
-        .document {
-            width: min(900px, calc(100% - 2rem));
-            min-height: 1050px;
-            margin: 0 auto 24px;
-            padding: 24px;
+        .pdf24_02 {
+            width: 51em;
+            margin: 0 auto;
+            position: relative;
+            padding: 1.5em;
             background: #fff;
-            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.14);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
         }
-        .header {
-            padding-bottom: 13px;
-            margin-bottom: 18px;
-            border-bottom: 2px solid #0070c0;
+        .header-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+            border-bottom: 2px solid #0070C0;
+            padding-bottom: 0.8em;
+            margin-bottom: 1.2em;
         }
-        .header-main {
+        .header-top-row {
             display: grid;
-            grid-template-columns: 150px 1fr 150px;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
-            gap: 12px;
+            width: 100%;
         }
-        .logo { width: 120px; max-height: 58px; object-fit: contain; }
-        .document-title {
+        .logo-takab {
+            height: 3.5em;
+            max-width: 9em;
+            width: auto;
+            object-fit: contain;
+        }
+        .doc-title {
+            font-size: 1.8em;
+            font-family: "TQEVHM+Calibri Bold", Arial, sans-serif;
+            color: #0070C0;
+            font-weight: bold;
             margin: 0;
-            color: #0070c0;
-            font-size: 25px;
             text-align: center;
         }
-        .folio {
-            color: #111827;
-            font-size: 13px;
-            font-weight: 700;
+        .doc-code {
+            font-size: 0.95em;
+            color: #000;
+            font-weight: bold;
+            white-space: normal;
             text-align: right;
             overflow-wrap: anywhere;
         }
         .company-name {
-            margin-top: 7px;
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 0.85em;
+            color: #002060;
+            font-weight: bold;
             text-align: center;
+            margin: 0;
         }
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0;
-            margin-bottom: 20px;
-            border: 1px solid #b8c5d6;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8em 1.5em;
+            background-color: #f8fafc;
+            border: 1px solid #c0c0c0;
             border-radius: 4px;
-            overflow: hidden;
+            padding: 0.8em 1em;
+            margin-bottom: 1.2em;
+            font-size: 0.78em;
         }
         .info-item {
-            min-height: 58px;
-            padding: 9px 11px;
-            border-right: 1px solid #d8e0ea;
-            border-bottom: 1px solid #d8e0ea;
-            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
         }
-        .info-item:nth-child(3n) { border-right: 0; }
-        .info-item:nth-last-child(-n + 3) { border-bottom: 0; }
         .info-label {
-            display: block;
-            margin-bottom: 4px;
-            color: #0070c0;
-            font-size: 10px;
-            font-weight: 700;
+            font-weight: bold;
+            color: #0070C0;
+            font-size: 0.9em;
             text-transform: uppercase;
+            margin-bottom: 2px;
         }
-        .info-value { color: #172554; font-size: 12px; line-height: 1.35; }
+        .info-value {
+            color: #002060;
+            border-bottom: 1px dashed #cbd5e1;
+            padding-bottom: 2px;
+            min-height: 1.2em;
+        }
         .section-title {
-            margin: 0;
-            padding: 7px 10px;
-            background: #0070c0;
-            color: #fff;
-            font-size: 12px;
-            letter-spacing: 0.04em;
+            background-color: #0070C0;
+            color: #ffffff;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 4px 8px;
+            margin: 0 0 4px 0;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 2px 2px 0 0;
         }
         .materials-table {
             width: 100%;
             border-collapse: collapse;
             color: #002060;
-            font-size: 10px;
+            font-size: 0.75em;
         }
         .materials-table th {
-            padding: 7px 5px;
-            border: 1px solid #b8c5d6;
-            background: #edf2f7;
-            font-weight: 700;
+            padding: 6px 4px;
+            border: 1px solid #c0c0c0;
+            background-color: #f2f2f2;
+            font-weight: bold;
             text-align: center;
         }
         .materials-table td {
-            padding: 7px 5px;
-            border: 1px solid #b8c5d6;
+            padding: 5px 4px;
+            border: 1px solid #c0c0c0;
             vertical-align: top;
+            white-space: normal;
+            word-wrap: break-word;
             overflow-wrap: anywhere;
         }
         .col-number { width: 5%; text-align: center; }
@@ -166,15 +185,14 @@ $rutaLogo = Session::url('assets/images/icono_takab.png');
         .signatures {
             display: flex;
             justify-content: space-around;
-            gap: 50px;
-            margin-top: 64px;
+            margin-top: 3em;
             page-break-inside: avoid;
         }
         .signature {
-            width: 36%;
-            padding-top: 6px;
+            width: 38%;
+            padding-top: 4px;
             border-top: 1px solid #002060;
-            font-size: 10px;
+            font-size: 0.75em;
             text-align: center;
         }
         .print-meta { margin-top: 30px; color: #64748b; font-size: 9px; text-align: right; }
@@ -182,7 +200,7 @@ $rutaLogo = Session::url('assets/images/icono_takab.png');
             @page { size: Letter portrait; margin: 11mm; }
             body { background: #fff; }
             .print-actions { display: none !important; }
-            .document { width: 100%; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+            .pdf24_02 { width: 100%; margin: 0; padding: 0; box-shadow: none; }
             .materials-table thead { display: table-header-group; }
             .materials-table tr { page-break-inside: avoid; break-inside: avoid; }
             .section-title,
@@ -194,14 +212,12 @@ $rutaLogo = Session::url('assets/images/icono_takab.png');
             }
         }
         @media (max-width: 700px) {
-            .header-main { grid-template-columns: 90px 1fr; }
-            .folio { grid-column: 1 / -1; text-align: center; }
-            .logo { width: 80px; }
-            .document-title { font-size: 20px; }
+            .pdf24_02 { width: calc(100% - 1em); padding: 1em; }
+            .header-top-row { grid-template-columns: 5em 1fr; }
+            .doc-code { grid-column: 1 / -1; text-align: center; margin-top: 0.5em; }
+            .logo-takab { max-width: 5em; }
+            .doc-title { font-size: 1.4em; }
             .info-grid { grid-template-columns: 1fr; }
-            .info-item,
-            .info-item:nth-child(3n),
-            .info-item:nth-last-child(-n + 3) { border-right: 0; border-bottom: 1px solid #d8e0ea; }
         }
     </style>
 </head>
@@ -210,14 +226,14 @@ $rutaLogo = Session::url('assets/images/icono_takab.png');
         <button type="button" class="btn-print" onclick="window.print()">Imprimir Orden de Compra</button>
     </div>
 
-    <main class="document">
-        <header class="header">
-            <div class="header-main">
-                <img class="logo" src="<?= htmlspecialchars($rutaLogo, ENT_QUOTES, 'UTF-8') ?>" alt="TAKAB Technology">
-                <h1 class="document-title">ORDEN DE COMPRA</h1>
-                <div class="folio">FOLIO: <?= htmlspecialchars((string) ($orden['folio'] ?: 'Sin Folio'), ENT_QUOTES, 'UTF-8') ?></div>
+    <main class="pdf24_02">
+        <header class="header-container">
+            <div class="header-top-row">
+                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo">
+                <h1 class="doc-title">ORDEN DE COMPRA</h1>
+                <div class="doc-code"><?= htmlspecialchars((string) ($orden['folio'] ?: 'Sin Folio'), ENT_QUOTES, 'UTF-8') ?></div>
             </div>
-            <div class="company-name">TAKAB, SISTEMAS TECNOLÓGICOS INTELIGENTES &amp; SERVICIOS INTEGRALES, S. DE R.L. DE C.V.</div>
+            <div class="company-name">TAKAB, SISTEMAS TECNOLOGICOS INTELIGENTES &amp; SERVICIOS INTEGRALES, S DE RL DE CV.</div>
         </header>
 
         <section class="info-grid" aria-label="Información de la Orden">

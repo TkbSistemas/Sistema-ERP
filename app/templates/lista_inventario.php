@@ -2,135 +2,125 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Hoja de Inventario - TAKAB</title>
+    <title>LISTA INVENTARIO | TAKAB</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             font-family: "TJEWVM+Tahoma", Arial, sans-serif;
             color: #002060;
-            background: #eef2f7;
+            background: #f9f9f9;
         }
         
         .pdf24_02 {
-            width: min(820px, calc(100% - 2em));
+            width: 51em;
             margin: 0 auto;
             position: relative;
             background: #fff;
             padding: 1.5em;
             box-sizing: border-box;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
         }
 
         .header-container {
-			width: 100%;
-			display: flex;
-			flex-direction: column;
-			gap: 0.6em;
-			border-bottom: 2px solid #0070C0;
-			padding-bottom: 1em;
-			margin-bottom: 1.5em;
-			font-family: "TJEWVM+Tahoma", Arial, sans-serif;
-		}
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+            border-bottom: 2px solid #0070C0;
+            padding-bottom: 0.8em;
+            margin-bottom: 1.2em;
+        }
 
+        .header-top-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            align-items: center;
+            width: 100%;
+        }
 
-.header-top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center; /* Alinea verticalmente el logo, título y código al centro */
-    width: 100%;
-}
+        .logo-takab {
+            height: 3.5em;
+            max-width: 9em;
+            width: auto;
+            object-fit: contain;
+        }
 
-.logo-takab {
-    height: 3.5em; /* Tamaño controlado para el logo de la esquina */
-    width: auto;
-    object-fit: contain;
-}
+        .doc-title {
+            font-size: 1.8em;
+            font-family: "TQEVHM+Calibri Bold", Arial, sans-serif;
+            color: #0070C0;
+            font-weight: bold;
+            margin: 0;
+            text-align: center;
+        }
 
-.doc-title {
-    font-size: 1.9em;
-    font-family: "TQEVHM+Calibri Bold", sans-serif;
-    color: #0070C0;
-    font-weight: bold;
-    margin: 0;
-    text-align: center;
-    flex-grow: 1;
-}
+        .header-spacer { width: 9em; }
 
-.doc-code {
-    font-size: 0.95em;
-    color: #000;
-    font-weight: bold;
-    white-space: nowrap;
-    text-align: right;
-}
+        .company-name {
+            font-size: 0.85em;
+            color: #002060;
+            font-weight: bold;
+            margin: 0;
+            text-align: center;
+        }
 
-/* Datos de la empresa y fiscales */
-.company-name {
-    font-size: 0.85em;
-    color: #002060;
-    font-weight: bold;
-    margin: 0;
-    text-align: center;
-}
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8em 1.5em;
+            background-color: #f8fafc;
+            border: 1px solid #c0c0c0;
+            border-radius: 4px;
+            padding: 0.8em 1em;
+            margin-bottom: 1.2em;
+            font-size: 0.78em;
+        }
 
-.company-data {
-    font-size: 0.72em;
-    color: #002060;
-    text-align: center;
-    line-height: 1.3;
-}
+        .info-item { display: flex; flex-direction: column; }
+        .info-item.full-width { grid-column: span 2; }
 
-/* Fila inferior: Fecha de impresión alineada a la derecha */
-.header-bottom-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.5em;
-}
+        .info-label {
+            font-weight: bold;
+            color: #0070C0;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
 
-.print-date {
-    font-size: 0.75em;
-    color: #002060;
-    font-weight: bold;
-}
-
-/* Línea del auditor */
-.auditor-line {
-    font-size: 0.75em;
-    color: #002060;
-    width: 100%;
-    margin-top: 0.5em;
-}
+        .info-value {
+            color: #002060;
+            border-bottom: 1px dashed #cbd5e1;
+            padding-bottom: 2px;
+            min-height: 1.2em;
+        }
 
         .inventario-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1em;
-            font-size: 0.7em;
+            margin-bottom: 2em;
+            font-size: 0.75em;
             color: #002060;
         }
 
-        /* Cabecera idéntica a tu diseño original */
         .inventario-table th {
             background-color: #f2f2f2;
             border: 1px solid #c0c0c0;
-            padding: 8px 4px;
-            font-family: "DKUBPC+Verdana Bold", sans-serif;
-            font-size: 0.9em;
+            padding: 6px 4px;
+            font-weight: bold;
             text-align: center;
             vertical-align: middle;
         }
 
-        /* Control de filas y comportamiento del texto largo */
         .inventario-table td {
             border: 1px solid #c0c0c0;
-            padding: 6px 4px;
+            padding: 5px 4px;
             vertical-align: top;
-            white-space: normal;       /* Permite que el texto salte a una segunda fila */
-            word-wrap: break-word;     /* Rompe palabras largas si es necesario */
+            white-space: normal;
+            word-wrap: break-word;
             overflow-wrap: anywhere;
         }
 
-        /* Anchos controlados para evitar que se desarme horizontalmente */
         .col-no     { width: 5%; text-align: center; }
         .col-codigo { width: 13%; }
         .col-nombre { width: 29%; }
@@ -146,12 +136,11 @@
             color: #63769f;
         }
 
-        /* --- DISEÑO EXCLUSIVO PARA IMPRESIÓN --- */
         @media print {
             @page { size: Letter portrait; margin: 11mm; }
             body { background: #fff; }
             .btn-print { display: none !important; }
-            .pdf24_02 { width: 100%; padding: 0; }
+            .pdf24_02 { width: 100%; padding: 0; box-shadow: none; }
             .inventario-table th {
                 background-color: #e5e5e5 !important;
                 -webkit-print-color-adjust: exact;
@@ -161,13 +150,16 @@
         }
 
         .btn-print {
-            padding: 8px 16px;
+            display: block;
+            margin: 15px auto;
+            padding: 8px 20px;
             background: #0070C0;
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
-            margin-bottom: 10px;
             font-weight: bold;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -178,32 +170,26 @@
     <div class="pdf24_ pdf24_02">
         
         <div class="header-container">
-    
-    <div class="header-top-row">
-		
-    <?php $ruta_logo = $rutaLogo ?? Session::url('assets/images/icono_takab.png'); ?>
-    <img class="logo-takab" src="<?php echo $ruta_logo; ?>" alt="TAKAB Technology Logo" />
-    <h1 class="doc-title">HOJA DE INVENTARIO</h1>
-    
-    <div class="doc-code">SA-TT-02</div>
-</div>
-    
-    <!-- Fila 2: Nombre de la Empresa -->
-    <div class="company-name">
-        TAKAB, SISTEMAS TECNOLOGICOS INTELIGENTES & SERVICIOS INTEGRALES, S DE RL DE CV.
-    </div>
-    
-    <!-- Fila 4: Fecha de Impresión -->
-    <div class="header-bottom-row">
-        <div class="print-date">FECHA DE IMPRESIÓN: <?= htmlspecialchars($fechaImpresion->format('d/m/Y H:i')) ?> | PÁGINA DE INVENTARIO: <?= (int) $pagina ?> DE <?= (int) $totalPaginas ?></div>
-    </div>
-    
-    <!-- Fila 5: Firma o nombre del auditor -->
-    <div class="auditor-line">
-        NOMBRE AUDITOR: <?= $auditor !== '' ? htmlspecialchars($auditor) : '________________________________________' ?>
-    </div>
-    
-</div>
+            <div class="header-top-row">
+                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo" />
+                <h1 class="doc-title">HOJA DE INVENTARIO</h1>
+                <div class="header-spacer" aria-hidden="true"></div>
+            </div>
+            <div class="company-name">
+                TAKAB, SISTEMAS TECNOLOGICOS INTELIGENTES & SERVICIOS INTEGRALES, S DE RL DE CV.
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Fecha de Impresión</span>
+                <span class="info-value"><?= htmlspecialchars($fechaImpresion->format('d/m/Y H:i')) ?></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Página de Inventario</span>
+                <span class="info-value"><?= (int) $pagina ?> de <?= (int) $totalPaginas ?></span>
+            </div>
+        </div>
 
         <table class="inventario-table">
             <thead>

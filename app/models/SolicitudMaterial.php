@@ -213,7 +213,8 @@ class SolicitudMaterial {
                             d.cantidad,
                             d.observaciones,
                             0 AS fuera_catalogo,
-                            NULL AS marca,
+                            p.marca,
+                            p.modelo,
                             NULL AS dimensiones,
                             COALESCE(si.stock_actual, 0) AS stock_actual
                         FROM solicitudes_material_detalles d
@@ -238,6 +239,7 @@ class SolicitudMaterial {
                             nr.observaciones,
                             1 AS fuera_catalogo,
                             nr.marca,
+                            NULL AS modelo,
                             nr.dimensiones,
                             NULL AS stock_actual
                         FROM solicitudes_material_noregistrados nr
@@ -481,6 +483,8 @@ class SolicitudMaterial {
         $sqlDetalles = "SELECT 
                             p.nomenclatura,
                             p.nombre,
+                            p.marca,
+                            p.modelo,
                             p.tipo, -- 'Herramienta', 'Consumible', 'Equipo'
                             um.apodo AS unidad_medida,
                             d.cantidad,

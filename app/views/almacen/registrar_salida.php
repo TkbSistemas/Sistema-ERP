@@ -471,7 +471,7 @@ function construirBorradorSalida() {
     const tieneDatos = productoId !== '' || cantidad !== '' || observaciones !== '';
 
     if (!tieneDatos) {
-        return { empty: true, valid: false, item: null, message: '' };
+        return { empty: true, valid: false, item: null, code: '', message: '' };
     }
 
     if (!productoId || !almacenId || !cantidad || Number(cantidad) <= 0) {
@@ -479,6 +479,7 @@ function construirBorradorSalida() {
             empty: false,
             valid: false,
             item: null,
+            code: 'datos-incompletos',
             message: 'Selecciona Producto, Almacén y una Cantidad Mayor a Cero Antes de Continuar.'
         };
     }
@@ -487,11 +488,14 @@ function construirBorradorSalida() {
     const stockDisponible = option && option.dataset.stock ? parseFloat(option.dataset.stock) : 0;
 
     if (Number(cantidad) > stockDisponible) {
+        const unidad = String(option?.dataset.unidad || '').trim();
+        const sufijoUnidad = unidad ? ` ${unidad}` : '';
         return {
             empty: false,
             valid: false,
             item: null,
-            message: `La Cantidad Ingresada  es Superior al Stock.`
+            code: 'stock-insuficiente',
+            message: `Solicitaste una salida de ${formatearCantidad(cantidad)}${sufijoUnidad}, pero solo hay ${formatearCantidad(stockDisponible)}${sufijoUnidad} disponibles.`
         };
     }
 
@@ -504,8 +508,33 @@ function construirBorradorSalida() {
             cantidad: cantidad,
             observaciones: observaciones
         },
+        code: '',
         message: ''
     };
+}
+
+function mostrarAlertaBorrador(draft) {
+    const esStockInsuficiente = draft.code === 'stock-insuficiente';
+    const enfocarCampo = () => {
+        const campo = esStockInsuficiente ? cantidadInput : productosSelect;
+        campo?.focus();
+        if (esStockInsuficiente && typeof cantidadInput.select === 'function') {
+            cantidadInput.select();
+        }
+    };
+
+    if (!window.Swal) {
+        enfocarCampo();
+        return;
+    }
+
+    Swal.fire({
+        icon: 'warning',
+        title: esStockInsuficiente ? 'Stock Insuficiente' : 'Datos Incompletos',
+        text: draft.message,
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Entendido'
+    }).then(enfocarCampo);
 }
 
 function limpiarBorradorSalida() {
@@ -582,7 +611,7 @@ function agregarProductoALaCaptura() {
     const draft = construirBorradorSalida();
     if (!draft.valid) {
         if (!draft.empty) {
-            window.alert(draft.message);
+            mostrarAlertaBorrador(draft);
         }
         return;
     }
@@ -716,12 +745,7 @@ salidaForm.addEventListener('submit', function (event) {
     const draft = construirBorradorSalida();
     if (!draft.empty) {
         if (!draft.valid) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Datos Incompletos',
-                text: draft.message,
-                confirmButtonColor: '#3085d6'
-            });
+            mostrarAlertaBorrador(draft);
             return;
         }
         salidaItems.push(draft.item);

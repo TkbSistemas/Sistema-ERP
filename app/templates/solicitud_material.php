@@ -1,12 +1,13 @@
 <?php
 $esEntrega = ($solicitud['estatus'] ?? '') === 'Entregada';
 $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIALES';
+$folioDocumento = trim((string) ($solicitud['folio'] ?? '')) ?: 'solicitud_material';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title><?= $tituloDocumento ?> | TAKAB</title>
+    <title><?= htmlspecialchars($folioDocumento, ENT_QUOTES, 'UTF-8') ?></title>
     <style>
         * {
             box-sizing: border-box;
@@ -39,14 +40,15 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
         }
 
         .header-top-row {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
             width: 100%;
         }
 
         .logo-takab {
             height: 3.5em;
+            max-width: 9em;
             width: auto;
             object-fit: contain;
         }
@@ -58,15 +60,15 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
             font-weight: bold;
             margin: 0;
             text-align: center;
-            flex-grow: 1;
         }
 
         .doc-code {
             font-size: 0.95em;
             color: #000;
             font-weight: bold;
-            white-space: nowrap;
+            white-space: normal;
             text-align: right;
+            overflow-wrap: anywhere;
         }
 
         .company-name {
@@ -180,10 +182,12 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
             word-wrap: break-word;
         }
 
-        .col-no          { width: 6%; text-align: center; }
-        .col-codigo      { width: 18%; }
-        .col-nombre      { width: 58%; }
-        .col-cant-unidad { width: 18%; text-align: center; font-weight: bold; }
+        .col-no          { width: 5%; text-align: center; }
+        .col-codigo      { width: 16%; }
+        .col-nombre      { width: 34%; }
+        .col-marca       { width: 13%; }
+        .col-modelo      { width: 13%; }
+        .col-cant-unidad { width: 19%; text-align: center; font-weight: bold; }
 
         .signatures-container {
             display: flex;
@@ -284,7 +288,7 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
         
         <div class="header-container">
             <div class="header-top-row">
-                <img class="logo-takab" src="assets/images/logo.png" alt="TAKAB Logo" />
+                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo" />
                 
                 <h1 class="doc-title"><?= $tituloDocumento ?></h1>
                 
@@ -326,11 +330,12 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
                     <span class="info-label">Entregado por</span>
                     <span class="info-value"><?= htmlspecialchars($solicitud['responsable'] ?? 'Sin Registro') ?></span>
                 </div>
-            <?php elseif ($requiereDevolucion): ?>
+
+            <!--?php elseif ($requiereDevolucion): ?>
                 <div class="info-item">
                     <span class="info-label">Fecha de Devolución</span>
                     <span class="info-value">________</span>
-                </div>
+                </div-->
             <?php endif; ?>
 
             <div class="info-item full-width">
@@ -355,6 +360,8 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
                             <th class="col-no">No.</th>
                             <th class="col-codigo">Código</th>
                             <th class="col-nombre">Nombre / Descripción del Producto</th>
+                            <th class="col-marca">Marca</th>
+                            <th class="col-modelo">Modelo</th>
                             <th class="col-cant-unidad">Cantidad / Unidad</th>
                         </tr>
                     </thead>
@@ -370,9 +377,6 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
                                 </td>
                                 <td class="col-nombre">
                                     <?= htmlspecialchars($prod['nombre'] ?? '-') ?>
-                                    <?php if (!empty($prod['marca'])): ?>
-                                        <span class="material-detail"><strong>Marca o Modelo:</strong> <?= htmlspecialchars($prod['marca']) ?></span>
-                                    <?php endif; ?>
                                     <?php if (!empty($prod['dimensiones'])): ?>
                                         <span class="material-detail"><strong>Dimensiones:</strong> <?= htmlspecialchars($prod['dimensiones']) ?></span>
                                     <?php endif; ?>
@@ -380,6 +384,8 @@ $tituloDocumento = $esEntrega ? 'ENTREGA DE MATERIALES' : 'SOLICITUD DE MATERIAL
                                         <span class="material-detail"><strong>Observaciones:</strong> <?= htmlspecialchars($prod['observaciones']) ?></span>
                                     <?php endif; ?>
                                 </td>
+                                <td class="col-marca"><?= htmlspecialchars(trim((string) ($prod['marca'] ?? '')) ?: '-') ?></td>
+                                <td class="col-modelo"><?= htmlspecialchars(trim((string) ($prod['modelo'] ?? '')) ?: '-') ?></td>
                                 <td class="col-cant-unidad">
                                     <?= htmlspecialchars(trim((string) ($prod['cantidad'] ?? 1) . ' ' . (string) ($prod['unidad_medida'] ?? 'Pza'))) ?>
                                 </td>
