@@ -1,0 +1,135 @@
+.reception-search-main { padding: 32px 32px 48px; }
+.reception-header { align-items: center; margin-bottom: 24px; }
+.reception-search-card,
+.reception-history-card {
+    border: 1px solid #dfe6f2;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 18px rgba(22, 47, 92, .06);
+}
+.reception-search-card { max-width: 980px; margin: 0 auto 28px; padding: 28px; }
+.reception-search-intro {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 20px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #e6ebf3;
+}
+.reception-search-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 13px;
+    color: #2563eb;
+    background: #eaf1ff;
+    font-size: 1.15rem;
+}
+.reception-search-intro h2,
+.reception-history-heading h2 { margin: 0; color: #12305f; }
+.reception-search-intro p,
+.reception-history-heading p { margin: 5px 0 0; color: #7180a1; }
+#reference-search-form > label {
+    display: block;
+    margin-bottom: 8px;
+    color: #304d79;
+    font-size: .84rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+.reference-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+.reference-input-wrap {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    border: 1px solid #cbd5e5;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+.reference-input-wrap:focus-within { border-color: #4c7fe1; box-shadow: 0 0 0 3px rgba(76, 127, 225, .15); }
+.reference-prefix {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 16px;
+    color: #315484;
+    background: #edf3fc;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+}
+#referencia {
+    width: 100%;
+    min-width: 0;
+    padding: 0 16px;
+    border: 0;
+    outline: 0;
+    color: #102a56;
+    background: transparent;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+#referencia.is-valid { color: #087443; }
+#referencia.is-invalid { color: #b42318; }
+.reference-submit { min-width: 190px; justify-content: center; }
+.reference-submit:disabled { opacity: .48; cursor: not-allowed; }
+.reference-feedback {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 9px;
+    color: #7482a5;
+    font-size: .78rem;
+}
+#reference-preview { color: #315484; font-family: Consolas, "Courier New", monospace; }
+.reception-history-card { padding: 24px; }
+.reception-history-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+.reception-history-heading h2 i { margin-right: 8px; color: #2563eb; }
+.reception-history-heading > span {
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: #315484;
+    background: #edf3fc;
+    font-size: .82rem;
+    font-weight: 800;
+}
+.reception-history-table { min-width: 960px; }
+.reception-materials-table { min-width: 1260px; }
+.reception-overview-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.reception-remaining { color: #16834a !important; font-weight: 800; white-space: nowrap; }
+.reception-remaining.has-remaining { color: #b45309 !important; }
+.reception-summary-content {
+    grid-template-columns: minmax(420px, 1.5fr) minmax(280px, 1fr) minmax(280px, .8fr);
+}
+.reception-summary-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1120px) {
+    .reception-overview-grid,
+    .reception-summary-content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .reception-summary-content .delivery-summary-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+    .reception-search-main { padding: 22px 16px 36px; }
+    .reception-header,
+    .reception-search-intro,
+    .reception-history-heading { align-items: stretch; flex-direction: column; }
+    .reception-search-card,
+    .reception-history-card { padding: 20px 18px; }
+    .reference-search-row { grid-template-columns: 1fr; }
+    .reference-submit { width: 100%; }
+    .reference-feedback { flex-direction: column; }
+    .reception-overview-grid,
+    .reception-summary-content,
+    .reception-summary-metrics { grid-template-columns: 1fr; }
+}

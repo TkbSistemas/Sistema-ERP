@@ -170,13 +170,15 @@
     border: 1px solid #60a5fa;
 }
 
-.solicitud-estatus--parcial {
+.solicitud-estatus--parcial,
+.solicitud-estatus--incompleta {
     color: #6b3e00;
     background: #ffedd5;
     border: 1px solid #fb923c;
 }
 
-.solicitud-estatus--completa {
+.solicitud-estatus--completa,
+.solicitud-estatus--recibida {
     color: #166534;
     background: #dcfce7;
     border: 1px solid #4ade80;

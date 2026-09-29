@@ -1,18 +1,136 @@
 <?php
 require_once __DIR__ . '/../helpers/Session.php';
 require_once __DIR__ . '/../helpers/Database.php';
+require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 class DashboardController
 {
     public function obtenerDashboardAdmin(): void
     {
-        Session::requireLogin();
+        Session::requireLogin(['Administrador']);
 
         $role   = $_SESSION['role'] ?? '';
         $nombre = $_SESSION['nombre'] ?? '';
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
+
+        $_SESSION['menu_items'] = [
+            ['slug' => 'menu_admin', 'label' => 'Menú Principal', 'icon' => 'fa-solid fa-grip', 'role' => 'Todos'],
+            ['slug' => 'dashboard_inventario', 'label' => 'Ir a Inventario', 'icon' => 'fa-solid fa-boxes-stacked', 'role' => 'Todos'],
+            ['slug' => 'dashboard_almacen', 'label' => 'Ir a Almacén', 'icon' => 'fa-solid fa-warehouse', 'role' => 'Todos'],
+            ['slug' => 'dashboard_compras', 'label' => 'Ir a Compras', 'icon' => 'fa-solid fa-cart-shopping', 'role' => 'Todos'],
+            ['slug' => 'dashboard_empleado', 'label' => 'Ir a Empleados', 'icon' => 'fa-solid fa-id-badge', 'role' => 'Todos'],
+            ['slug' => 'proyectos', 'label' => 'Ir a Proyectos', 'icon' => 'fa-solid fa-diagram-project', 'role' => 'Todos'],
+            ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos'],
+        ];
 
         $db = Database::getInstance()->getConnection();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $accion = (string) ($_POST['accion'] ?? '');
+                if ($accion === 'crear_usuario') {
+                    $nombreUsuario = trim((string) ($_POST['nombre'] ?? ''));
+                    $username = strtolower(trim((string) ($_POST['username'] ?? '')));
+                    $password = (string) ($_POST['password'] ?? '');
+                    $confirmacion = (string) ($_POST['password_confirmacion'] ?? '');
+                    $rolUsuario = trim((string) ($_POST['role'] ?? ''));
+                    $rolesPermitidos = ['Administrador', 'Almacen', 'Empleado', 'Compras', 'Proyectos'];
+
+                    if (mb_strlen($nombreUsuario) < 2 || mb_strlen($nombreUsuario) > 100) {
+                        throw new InvalidArgumentException('El Nombre Debe Tener entre 2 y 100 Caracteres.');
+                    }
+                    if (!preg_match('/^[a-z0-9._-]{4,25}$/', $username)) {
+                        throw new InvalidArgumentException('El Usuario Debe Tener entre 4 y 25 Caracteres y Solo Puede Usar Letras, Números, Punto, Guion o Guion Bajo.');
+                    }
+                    if (!in_array($rolUsuario, $rolesPermitidos, true)) {
+                        throw new InvalidArgumentException('Selecciona un Rol de Acceso Válido.');
+                    }
+                    if (strlen($password) < 8 || strlen($password) > 72) {
+                        throw new InvalidArgumentException('La Contraseña Debe Tener entre 8 y 72 Caracteres.');
+                    }
+                    if ($password !== $confirmacion) {
+                        throw new InvalidArgumentException('La Confirmación de la Contraseña no Coincide.');
+                    }
+
+                    $existe = $db->prepare('SELECT COUNT(*) FROM usuarios WHERE username = ?');
+                    $existe->execute([$username]);
+                    if ((int) $existe->fetchColumn() > 0) {
+                        throw new RuntimeException('El Nombre de Usuario ya Está Registrado.');
+                    }
+
+                    $hash = password_hash($password, PASSWORD_DEFAULT);
+                    if ($hash === false) {
+                        throw new RuntimeException('No Fue Posible Proteger la Contraseña.');
+                    }
+                    $insertar = $db->prepare(
+                        'INSERT INTO usuarios (username, password, nombre, role, baja, activo) VALUES (?, ?, ?, ?, 0, 1)'
+                    );
+                    $insertar->execute([$username, $hash, $nombreUsuario, $rolUsuario]);
+                    $usuarioNuevoId = (int) $db->lastInsertId();
+
+                    ActivityLogger::registrarAlta('administracion', 'usuario', $usuarioNuevoId, 'Usuario de Acceso Registrado', [
+                        'username' => $username,
+                        'rol' => $rolUsuario,
+                    ]);
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'success',
+                        'titulo' => 'Usuario Registrado',
+                        'mensaje' => 'La Cuenta de Acceso se Creó Correctamente.',
+                    ];
+                } elseif ($accion === 'crear_proyecto') {
+                    $codigo = strtoupper(trim((string) ($_POST['codigo'] ?? '')));
+                    $nombreProyecto = trim((string) ($_POST['nombre_proyecto'] ?? ''));
+
+                    if (!preg_match('/^[A-Z0-9._-]{2,50}$/', $codigo)) {
+                        throw new InvalidArgumentException('El Código Debe Tener entre 2 y 50 Caracteres y Solo Puede Usar Letras, Números, Punto, Guion o Guion Bajo.');
+                    }
+                    if (mb_strlen($nombreProyecto) < 2 || mb_strlen($nombreProyecto) > 255) {
+                        throw new InvalidArgumentException('El Nombre del Proyecto Debe Tener entre 2 y 255 Caracteres.');
+                    }
+
+                    $existe = $db->prepare('SELECT COUNT(*) FROM proyectos WHERE UPPER(codigo) = ?');
+                    $existe->execute([$codigo]);
+                    if ((int) $existe->fetchColumn() > 0) {
+                        throw new RuntimeException('Ya Existe un Proyecto con Ese Código.');
+                    }
+
+                    $insertar = $db->prepare('INSERT INTO proyectos (codigo, nombre, cliente_id) VALUES (?, ?, NULL)');
+                    $insertar->execute([$codigo, $nombreProyecto]);
+                    $proyectoId = (int) $db->lastInsertId();
+
+                    ActivityLogger::registrarAlta('administracion', 'proyecto', $proyectoId, 'Proyecto Registrado', [
+                        'codigo' => $codigo,
+                        'nombre' => $nombreProyecto,
+                    ]);
+                    $_SESSION['alerta'] = [
+                        'tipo' => 'success',
+                        'titulo' => 'Proyecto Registrado',
+                        'mensaje' => 'El Proyecto se Creó Correctamente.',
+                    ];
+                } else {
+                    throw new InvalidArgumentException('La Operación Solicitada no es Válida.');
+                }
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'warning',
+                    'titulo' => 'No Fue Posible Guardar el Registro',
+                    'mensaje' => $e->getMessage(),
+                ];
+            } catch (Throwable $e) {
+                error_log('Error en acción rápida administrativa: ' . $e->getMessage());
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'No Fue Posible Guardar el Registro',
+                    'mensaje' => 'Ocurrió un Error al Procesar la Información. Intenta Nuevamente.',
+                ];
+            }
+
+            header('Location: ' . Session::url('dashboard_admin'));
+            exit;
+        }
 
         $datos = [
             'nombre'      => $nombre,
@@ -21,20 +139,7 @@ class DashboardController
             'alertas'     => [],
         ];
 
-        switch ($role) {
-            case 'Administrador':
-                $datos = array_merge($datos, $this->datosAdministrador($db));
-                break;
-            case 'Almacen':
-                $datos = array_merge($datos, $this->datosAlmacen($db));
-                break;
-            case 'Empleado':
-                $datos = array_merge($datos, $this->datosEmpleado($db, $userId));
-                break;
-            default:
-                $datos = array_merge($datos, $this->datosGenerales($db));
-                break;
-        }
+        $datos = array_merge($datos, $this->datosAdministrador($db));
 
         include __DIR__ . '/../views/administrador/dashboard_admin.php';
     }
@@ -59,16 +164,74 @@ class DashboardController
 
     private function datosAdministrador($db): array
     {
-        $datos = $this->datosGenerales($db);
+        $resumen = $db->query(
+            "SELECT
+                (SELECT COUNT(*) FROM inventario WHERE activo = '1') AS productos_activos,
+                (SELECT COUNT(*)
+                   FROM inventario i
+                   LEFT JOIN (
+                       SELECT producto_id, SUM(stock) AS stock_total
+                       FROM stock_almacen
+                       GROUP BY producto_id
+                   ) sa ON sa.producto_id = i.id
+                  WHERE i.activo = '1'
+                    AND COALESCE(sa.stock_total, 0) < COALESCE(i.stock_minimo, 0)) AS productos_stock_bajo,
+                (SELECT COALESCE(SUM(COALESCE(sa.stock_total, 0) * COALESCE(i.precio_unitario, 0)), 0)
+                   FROM inventario i
+                   LEFT JOIN (
+                       SELECT producto_id, SUM(stock) AS stock_total
+                       FROM stock_almacen
+                       GROUP BY producto_id
+                   ) sa ON sa.producto_id = i.id
+                  WHERE i.activo = '1') AS valor_inventario,
+                (SELECT COUNT(*) FROM solicitudes_material WHERE activo = 1 AND estatus = 'Pendiente') AS solicitudes_pendientes,
+                (SELECT COUNT(*) FROM solicitudes_material WHERE activo = 1 AND estatus = 'Aprobada') AS solicitudes_por_entregar,
+                (SELECT COUNT(*) FROM ordenes_compra WHERE estatus = 'Pendiente') AS ordenes_pendientes,
+                (SELECT COUNT(*) FROM ordenes_compra WHERE estatus IN ('Aprobada', 'Parcial')) AS ordenes_por_procesar,
+                (SELECT COUNT(*)
+                   FROM ordenes_compra oc
+                   LEFT JOIN facturas_compras fc ON fc.orden_id = oc.id
+                  WHERE oc.estatus IN ('Parcial', 'Completa', 'Incompleta', 'Recibida')
+                    AND fc.id IS NULL) AS ordenes_sin_factura,
+                (SELECT COUNT(*) FROM catalogo_proveedores WHERE activo = 1) AS proveedores_activos,
+                (SELECT COUNT(*) FROM usuarios WHERE activo = 1 AND baja = 0) AS usuarios_activos,
+                (SELECT COUNT(*) FROM almacenes WHERE activo = 1) AS almacenes_activos,
+                (SELECT COUNT(*) FROM proyectos) AS proyectos_registrados"
+        )->fetch(PDO::FETCH_ASSOC) ?: [];
 
-        $solicitudesPendientes = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus = 'Pendiente'")->fetchColumn();
-        $solicitudesAprobadas  = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus = 'Aprobada'")->fetchColumn();
+        $actividad = $db->query(
+            "SELECT l.accion, l.descripcion, l.created_at, COALESCE(u.nombre, 'Sistema') AS usuario
+             FROM logs_actividad l
+             LEFT JOIN usuarios u ON u.id = l.usuario_id
+             ORDER BY l.created_at DESC, l.id DESC
+             LIMIT 7"
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-        $datos['solicitudesPendientes'] = $solicitudesPendientes;
-        $datos['solicitudesAprobadas']  = $solicitudesAprobadas;
-        $datos['ultimaActualizacion']   = $this->ultimasActualizaciones($db);
+        foreach ($actividad as &$registro) {
+            $descripcion = trim((string) ($registro['descripcion'] ?? 'Actividad Registrada'));
+            $posicionContexto = strpos($descripcion, ' {');
+            if ($posicionContexto !== false) {
+                $descripcion = substr($descripcion, 0, $posicionContexto);
+            }
+            $registro['descripcion_limpia'] = $descripcion !== '' ? $descripcion : 'Actividad Registrada';
+        }
+        unset($registro);
 
-        return $datos;
+        return [
+            'productosActivos' => (int) ($resumen['productos_activos'] ?? 0),
+            'stockBajo' => (int) ($resumen['productos_stock_bajo'] ?? 0),
+            'valorTotalInventario' => (float) ($resumen['valor_inventario'] ?? 0),
+            'solicitudesPendientes' => (int) ($resumen['solicitudes_pendientes'] ?? 0),
+            'solicitudesPorEntregar' => (int) ($resumen['solicitudes_por_entregar'] ?? 0),
+            'ordenesPendientes' => (int) ($resumen['ordenes_pendientes'] ?? 0),
+            'ordenesPorProcesar' => (int) ($resumen['ordenes_por_procesar'] ?? 0),
+            'ordenesSinFactura' => (int) ($resumen['ordenes_sin_factura'] ?? 0),
+            'proveedoresActivos' => (int) ($resumen['proveedores_activos'] ?? 0),
+            'usuariosActivos' => (int) ($resumen['usuarios_activos'] ?? 0),
+            'almacenesActivos' => (int) ($resumen['almacenes_activos'] ?? 0),
+            'proyectosRegistrados' => (int) ($resumen['proyectos_registrados'] ?? 0),
+            'actividadReciente' => $actividad,
+        ];
     }
 
     private function datosAlmacen($db): array{

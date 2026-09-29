@@ -1,0 +1,263 @@
+.facturas-page-main {
+    display: grid;
+    gap: 22px;
+}
+
+.facturas-history-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 46px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.facturas-summary {
+    margin: 0;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.facturas-summary .card-value-money {
+    font-size: clamp(1.35rem, 2vw, 2rem);
+}
+
+.facturas-list-card {
+    padding: 24px;
+}
+
+.facturas-toolbar {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(160px, 220px) minmax(160px, 220px);
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 22px;
+}
+
+.facturas-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.facturas-search i {
+    position: absolute;
+    left: 16px;
+    color: #2f64c5;
+}
+
+.facturas-search input,
+.facturas-status-filter select {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid #cbd8ed;
+    border-radius: 12px;
+    background: #fff;
+    color: #153565;
+    font: inherit;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.facturas-search input {
+    padding: 0 16px 0 46px;
+}
+
+.facturas-status-filter {
+    display: grid;
+    gap: 7px;
+    color: #536a96;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.facturas-status-filter select {
+    padding: 0 38px 0 14px;
+    text-transform: none;
+    font-weight: 650;
+    letter-spacing: normal;
+}
+
+.facturas-search input:focus,
+.facturas-status-filter select:focus {
+    border-color: #4c86ee;
+    box-shadow: 0 0 0 4px rgba(55, 113, 220, .12);
+}
+
+.facturas-table td {
+    vertical-align: middle;
+}
+
+.facturas-table {
+    width: 100%;
+    min-width: 1120px;
+    table-layout: auto;
+}
+
+.facturas-table th:first-child,
+.facturas-table td:first-child {
+    min-width: 205px;
+}
+
+.facturas-table th:nth-child(2),
+.facturas-table td:nth-child(2) {
+    min-width: 140px;
+}
+
+.facturas-table th:nth-child(4),
+.facturas-table td:nth-child(4) {
+    min-width: 175px;
+}
+
+.facturas-table th:last-child,
+.facturas-table td:last-child {
+    width: 84px;
+    min-width: 84px;
+    text-align: center;
+}
+
+.factura-order-folio,
+.factura-cell-note {
+    display: block;
+}
+
+.factura-order-folio {
+    white-space: nowrap;
+}
+
+.factura-cell-note {
+    margin-top: 5px;
+    color: #7183a6;
+    font-size: .82rem;
+}
+
+.invoice-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: .83rem;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.invoice-state--assigned {
+    color: #087646;
+    background: #e9f9f0;
+}
+
+.invoice-state--pending {
+    color: #9b6500;
+    background: #fff6d9;
+}
+
+.btn-invoice {
+    width: 40px;
+    height: 40px;
+    margin: 0 !important;
+    padding: 0;
+    border: 1px solid #d4def0;
+    cursor: pointer;
+}
+
+.invoice-modal-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 4px 0 20px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f3f7fe;
+    color: #405b89;
+    text-align: left;
+}
+
+.invoice-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    text-align: left;
+}
+
+.invoice-modal-field {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+}
+
+.invoice-modal-field--wide {
+    grid-column: 1 / -1;
+}
+
+.invoice-modal-field > span {
+    color: #3f5680;
+    font-size: .84rem;
+    font-weight: 800;
+}
+
+.invoice-modal-field b {
+    color: #d13838;
+}
+
+.invoice-swal-control.swal2-input,
+.invoice-swal-control.swal2-select {
+    width: 100%;
+    height: 48px;
+    margin: 0;
+    border: 1px solid #cbd8ed;
+    border-radius: 10px;
+    box-shadow: none;
+    color: #173563;
+    font-size: .95rem;
+}
+
+.invoice-swal-control.swal2-input:focus,
+.invoice-swal-control.swal2-select:focus {
+    border-color: #4c86ee;
+    box-shadow: 0 0 0 4px rgba(55, 113, 220, .12);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 900px) {
+    .facturas-toolbar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .facturas-search {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .facturas-history-button {
+        width: 100%;
+    }
+    .facturas-list-card {
+        padding: 16px;
+    }
+
+    .facturas-toolbar,
+    .invoice-modal-grid,
+    .invoice-modal-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .facturas-search,
+    .invoice-modal-field--wide {
+        grid-column: auto;
+    }
+}

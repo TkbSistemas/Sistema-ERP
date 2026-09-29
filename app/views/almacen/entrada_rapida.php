@@ -97,12 +97,6 @@ $breadcrumbs = [
                                         <option value="<?= htmlspecialchars($categoriaNombre) ?>"><?= htmlspecialchars($categoriaNombre) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <select id="filtro_almacen">
-                                    <option value="">Almacén Asignado</option>
-                                    <?php foreach ($almacenes as $almacen): ?>
-                                        <option value="<?= (int) $almacen['id'] ?>"><?= htmlspecialchars($almacen['nombre']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
                                 <label style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
                                     <input type="checkbox" id="filtro_stock" style="width:auto; margin:0;"> Solo con Stock
                                 </label>
@@ -298,7 +292,6 @@ const summaryAlmacen = document.getElementById('summary-almacen');
 const filtroTexto = document.getElementById('filtro_texto');
 const filtroTipo = document.getElementById('filtro_tipo');
 const filtroCategoria = document.getElementById('filtro_categoria');
-const filtroAlmacen = document.getElementById('filtro_almacen');
 const filtroStock = document.getElementById('filtro_stock');
 const filtroResultados = document.getElementById('filtro_resultados');
 const lineasIniciales = <?= json_encode(array_values($entradaItems), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
@@ -436,7 +429,6 @@ function aplicarFiltroProductos() {
     const texto = (filtroTexto.value || '').trim().toLowerCase();
     const tipo = filtroTipo.value;
     const categoria = filtroCategoria.value;
-    const almacen = filtroAlmacen.value;
     const soloStock = filtroStock.checked;
     let visibles = 0;
 
@@ -453,7 +445,6 @@ function aplicarFiltroProductos() {
         const barras = (option.dataset.barras || '').toLowerCase();
         const tipoOpt = option.dataset.tipo || '';
         const categoriaOpt = option.dataset.categoria || '';
-        const almacenOpt = option.dataset.almacen || '';
         const stockOpt = parseFloat(option.dataset.stock || '0');
 
         let coincide = true;
@@ -465,9 +456,6 @@ function aplicarFiltroProductos() {
         }
         if (coincide && categoria) {
             coincide = categoriaOpt === categoria;
-        }
-        if (coincide && almacen) {
-            coincide = almacenOpt === almacen;
         }
         if (coincide && soloStock) {
             coincide = stockOpt > 0;
@@ -523,7 +511,6 @@ productosSelect.addEventListener('change', actualizarResumen);
 filtroTexto.addEventListener('input', aplicarFiltroProductos);
 filtroTipo.addEventListener('change', aplicarFiltroProductos);
 filtroCategoria.addEventListener('change', aplicarFiltroProductos);
-filtroAlmacen.addEventListener('change', aplicarFiltroProductos);
 filtroStock.addEventListener('change', aplicarFiltroProductos);
 agregarProductoBtn.addEventListener('click', agregarProductoALaCaptura);
 limpiarCapturaBtn.addEventListener('click', () => {

@@ -5,6 +5,7 @@ Session::requireLogin(['Administrador', 'Compras']);
 $role = $role ?? ($_SESSION['role'] ?? '');
 $nombre = $nombre ?? ($_SESSION['nombre'] ?? '');
 $detalles = is_array($orden['detalles'] ?? null) ? $orden['detalles'] : [];
+$almacenes = is_array($almacenes ?? null) ? $almacenes : [];
 $formatearCantidad = static function ($valor): string {
     return rtrim(rtrim(number_format((float) $valor, 2, '.', ','), '0'), '.');
 };
@@ -18,6 +19,8 @@ $formatearFecha = static function ($fecha): string {
 $valorEnviado = static function (int $detalleId, string $campo, $predeterminado) {
     return $_POST['detalles'][$detalleId][$campo] ?? $predeterminado;
 };
+$metodoEntregaSeleccionado = (string) ($_POST['metodo_entrega'] ?? $orden['metodo_entrega'] ?? 'Por Confirmar');
+$almacenSeleccionado = (int) ($_POST['almacen_id'] ?? $orden['almacen']['id'] ?? 0);
 $partidasConfirmadas = count(array_filter($detalles, static function (array $detalle): bool {
     $cantidad = $detalle['cantidad_confirmada'] ?? $detalle['cantidad_solicitada'] ?? 0;
     return (float) $cantidad > 0;
@@ -79,7 +82,14 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                         <?php else: ?>
                             <div class="process-table-wrapper">
                                 <table class="process-materials-table purchase-materials-table">
-                                    <thead><tr><th>Material</th><th>Marca / Modelo</th><th>Solicitado</th><th>Precio Estimado</th><th>Cantidad Confirmada</th><th>Precio Confirmado</th><th>Importe Confirmado</th></tr></thead>
+                                    <thead><tr>
+                                        <th>Material</th>
+                                        <th>Marca / Modelo</th>
+                                        <th>Solicitado</th>
+                                        <th>Precio Estimado</th>
+                                        <th>Cantidad Confirmada</th>
+                                        <th>Precio Confirmado</th>
+                                    </tr></thead>
                                     <tbody>
                                     <?php foreach ($detalles as $detalle): ?>
                                         <?php
@@ -106,7 +116,6 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
                                                 </div>
                                             </td>
                                             <td><div class="price-control"><span>$</span><input class="unit-price" type="number" name="detalles[<?= $detalleId ?>][precio_confirmado]" value="<?= htmlspecialchars((string) $precioConfirmado, ENT_QUOTES, 'UTF-8') ?>" min="0.01" step="0.01" required></div></td>
-                                            <td class="purchase-line-total">$0.00</td>
                                         </tr>
                                     <?php endforeach; ?>
                                     </tbody>
@@ -117,16 +126,41 @@ $processStyleVersion = is_file($processStylePath) ? (string) filemtime($processS
 
                     <section class="process-card delivery-summary">
                         <h2><i class="fa-solid fa-clipboard-check"></i> Resumen de Compra</h2>
-                        <div class="delivery-summary-content">
-                            <div class="summary-metrics purchase-summary-metrics">
-                                <div class="summary-metric"><span>Partidas Solicitadas</span><strong><?= count($detalles) ?></strong></div>
-                                <div class="summary-metric summary-delivery-total"><span>Partidas Confirmadas</span><strong id="confirmed-lines"><?= $partidasConfirmadas ?></strong></div>
-                                <div class="summary-metric"><span>Total Confirmado</span><strong id="confirmed-total">$0.00</strong></div>
+                        <div class="delivery-summary-content purchase-summary-content">
+                            <div class="purchase-summary-top">
+                                <label class="purchase-delivery-field">
+                                    <span>Forma de Entrega</span>
+                                    <select name="metodo_entrega" required>
+                                        <?php foreach (['Reparto', 'Recolección', 'Por Confirmar'] as $metodo): ?>
+                                            <option value="<?= htmlspecialchars($metodo, ENT_QUOTES, 'UTF-8') ?>" <?= $metodoEntregaSeleccionado === $metodo ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($metodo, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
+                                <label class="purchase-delivery-field">
+                                    <span>Almacén Destino</span>
+                                    <select name="almacen_id" required>
+                                        <option value="">Selecciona un Almacén...</option>
+                                        <?php foreach ($almacenes as $almacen): ?>
+                                            <option value="<?= (int) ($almacen['id'] ?? 0) ?>" <?= $almacenSeleccionado === (int) ($almacen['id'] ?? 0) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars((string) ($almacen['nombre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
+                                <div class="summary-metrics purchase-summary-metrics">
+                                    <div class="summary-metric"><span>Partidas Solicitadas</span><strong><?= count($detalles) ?></strong></div>
+                                    <div class="summary-metric summary-delivery-total"><span>Partidas Confirmadas</span><strong id="confirmed-lines"><?= $partidasConfirmadas ?></strong></div>
+                                    <div class="summary-metric"><span>Total Confirmado</span><strong id="confirmed-total">$0.00</strong></div>
+                                </div>
                             </div>
-                            <div class="delivery-note"><i class="fa-solid fa-circle-info"></i><p>La Orden será Completa sólo si Todas las Cantidades Confirmadas Cubren lo Solicitado; de lo Contrario quedará Parcial.</p></div>
-                            <div class="delivery-summary-actions">
-                                <button type="submit" class="mark-delivered-button" <?= $detalles === [] ? 'disabled' : '' ?>><i class="fa-solid fa-circle-check"></i> Confirmar Compra</button>
-                                <a class="cancel-process-button" href="<?= htmlspecialchars(Session::url('ordenes_compra'), ENT_QUOTES, 'UTF-8') ?>"><i class="fa-solid fa-arrow-left"></i> Regresar a la Lista de Órdenes</a>
+                            <div class="purchase-summary-footer">
+                                <div class="delivery-note"><i class="fa-solid fa-circle-info"></i><p>La Orden será Completa sólo si Todas las Cantidades Confirmadas Cubren lo Solicitado; de lo Contrario quedará Parcial.</p></div>
+                                <div class="delivery-summary-actions">
+                                    <button type="submit" class="mark-delivered-button" <?= $detalles === [] ? 'disabled' : '' ?>><i class="fa-solid fa-circle-check"></i> Confirmar Compra</button>
+                                    <a class="cancel-process-button" href="<?= htmlspecialchars(Session::url('ordenes_compra'), ENT_QUOTES, 'UTF-8') ?>"><i class="fa-solid fa-arrow-left"></i> Regresar a la Lista de Órdenes</a>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -183,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form?.addEventListener('submit', async (event) => {
         if (confirmedSubmit || !form.checkValidity()) return;
         event.preventDefault();
-        const result = await Swal.fire({ icon: 'question', title: '¿Confirmar la Compra?', text: 'Se Guardarán las Cantidades y los Precios Indicados para Cada Material.', showCancelButton: true, confirmButtonColor: '#16834a', cancelButtonColor: '#64748b', confirmButtonText: 'Sí, Confirmar', cancelButtonText: 'Revisar' });
+        const result = await Swal.fire({ icon: 'question', title: '¿Confirmar la Compra?', text: 'Se Guardarán las Cantidades, los Precios, la Forma de Entrega y el Almacén Destino.', showCancelButton: true, confirmButtonColor: '#16834a', cancelButtonColor: '#64748b', confirmButtonText: 'Sí, Confirmar', cancelButtonText: 'Revisar' });
         if (result.isConfirmed) { confirmedSubmit = true; form.submit(); }
     });
     updateSummary();

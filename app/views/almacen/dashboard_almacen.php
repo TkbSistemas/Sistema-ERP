@@ -8,6 +8,10 @@ if (!in_array($role, ['Administrador', 'Almacen'])) { // Si el rol no es Adminis
 $role = $datos['role'] ?? 'Empleado';
 $nombre = $datos['nombre'] ?? '';
 $alertas = $datos['alertas'] ?? [];
+$referenciaOrden = static function (?string $folio): string {
+    $referencia = preg_replace('/\D+/', '', (string) $folio);
+    return $referencia !== '' ? $referencia : '-';
+};
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -87,28 +91,25 @@ $alertas = $datos['alertas'] ?? [];
                             <tr>
                                 <th>Folio</th>
                                 <th>Proveedor</th>
-                                <th>Estatus</th>
+                                <th>Partidas</th>
                                 <th>Tipo de Entrega</th>
+                                <th>Referencia</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!empty($datos['ordenesEnEntrega'])): ?>
                                 <?php foreach ($datos['ordenesEnEntrega'] as $orden): ?>
-                                    <?php $estatusClase = strtolower(trim((string) ($orden['estatus'] ?? ''))); ?>
                                     <tr>
                                         <td><span class="mono"><?= htmlspecialchars($orden['folio'] ?? '-') ?></span></td>
                                         <td><?= htmlspecialchars($orden['proveedor_nombre'] ?: 'Sin Proveedor') ?></td>
-                                        <td>
-                                            <span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase) ?>">
-                                                <?= htmlspecialchars($orden['estatus'] ?? '-') ?>
-                                            </span>
-                                        </td>
+                                        <td><?= number_format((int) ($orden['total_partidas'] ?? 0)) ?></td>
                                         <td><?= htmlspecialchars($orden['metodo_entrega'] ?: 'Por Confirmar') ?></td>
+                                        <td><span class="mono"><?= htmlspecialchars($referenciaOrden($orden['folio'] ?? null)) ?></span></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="table-empty">No hay Órdenes Aprobadas o Parciales por Recibir.</td>
+                                    <td colspan="5" class="table-empty">No Hay Órdenes Pendientes de Recepción.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

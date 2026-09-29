@@ -1,6 +1,17 @@
 <?php
 $detalles = is_array($orden['detalles'] ?? null) ? $orden['detalles'] : [];
-$totalEstimado = (float) ($orden['total_estimado'] ?? 0);
+$estatusOrden = (string) ($orden['estatus'] ?? 'Pendiente');
+$usaValoresConfirmados = in_array($estatusOrden, ['Completa', 'Parcial', 'Recibida', 'Incompleta'], true);
+$totalDocumento = 0.0;
+foreach ($detalles as $detalle) {
+    $cantidadDocumento = $usaValoresConfirmados
+        ? (float) ($detalle['cantidad_confirmada'] ?? 0)
+        : (float) ($detalle['cantidad_solicitada'] ?? 0);
+    $precioDocumento = $usaValoresConfirmados
+        ? (float) ($detalle['precio_confirmado'] ?? 0)
+        : (float) ($detalle['precio_unitario'] ?? 0);
+    $totalDocumento += $cantidadDocumento * $precioDocumento;
+}
 $formatearCantidad = static function ($valor): string {
     return rtrim(rtrim(number_format((float) $valor, 2, '.', ','), '0'), '.');
 };
@@ -254,7 +265,7 @@ $folioDocumento = trim((string) ($orden['folio'] ?? '')) ?: (string) ($orden['id
                         <th class="col-code">Código</th>
                         <th class="col-description">Material / Descripción</th>
                         <th class="col-brand-model">Marca / Modelo</th>
-                        <th class="col-quantity-unit">Cantidad / Unidad</th>
+                        <th class="col-quantity-unit"><?= $usaValoresConfirmados ? 'Cantidad Confirmada / Unidad' : 'Cantidad / Unidad' ?></th>
                         <th class="col-price">Precio Unitario</th>
                         <th class="col-amount">Importe</th>
                     </tr>
@@ -269,25 +280,32 @@ $folioDocumento = trim((string) ($orden['folio'] ?? '')) ?: (string) ($orden['id
                         $marca = trim((string) ($detalle['marca'] ?? ''));
                         $modelo = trim((string) ($detalle['modelo'] ?? ''));
                         $unidad = trim((string) ($detalle['unidad'] ?? '')) ?: 'Pza';
+                        $cantidadDocumento = $usaValoresConfirmados
+                            ? (float) ($detalle['cantidad_confirmada'] ?? 0)
+                            : (float) ($detalle['cantidad_solicitada'] ?? 0);
+                        $precioDocumento = $usaValoresConfirmados
+                            ? (float) ($detalle['precio_confirmado'] ?? 0)
+                            : (float) ($detalle['precio_unitario'] ?? 0);
+                        $importeDocumento = $cantidadDocumento * $precioDocumento;
                         ?>
                         <tr>
                             <td class="col-number"><?= $indice + 1 ?></td>
                             <td class="col-code">
-                                <?= htmlspecialchars((string) $codigo, ENT_QUOTES, 'UTF-8') ?>
                                 <?php if (!empty($detalle['codigo_fabricante']) && $detalle['codigo_fabricante'] !== $codigo): ?>
-                                    <span class="product-detail">Fabricante: <?= htmlspecialchars((string) $detalle['codigo_fabricante'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="product-detail"><?= htmlspecialchars((string) $detalle['codigo_fabricante'], ENT_QUOTES, 'UTF-8') ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="col-description">
+                                <?= htmlspecialchars((string) $codigo, ENT_QUOTES, 'UTF-8') ?>
                                 <span class="product-name"><?= htmlspecialchars((string) ($detalle['producto_nombre'] ?? 'Producto'), ENT_QUOTES, 'UTF-8') ?></span>
                             </td>
                             <td class="col-brand-model">
                                 <span class="product-detail"><strong>Marca:</strong> <?= htmlspecialchars($marca !== '' ? $marca : '-', ENT_QUOTES, 'UTF-8') ?></span>
                                 <span class="product-detail"><strong>Modelo:</strong> <?= htmlspecialchars($modelo !== '' ? $modelo : '-', ENT_QUOTES, 'UTF-8') ?></span>
                             </td>
-                            <td class="col-quantity-unit"><?= htmlspecialchars($formatearCantidad($detalle['cantidad_solicitada'] ?? 0) . ' ' . $unidad, ENT_QUOTES, 'UTF-8') ?></td>
-                            <td class="col-price">$<?= number_format((float) ($detalle['precio_unitario'] ?? 0), 2) ?></td>
-                            <td class="col-amount">$<?= number_format((float) ($detalle['importe_estimado'] ?? 0), 2) ?></td>
+                            <td class="col-quantity-unit"><?= htmlspecialchars($formatearCantidad($cantidadDocumento) . ' ' . $unidad, ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="col-price">$<?= number_format($precioDocumento, 2) ?></td>
+                            <td class="col-amount">$<?= number_format($importeDocumento, 2) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -298,10 +316,14 @@ $folioDocumento = trim((string) ($orden['folio'] ?? '')) ?: (string) ($orden['id
         <div class="totals">
             <div>
                 <div class="total-box">
-                    <span class="total-label">Total Estimado de la Orden</span>
-                    <span class="total-value">$<?= number_format($totalEstimado, 2) ?> MXN</span>
+                    <span class="total-label"><?= $usaValoresConfirmados ? 'Total Confirmado de la Orden' : 'Total Estimado de la Orden' ?></span>
+                    <span class="total-value">$<?= number_format($totalDocumento, 2) ?> MXN</span>
                 </div>
-                <p class="total-note">Calculado con la Cantidad Solicitada por el Precio Unitario.</p>
+                <p class="total-note">
+                    <?= $usaValoresConfirmados
+                        ? 'Calculado con la Cantidad y el Precio Confirmados sin IVA.'
+                        : 'Calculado con la Cantidad Solicitada por el Precio Unitario sin IVA.' ?>
+                </p>
             </div>
         </div>
 

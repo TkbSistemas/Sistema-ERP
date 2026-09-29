@@ -114,7 +114,7 @@ $buildTabQuery = function (string $tab): string {
                     <td><?= htmlspecialchars($s['nombre_solicitante']) ?></td>
                     <td><?= htmlspecialchars($s['nombre_proyecto'] ?? 'Sin Proyecto') ?></td>
                     <td><?= htmlspecialchars($s['fecha_solicitud']) ?></td>
-                    <td><?= nl2br(htmlspecialchars((string) ($s['materiales_resumen'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></td>
+                    <td><?= strip_tags((string) ($s['materiales_resumen'] ?? ''), '<br>') ?></td>
                     <td>
                         <a class="btn-table" title="Ver" href="ver_solicitud_material?id=<?= $s['id'] ?>"><i class="fa fa-eye"></i></a>
                         <?php if ($s['estatus'] === 'Pendiente'): ?>

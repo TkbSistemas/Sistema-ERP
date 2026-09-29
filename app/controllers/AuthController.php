@@ -70,7 +70,8 @@ class AuthController
             'Compras'       => 'dashboard_compras',
             'Licitaciones'  => 'dashboard_licitaciones',
             'Empleado'      => 'dashboard_empleado',
-            'Inventario'    => 'dashboard_inventario'
+            'Inventario'    => 'dashboard_inventario',
+            'Proyectos'     => 'proyectos'
         ];
 
         if ($rol && isset($roleDashboards[$rol])) {

@@ -10,6 +10,7 @@ $productos = is_array($productos ?? null) ? array_values(array_filter(
 )) : [];
 $proyectos = is_array($proyectos ?? null) ? $proyectos : [];
 $proveedores = is_array($proveedores ?? null) ? $proveedores : [];
+$almacenes = is_array($almacenes ?? null) ? $almacenes : [];
 $error = $error ?? '';
 $msg = $msg ?? '';
 
@@ -118,6 +119,19 @@ $formStyleVersion = is_file($formStylePath) ? (string) filemtime($formStylePath)
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+
+                            <div class="form-field">
+                                <label for="almacen_id">Almacén Destino *</label>
+                                <select id="almacen_id" name="almacen_id" required>
+                                    <option value="">Selecciona un Almacén...</option>
+                                    <?php foreach ($almacenes as $almacen): ?>
+                                        <option value="<?= (int) ($almacen['id'] ?? 0) ?>"
+                                            <?= (string) ($_POST['almacen_id'] ?? '') === (string) ($almacen['id'] ?? '') ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars((string) ($almacen['nombre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
 
                         <div id="modo_catalogo">
@@ -222,6 +236,7 @@ $formStyleVersion = is_file($formStylePath) ? (string) filemtime($formStylePath)
                         <div class="summary-item"><span class="label">Partidas</span><span class="value" id="summary-total">0</span></div>
                         <div class="summary-item"><span class="label">Total Estimado</span><span class="value" id="summary-importe">$0.00</span></div>
                         <div class="summary-item"><span class="label">Proveedor General</span><span class="value" id="summary-proveedor">Sin Seleccionar</span></div>
+                        <div class="summary-item"><span class="label">Almacén Destino</span><span class="value" id="summary-almacen">Sin Seleccionar</span></div>
                         <div class="summary-item"><span class="label">Fecha Requerida</span><span class="value" id="summary-fecha">Sin Seleccionar</span></div>
                     </div>
                 </aside>
@@ -239,6 +254,7 @@ $formStyleVersion = is_file($formStylePath) ? (string) filemtime($formStylePath)
     const cantidadInput = document.getElementById('cantidad');
     const precioUnitarioInput = document.getElementById('precio_unitario');
     const proveedorSelect = document.getElementById('proveedor_id');
+    const almacenSelect = document.getElementById('almacen_id');
     const fechaCompra = document.getElementById('fecha_compra');
     const filtroTexto = document.getElementById('filtro_texto');
     const filtroTipo = document.getElementById('filtro_tipo');
@@ -356,6 +372,8 @@ $formStyleVersion = is_file($formStylePath) ? (string) filemtime($formStylePath)
         document.getElementById('summary-importe').textContent = textoMoneda(importe);
         document.getElementById('summary-proveedor').textContent = proveedorSelect.selectedOptions[0]?.value
             ? proveedorSelect.selectedOptions[0].textContent.trim() : 'Sin Seleccionar';
+        document.getElementById('summary-almacen').textContent = almacenSelect.selectedOptions[0]?.value
+            ? almacenSelect.selectedOptions[0].textContent.trim() : 'Sin Seleccionar';
         document.getElementById('summary-fecha').textContent = textoFecha(fechaCompra.value);
     }
 
@@ -440,6 +458,7 @@ $formStyleVersion = is_file($formStylePath) ? (string) filemtime($formStylePath)
     filtroTipo.addEventListener('change', aplicarFiltros);
     filtroCategoria.addEventListener('change', aplicarFiltros);
     proveedorSelect.addEventListener('change', actualizarResumen);
+    almacenSelect.addEventListener('change', actualizarResumen);
     fechaCompra.addEventListener('input', actualizarResumen);
     fechaCompra.addEventListener('change', actualizarResumen);
     productoSelect.addEventListener('change', () => {

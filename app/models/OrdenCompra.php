@@ -12,6 +12,8 @@ class OrdenCompra{
                     oc.estatus,
                     oc.fecha_compra,
                     oc.metodo_entrega,
+                    oc.id_almacen,
+                    a.nombre AS almacen_nombre,
                     oc.created_by,
                     u.nombre AS creado_por,
                     cp.id AS proveedor_id,
@@ -38,6 +40,7 @@ class OrdenCompra{
                 FROM ordenes_compra oc
                 LEFT JOIN catalogo_proveedores cp ON oc.proveedor_id = cp.id
                 LEFT JOIN proyectos p ON oc.proyecto_id = p.id
+                LEFT JOIN almacenes a ON a.id = oc.id_almacen
                 LEFT JOIN usuarios u ON oc.created_by = u.id
                 LEFT JOIN ordenes_compra_detalles ocd ON oc.id = ocd.orden_compra_id
                 LEFT JOIN inventario i ON ocd.producto_id = i.id
@@ -57,6 +60,10 @@ class OrdenCompra{
                     'estatus' => (string) ($fila['estatus'] ?? 'Pendiente'),
                     'fecha_compra' => $fila['fecha_compra'],
                     'metodo_entrega' => $fila['metodo_entrega'] ?: 'Por Confirmar',
+                    'almacen' => [
+                        'id' => $fila['id_almacen'] !== null ? (int) $fila['id_almacen'] : null,
+                        'nombre' => $fila['almacen_nombre'] ?: 'Sin Almacén',
+                    ],
                     'created_by' => $fila['created_by'],
                     'creado_por' => $fila['creado_por'] ?: 'Sin Registro',
                     'proveedor' => [
@@ -73,6 +80,7 @@ class OrdenCompra{
                     'detalles' => [],
                     'materiales_resumen' => '',
                     'total_estimado' => 0.0,
+                    'total_confirmado' => 0.0,
                 ];
             }
             if ($fila['detalle_id'] !== null) {
@@ -83,6 +91,13 @@ class OrdenCompra{
                 if ($nombreProducto === '') {
                     $nombreProducto = 'Producto #' . (int) $fila['producto_id'];
                 }
+
+                $cantidadConfirmada = $fila['cantidad_confirmada'] !== null
+                    ? (float) $fila['cantidad_confirmada']
+                    : 0.0;
+                $precioConfirmado = $fila['precio_confirmado'] !== null
+                    ? (float) $fila['precio_confirmado']
+                    : 0.0;
 
                 $ordenesAgrupadas[$idOrden]['detalles'][] = [
                     'id' => (int) $fila['detalle_id'],
@@ -99,9 +114,11 @@ class OrdenCompra{
                     'precio_unitario' => $precio,
                     'importe_estimado' => round($cantidad * $precio, 2),
                     'cantidad_confirmada' => $fila['cantidad_confirmada'],
-                    'precio_confirmado' => $fila['precio_confirmado']
+                    'precio_confirmado' => $fila['precio_confirmado'],
+                    'importe_confirmado' => round($cantidadConfirmada * $precioConfirmado, 2),
                 ];
                 $ordenesAgrupadas[$idOrden]['total_estimado'] += $cantidad * $precio;
+                $ordenesAgrupadas[$idOrden]['total_confirmado'] += $cantidadConfirmada * $precioConfirmado;
             }
         }
 
@@ -114,6 +131,10 @@ class OrdenCompra{
             }
             $orden['materiales_resumen'] = implode("\n", $resumen);
             $orden['total_estimado'] = round((float) $orden['total_estimado'], 2);
+            $orden['total_confirmado'] = round((float) $orden['total_confirmado'], 2);
+            $orden['total_mostrado'] = in_array($orden['estatus'], ['Completa', 'Parcial', 'Recibida', 'Incompleta'], true)
+                ? $orden['total_confirmado']
+                : $orden['total_estimado'];
         }
         unset($orden);
 
@@ -151,8 +172,8 @@ class OrdenCompra{
         try {
             $stmtOrden = $db->prepare(
                 "INSERT INTO ordenes_compra
-                    (folio, estatus, proyecto_id, proveedor_id, fecha_compra, metodo_entrega, created_by)
-                 VALUES (NULL, 'Pendiente', ?, ?, ?, ?, ?)"
+                    (folio, estatus, proyecto_id, proveedor_id, fecha_compra, metodo_entrega, id_almacen, created_by)
+                 VALUES (NULL, 'Pendiente', ?, ?, ?, ?, ?, ?)"
             );
             $stmtOrden->execute([
                 isset($cabecera['proyecto_id']) && (int) $cabecera['proyecto_id'] > 0
@@ -161,6 +182,7 @@ class OrdenCompra{
                 (int) $cabecera['proveedor_id'],
                 $cabecera['fecha_compra'],
                 $cabecera['metodo_entrega'],
+                (int) $cabecera['almacen_id'],
                 (int) $cabecera['created_by'],
             ]);
 
@@ -198,10 +220,65 @@ class OrdenCompra{
         }
     }
 
-    public static function confirmarCompra(int $ordenId, array $detalles): string
+    public static function aprobar(int $ordenId): array
+    {
+        if ($ordenId <= 0) {
+            throw new InvalidArgumentException('La Orden de Compra no es Válida.');
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $gestionaTransaccion = !$db->inTransaction();
+        if ($gestionaTransaccion) {
+            $db->beginTransaction();
+        }
+
+        try {
+            $stmt = $db->prepare('SELECT id, folio, estatus FROM ordenes_compra WHERE id = ? FOR UPDATE');
+            $stmt->execute([$ordenId]);
+            $orden = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$orden) {
+                throw new RuntimeException('La Orden de Compra no Existe.');
+            }
+            if ((string) $orden['estatus'] !== 'Pendiente') {
+                throw new RuntimeException('Solo las Órdenes Pendientes Pueden Aprobarse.');
+            }
+
+            $actualizar = $db->prepare("UPDATE ordenes_compra SET estatus = 'Aprobada' WHERE id = ?");
+            $actualizar->execute([$ordenId]);
+
+            if ($gestionaTransaccion) {
+                $db->commit();
+            }
+
+            return [
+                'id' => (int) $orden['id'],
+                'folio' => (string) ($orden['folio'] ?? ''),
+                'estatus' => 'Aprobada',
+            ];
+        } catch (Throwable $e) {
+            if ($gestionaTransaccion && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public static function confirmarCompra(
+        int $ordenId,
+        array $detalles,
+        string $metodoEntrega,
+        int $almacenId
+    ): string
     {
         if ($ordenId <= 0 || $detalles === []) {
             throw new InvalidArgumentException('La Orden y sus Materiales son Obligatorios.');
+        }
+        if (!in_array($metodoEntrega, ['Reparto', 'Recolección', 'Por Confirmar'], true)) {
+            throw new InvalidArgumentException('La Forma de Entrega no es Válida.');
+        }
+        if ($almacenId <= 0) {
+            throw new InvalidArgumentException('El Almacén Destino es Obligatorio.');
         }
 
         $db = Database::getInstance()->getConnection();
@@ -253,8 +330,10 @@ class OrdenCompra{
             $stmtEstado->execute([$ordenId]);
             $estatus = (int) $stmtEstado->fetchColumn() === 0 ? 'Completa' : 'Parcial';
 
-            $actualizarOrden = $db->prepare('UPDATE ordenes_compra SET estatus = ? WHERE id = ?');
-            $actualizarOrden->execute([$estatus, $ordenId]);
+            $actualizarOrden = $db->prepare(
+                'UPDATE ordenes_compra SET estatus = ?, metodo_entrega = ?, id_almacen = ? WHERE id = ?'
+            );
+            $actualizarOrden->execute([$estatus, $metodoEntrega, $almacenId, $ordenId]);
 
             if ($gestionaTransaccion) {
                 $db->commit();

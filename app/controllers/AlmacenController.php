@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Prestamo.php';
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../models/MovimientoInventario.php';
 require_once __DIR__ . '/../models/SolicitudMaterial.php';
+require_once __DIR__ . '/../models/RecepcionAlmacen.php';
 require_once __DIR__ . '/../helpers/ActivityLogger.php';
 
 class AlmacenController
@@ -413,12 +414,137 @@ class AlmacenController
         include __DIR__ . '/../views/almacen/entrada_rapida.php';
     }
     
-    public function viewRegistrarEntrada(){
-        $productos = Producto::All();
-        $almacenes = Almacen::all();
+    public function viewRegistrarEntrada(): void
+    {
         Session::requireLogin(['Administrador', 'Almacen']);
-        
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $referencia = trim((string) ($_POST['referencia'] ?? ''));
+                $folio = RecepcionAlmacen::folioDesdeReferencia($referencia);
+                $orden = RecepcionAlmacen::buscarOrdenPorFolio($folio);
+                if ($orden === null) {
+                    throw new RuntimeException(
+                        'La Referencia no Corresponde a una Orden Disponible para Recepción (Parcial, Completa o Incompleta).'
+                    );
+                }
+                if ((int) ($orden['id_almacen'] ?? 0) <= 0) {
+                    throw new RuntimeException('La Orden no Tiene un Almacén Destino Asignado.');
+                }
+                if (!empty($orden['recepcion_completa'])) {
+                    throw new RuntimeException('La Orden ya fue Recibida por Completo.');
+                }
+
+                header('Location: ' . Session::url('procesar_entrada') . '?id=' . (int) $orden['id']);
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'Orden no Disponible',
+                    'mensaje' => $e->getMessage(),
+                ];
+                header('Location: ' . Session::url('registrar_entrada'));
+                exit;
+            } catch (Throwable $e) {
+                error_log('Error al buscar orden para recepción: ' . $e->getMessage());
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'No Fue Posible Consultar la Orden',
+                    'mensaje' => 'Ocurrió un Error al Consultar la Referencia. Intenta Nuevamente.',
+                ];
+                header('Location: ' . Session::url('registrar_entrada'));
+                exit;
+            }
+        }
+
+        $recepcionesRecientes = RecepcionAlmacen::ultimas();
         include __DIR__ . '/../views/almacen/registrar_entrada.php';
+    }
+
+    public function procesarEntrada(): void
+    {
+        Session::requireLogin(['Administrador', 'Almacen']);
+
+        $ordenId = (int) ($_POST['orden_id'] ?? $_GET['id'] ?? 0);
+        $orden = RecepcionAlmacen::buscarOrdenPorId($ordenId);
+        if ($orden === null || !empty($orden['recepcion_completa'])) {
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'Orden no Disponible',
+                'mensaje' => $orden === null
+                    ? 'La Orden no Existe o no Está Disponible para Recepción (Parcial, Completa o Incompleta).'
+                    : 'La Orden ya fue Recibida por Completo.',
+            ];
+            header('Location: ' . Session::url('registrar_entrada'));
+            exit;
+        }
+
+        if ((int) ($orden['id_almacen'] ?? 0) <= 0) {
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'Almacén no Asignado',
+                'mensaje' => 'La Orden no Tiene un Almacén Destino Asignado.',
+            ];
+            header('Location: ' . Session::url('registrar_entrada'));
+            exit;
+        }
+
+        $error = '';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+                $cantidades = $_POST['cantidades'] ?? null;
+                if (!is_array($cantidades)) {
+                    throw new InvalidArgumentException('No se Recibieron las Cantidades de la Orden.');
+                }
+
+                $resultado = RecepcionAlmacen::registrar(
+                    $ordenId,
+                    (int) ($_SESSION['user_id'] ?? 0),
+                    $cantidades
+                );
+                ActivityLogger::registrarAlta(
+                    'almacen',
+                    'recepcion_almacen',
+                    $resultado['id'],
+                    'Recepción de Orden de Compra Registrada',
+                    [
+                        'folio' => $resultado['folio'],
+                        'orden_folio' => $resultado['orden_folio'],
+                        'estatus' => $resultado['estatus'],
+                        'estatus_orden' => $resultado['estatus_orden'],
+                        'almacen_id' => $resultado['almacen_id'],
+                        'partidas' => $resultado['partidas'],
+                        'cantidad_total' => $resultado['cantidad_total'],
+                    ]
+                );
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Recepción Registrada',
+                    'mensaje' => 'La Recepción ' . $resultado['folio']
+                        . ' quedó con Estatus ' . $resultado['estatus']
+                        . '. La Orden quedó ' . $resultado['estatus_orden'] . ' y el Stock fue Actualizado.',
+                ];
+                header('Location: ' . Session::url('registrar_entrada'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+                $orden = RecepcionAlmacen::buscarOrdenPorId($ordenId) ?? $orden;
+            } catch (Throwable $e) {
+                error_log('Error al registrar recepción de compra: ' . $e->getMessage());
+                $error = 'No Fue Posible Registrar la Recepción. Revisa los Datos e Intenta Nuevamente.';
+                $orden = RecepcionAlmacen::buscarOrdenPorId($ordenId) ?? $orden;
+            }
+        }
+
+        include __DIR__ . '/../views/almacen/procesar_entrada.php';
     }
 
     public function registrarEntradaRapida(){
@@ -843,10 +969,16 @@ class AlmacenController
         $productosAlmacen        = (int) $db->query('SELECT COUNT(*) FROM inventario')->fetchColumn();
         $solicitudesPorGestionar = (int) $db->query("SELECT COUNT(*) FROM solicitudes_material WHERE estatus IN ('Pendiente','Aprobada')")->fetchColumn();
         $stmtOrdenesEntrega = $db->query(
-            "SELECT oc.folio, oc.estatus, oc.metodo_entrega, cp.nombre AS proveedor_nombre
+            "SELECT
+                oc.folio,
+                oc.metodo_entrega,
+                cp.nombre AS proveedor_nombre,
+                COUNT(ocd.id) AS total_partidas
              FROM ordenes_compra oc
              LEFT JOIN catalogo_proveedores cp ON cp.id = oc.proveedor_id
-             WHERE oc.estatus IN ('Aprobada', 'Parcial')
+             LEFT JOIN ordenes_compra_detalles ocd ON ocd.orden_compra_id = oc.id
+             WHERE oc.estatus IN ('Parcial', 'Completa', 'Incompleta')
+             GROUP BY oc.id, oc.folio, oc.metodo_entrega, cp.nombre, oc.fecha_compra
              ORDER BY oc.fecha_compra DESC, oc.id DESC"
         );
         $ordenesEnEntrega = $stmtOrdenesEntrega->fetchAll(\PDO::FETCH_ASSOC);

@@ -29,6 +29,11 @@ switch ($route) {
        require_once __DIR__ . '/../app/controllers/AuthController.php';
         (new AuthController())->enConstruccion();
         break;    
+    case 'forgot':
+    case 'forgot.php':
+        require_once __DIR__ . '/../app/controllers/AuthController.php';
+        (new AuthController())->enConstruccion();
+        break;
     // ================================= Rutas para el Administrador =======================================================
     case 'dashboard_admin':
         require_once __DIR__ . '/../app/controllers/DashboardController.php';
@@ -37,6 +42,10 @@ switch ($route) {
     case 'menu_admin':
         require_once __DIR__ . '/../app/controllers/AdminController.php';
         (new AdminController())->obtenerMenuAdmin();
+        break;
+    case 'proyectos':
+        require_once __DIR__ . '/../app/controllers/AuthController.php';
+        (new AuthController())->enConstruccion();
         break;
     //================================== Rutas para el Inventario =======================================================
     case 'dashboard_inventario':
@@ -132,6 +141,10 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->viewRegistrarEntrada();
         break;
+    case 'procesar_entrada':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->procesarEntrada();
+        break;
     case 'entrada_rapida':
         require_once __DIR__ . '/../app/controllers/AlmacenController.php';
         (new AlmacenController())->viewRegistrarEntradaRapida();
@@ -189,6 +202,15 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->obtenerOrdenesCompra();
         break;
+    case 'facturas_compra':
+    case 'facturas_compras':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->facturasCompras();
+        break;
+    case 'factura_historica':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->facturaHistorica();
+        break;
     case 'orden_nueva':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->crearOrdenCompra();
@@ -196,6 +218,10 @@ switch ($route) {
     case 'ver_orden_compra':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->verOrdenCompra((int) ($_GET['id'] ?? 0));
+        break;
+    case 'aprobar_orden_compra':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->aprobarOrdenCompra();
         break;
     case 'procesar_compra':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';

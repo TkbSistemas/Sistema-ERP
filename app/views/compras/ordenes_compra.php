@@ -95,11 +95,11 @@ $fechaLegible = static function (?string $fecha): string {
                     </div>
                     <div class="dashboard-card waiting">
                         <div class="card-info">
-                            <div class="card-label">Órdenes en Entrega</div>
-                            <div class="card-value"><?= number_format((int) ($datos['numOrdenesEnEntrega'] ?? 0)) ?></div>
+                            <div class="card-label">Órdenes por Procesar</div>
+                            <div class="card-value"><?= number_format((int) ($datos['numOrdenesPorProcesar'] ?? 0)) ?></div>
                             <div class="card-sub">Aprobadas o Parciales</div>
                         </div>
-                        <div class="card-icon-container"><span class="mdi mdi-truck-delivery-outline"></span></div>
+                        <div class="card-icon-container"><span class="mdi mdi-progress-clock"></span></div>
                     </div>
                     <div class="dashboard-card">
                         <div class="card-info">
@@ -113,7 +113,7 @@ $fechaLegible = static function (?string $fecha): string {
 
                 <nav class="prestamos-tabs" aria-label="Secciones de Órdenes de Compra">
                     <a href="<?= htmlspecialchars($buildQuery('pendientes'), ENT_QUOTES, 'UTF-8') ?>"
-                       class="prestamos-tab <?= $tabActiva === 'pendientes' ? 'active' : '' ?>">Pendientes</a>
+                       class="prestamos-tab <?= $tabActiva === 'pendientes' ? 'active' : '' ?>">Por Gestionar</a>
                     <a href="<?= htmlspecialchars($buildQuery('historial'), ENT_QUOTES, 'UTF-8') ?>"
                        class="prestamos-tab <?= $tabActiva === 'historial' ? 'active' : '' ?>">Historial</a>
                 </nav>
@@ -127,15 +127,15 @@ $fechaLegible = static function (?string $fecha): string {
                                 <th>Proyecto</th>
                                 <th>Proveedor</th>
                                 <th>Fecha Requerida</th>
-                                <th>Total Estimado</th>
+                                <th>Total</th>
                                 <th class="col-actions">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php if ($ordenesCompra === []): ?>
                             <tr>
-                                <td colspan="8" class="table-empty">
-                                    <?= $tabActiva === 'pendientes' ? 'No Hay Órdenes Pendientes.' : 'No Hay Órdenes de Compra Registradas.' ?>
+                                <td colspan="7" class="table-empty">
+                                    <?= $tabActiva === 'pendientes' ? 'No Hay Órdenes por Gestionar.' : 'No Hay Órdenes de Compra Registradas.' ?>
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -154,16 +154,22 @@ $fechaLegible = static function (?string $fecha): string {
                                         <?= htmlspecialchars((string) ($orden['proveedor']['nombre'] ?? 'Sin Proveedor'), ENT_QUOTES, 'UTF-8') ?>
                                     </td>
                                     <td><?= htmlspecialchars($fechaLegible($orden['fecha_compra'] ?? null), ENT_QUOTES, 'UTF-8') ?></td>
-                                    <td class="orden-total-estimado">$<?= number_format((float) ($orden['total_estimado'] ?? 0), 2) ?></td>
+                                    <td class="orden-total-estimado">
+                                        $<?= number_format((float) ($orden['total_mostrado'] ?? $orden['total_estimado'] ?? 0), 2) ?>
+                                    </td>
                                     <td class="col-actions">
-                                        <a class="btn-table"
-                                           href="<?= htmlspecialchars(Session::url('ver_orden_compra') . '?id=' . (int) $orden['id'], ENT_QUOTES, 'UTF-8') ?>"
-                                           target="_blank"
-                                           rel="noopener"
-                                           title="Ver e Imprimir Orden"
-                                           aria-label="Ver e Imprimir la Orden <?= htmlspecialchars((string) ($orden['folio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </a>
+                                        <?php if (($orden['estatus'] ?? '') === 'Pendiente'): ?>
+                                            <form class="approve-order-form"
+                                                  method="post"
+                                                  action="<?= htmlspecialchars(Session::url('aprobar_orden_compra'), ENT_QUOTES, 'UTF-8') ?>"
+                                                  data-folio="<?= htmlspecialchars((string) ($orden['folio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="csrf" value="<?= htmlspecialchars(Session::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="orden_id" value="<?= (int) $orden['id'] ?>">
+                                                <button type="submit" class="btn-table" title="Aprobar Orden" aria-label="Aprobar la Orden <?= htmlspecialchars((string) ($orden['folio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <i class="fa-solid fa-circle-check"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                         <?php if (in_array($orden['estatus'], ['Aprobada', 'Parcial'], true)): ?>
                                             <a class="btn-table"
                                                href="<?= htmlspecialchars(Session::url('procesar_compra') . '?id=' . (int) $orden['id'], ENT_QUOTES, 'UTF-8') ?>"
@@ -172,6 +178,14 @@ $fechaLegible = static function (?string $fecha): string {
                                                  <i class="fa-solid fa-boxes-stacked"></i>
                                             </a>
                                         <?php endif; ?>
+                                        <a class="btn-table"
+                                           href="<?= htmlspecialchars(Session::url('ver_orden_compra') . '?id=' . (int) $orden['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                           target="_blank"
+                                           rel="noopener"
+                                           title="Ver e Imprimir Orden"
+                                           aria-label="Ver e Imprimir la Orden <?= htmlspecialchars((string) ($orden['folio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
                                         <a class="btn-table"
                                            target="_blank"
                                            rel="noopener"
@@ -213,5 +227,29 @@ $fechaLegible = static function (?string $fecha): string {
 </div>
 
 <?php include __DIR__ . '/../layouts/scripts.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.approve-order-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const folio = form.dataset.folio || 'seleccionada';
+            const result = await Swal.fire({
+                icon: 'question',
+                title: '¿Aprobar la Orden?',
+                text: `La Orden ${folio} Quedará Disponible para su Procesamiento.`,
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, Aprobar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                HTMLFormElement.prototype.submit.call(form);
+            }
+        });
+    });
+});
+</script>
 </body>
 </html>

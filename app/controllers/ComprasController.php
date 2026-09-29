@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/Almacen.php';
 require_once __DIR__ . '/../models/Proyecto.php';
 require_once __DIR__ . '/../models/Proveedor.php';
 require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../models/FacturaCompra.php';
 
 class ComprasController{
 
@@ -16,25 +17,42 @@ class ComprasController{
 
         $role   = $_SESSION['role'] ?? '';
         $nombre = $_SESSION['nombre'] ?? '';
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
-
        $_SESSION['menu_items'] = [
             ['slug' => 'construccion', 'label' => 'Cotizaciones', 'icon' => 'fa-solid fa-file-contract', 'role' => 'Todos'],
             ['slug' => 'ordenes_compra', 'label' => 'Órdenes de Compra', 'icon' => 'fa-solid fa-list-check', 'role' => 'Todos'],
-            ['slug' => 'construccion', 'label' => 'Facturas de Compra', 'icon' => 'fa-solid fa-file-invoice-dollar', 'role' => 'Todos'],
+            ['slug' => 'facturas_compras', 'label' => 'Facturas de Compra', 'icon' => 'fa-solid fa-file-invoice-dollar', 'role' => 'Todos'],
             ['slug' => 'catalogo_productos', 'label' => 'Catálogo de Productos', 'icon' => 'fa-solid fa-clipboard-list', 'role' => 'Todos'],
             ['slug' => 'proveedores', 'label' => 'Catálogo de Proveedores', 'icon' => 'fa-solid fa-building-user', 'role' => 'Todos'],
             ['slug' => 'configuracion_compras', 'label' => 'Configuración', 'icon' => 'fa-solid fa-gear', 'role' => 'Todos'],
             ['slug' => 'logout', 'label' => 'Cerrar Sesión', 'icon' => 'fa-solid fa-arrow-right-from-bracket', 'role' => 'Todos']
         ];
 
-        $db = Database::getInstance()->getConnection();
+        $ordenes = OrdenCompra::all();
+        $ordenesFacturables = FacturaCompra::ordenesElegibles();
+
+        $ordenesPendientes = array_values(array_filter(
+            $ordenes,
+            static fn(array $orden): bool => ($orden['estatus'] ?? '') === 'Pendiente'
+        ));
+        $ordenesPorProcesar = array_values(array_filter(
+            $ordenes,
+            static fn(array $orden): bool => in_array(($orden['estatus'] ?? ''), ['Aprobada', 'Parcial'], true)
+        ));
+        $ordenesSinFactura = array_values(array_filter(
+            $ordenesFacturables,
+            static fn(array $orden): bool => empty($orden['factura_id'])
+        ));
+
+        $ultimasOrdenes = array_slice($ordenes, 0, 6);
 
         $datos = [
             'nombre'      => $nombre,
             'role'        => $role,
             'last_update' => date('d/m/Y, h:i:s a'),
-            'alertas'     => [],
+            'ordenes_pendientes' => count($ordenesPendientes),
+            'ordenes_por_procesar' => count($ordenesPorProcesar),
+            'ordenes_sin_factura' => count($ordenesSinFactura),
+            'ultimas_ordenes' => $ultimasOrdenes,
         ];
 
 
@@ -102,7 +120,15 @@ class ComprasController{
             $todasLasOrdenes,
             static fn(array $orden): bool => ($orden['estatus'] ?? '') === 'Pendiente'
         ));
-        $ordenesEnEntrega = array_values(array_filter(
+        $ordenesPorGestionar = array_values(array_filter(
+            $todasLasOrdenes,
+            static fn(array $orden): bool => in_array(
+                ($orden['estatus'] ?? ''),
+                ['Pendiente', 'Aprobada', 'Parcial'],
+                true
+            )
+        ));
+        $ordenesPorProcesar = array_values(array_filter(
             $todasLasOrdenes,
             static fn(array $orden): bool => in_array(($orden['estatus'] ?? ''), ['Aprobada', 'Parcial'], true)
         ));
@@ -112,7 +138,7 @@ class ComprasController{
             static fn(array $orden): bool => str_starts_with((string) ($orden['fecha_compra'] ?? ''), $mesActual)
         ));
 
-        $ordenesTab = $tabActiva === 'pendientes' ? $ordenesPendientes : $todasLasOrdenes;
+        $ordenesTab = $tabActiva === 'pendientes' ? $ordenesPorGestionar : $todasLasOrdenes;
         $totalRegistros = count($ordenesTab);
         $totalPaginas = max(1, (int) ceil($totalRegistros / $porPagina));
         $pagina = min($pagina, $totalPaginas);
@@ -133,11 +159,246 @@ class ComprasController{
             'role' => $role,
             'last_update' => date('d/m/Y, h:i:s a'),
             'numOrdenesPendientes' => count($ordenesPendientes),
-            'numOrdenesEnEntrega' => count($ordenesEnEntrega),
+            'numOrdenesPorProcesar' => count($ordenesPorProcesar),
             'numOrdenesEsteMes' => count($ordenesEsteMes),
         ];
 
         include __DIR__ . '/../views/compras/ordenes_compra.php';
+    }
+
+    public function facturasCompras(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $ordenId = (int) ($_POST['orden_id'] ?? 0);
+                $proyectoId = (int) ($_POST['proyecto_id'] ?? 0);
+                $folioFiscal = strtoupper(trim((string) ($_POST['folio_fiscal'] ?? '')));
+                $monto = filter_var($_POST['monto_total'] ?? null, FILTER_VALIDATE_FLOAT);
+                $fechaEmision = trim((string) ($_POST['fecha_emision'] ?? ''));
+
+                if ($ordenId <= 0) {
+                    throw new InvalidArgumentException('Selecciona una Orden de Compra Válida.');
+                }
+                if ($proyectoId <= 0) {
+                    throw new InvalidArgumentException('Selecciona el Proyecto al que se Asignará la Compra.');
+                }
+                if ($folioFiscal === '' || mb_strlen($folioFiscal) > 100) {
+                    throw new InvalidArgumentException('Captura un Folio Fiscal Válido de Hasta 100 Caracteres.');
+                }
+                if ($monto === false || $monto <= 0 || $monto > 999999999999.99) {
+                    throw new InvalidArgumentException('El Monto Total de la Factura Debe ser Mayor a Cero.');
+                }
+                $fechaValida = DateTimeImmutable::createFromFormat('!Y-m-d', $fechaEmision);
+                if (!$fechaValida || $fechaValida->format('Y-m-d') !== $fechaEmision) {
+                    throw new InvalidArgumentException('Selecciona una Fecha de Emisión Válida.');
+                }
+                if ($fechaValida > new DateTimeImmutable('today')) {
+                    throw new InvalidArgumentException('La Fecha de Emisión no Puede ser Posterior al Día de Hoy.');
+                }
+
+                $resultado = FacturaCompra::guardarParaOrden(
+                    $ordenId,
+                    $proyectoId,
+                    $folioFiscal,
+                    round((float) $monto, 2),
+                    $fechaEmision
+                );
+
+                $descripcion = $resultado['es_nueva'] ? 'Factura de Compra Registrada' : 'Factura de Compra Actualizada';
+                if ($resultado['es_nueva']) {
+                    ActivityLogger::registrarAlta('compras', 'factura_compra', $resultado['id'], $descripcion, [
+                        'orden_id' => $ordenId,
+                        'folio_orden' => $resultado['folio_orden'],
+                        'folio_fiscal' => $folioFiscal,
+                        'proyecto_id' => $proyectoId,
+                    ]);
+                } else {
+                    ActivityLogger::registrarActualizacion('compras', 'factura_compra', $resultado['id'], $descripcion, [
+                        'orden_id' => $ordenId,
+                        'folio_orden' => $resultado['folio_orden'],
+                        'folio_fiscal' => $folioFiscal,
+                        'proyecto_id' => $proyectoId,
+                    ]);
+                }
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => $resultado['es_nueva'] ? 'Factura Asignada' : 'Factura Actualizada',
+                    'mensaje' => 'La Factura de la Orden ' . $resultado['folio_orden'] . ' se Guardó Correctamente.',
+                ];
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $_SESSION['alerta'] = [
+                    'tipo' => 'warning',
+                    'titulo' => 'No Fue Posible Guardar la Factura',
+                    'mensaje' => $e->getMessage(),
+                ];
+            } catch (Throwable $e) {
+                error_log('Error al guardar factura de compra: ' . $e->getMessage());
+                $_SESSION['alerta'] = [
+                    'tipo' => 'error',
+                    'titulo' => 'No Fue Posible Guardar la Factura',
+                    'mensaje' => 'Ocurrió un Error al Procesar la Información. Intenta Nuevamente.',
+                ];
+            }
+
+            header('Location: ' . Session::url('facturas_compras'));
+            exit;
+        }
+
+        $nombre = $_SESSION['nombre'] ?? '';
+        $role = $_SESSION['role'] ?? '';
+        $ordenesFacturables = FacturaCompra::ordenesElegibles();
+        $proyectos = Proyecto::all();
+
+        include __DIR__ . '/../views/compras/facturas_compra.php';
+    }
+
+    public function facturaHistorica(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        $nombre = $_SESSION['nombre'] ?? '';
+        $role = $_SESSION['role'] ?? '';
+        $productos = array_values(array_filter(
+            Producto::all(),
+            static fn(array $producto): bool => !array_key_exists('activo', $producto)
+                || (int) $producto['activo'] === 1
+        ));
+        $proyectos = Proyecto::all();
+        $proveedores = Proveedor::all();
+        $almacenes = $this->almacenesActivos();
+        $error = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                    throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+                }
+
+                $responsableId = (int) ($_SESSION['user_id'] ?? 0);
+                if ($responsableId <= 0) {
+                    throw new RuntimeException('No Fue Posible Identificar al Usuario Responsable.');
+                }
+
+                $proveedorId = $this->validarProveedorActivo((int) ($_POST['proveedor_id'] ?? 0));
+                $almacenId = $this->validarAlmacenActivo((int) ($_POST['almacen_id'] ?? 0), $almacenes);
+                $proyectoId = (int) ($_POST['proyecto_id'] ?? 0);
+                $proyectosValidos = array_column($proyectos, null, 'id');
+                if ($proyectoId <= 0 || !isset($proyectosValidos[$proyectoId])) {
+                    throw new InvalidArgumentException('Selecciona un Proyecto Válido.');
+                }
+
+                $folioFiscal = strtoupper(trim((string) ($_POST['folio_fiscal'] ?? '')));
+                if ($folioFiscal === '' || mb_strlen($folioFiscal) > 100) {
+                    throw new InvalidArgumentException('Captura un Folio Fiscal Válido de Hasta 100 Caracteres.');
+                }
+
+                $fechaEmision = trim((string) ($_POST['fecha_emision'] ?? ''));
+                $fechaValida = DateTimeImmutable::createFromFormat('!Y-m-d', $fechaEmision);
+                if (!$fechaValida || $fechaValida->format('Y-m-d') !== $fechaEmision) {
+                    throw new InvalidArgumentException('Selecciona una Fecha de Emisión Válida.');
+                }
+                if ($fechaValida > new DateTimeImmutable('today')) {
+                    throw new InvalidArgumentException('La Fecha de Emisión no Puede ser Posterior al Día de Hoy.');
+                }
+
+                $materialesEntrada = json_decode((string) ($_POST['materiales'] ?? ''), true);
+                if (!is_array($materialesEntrada) || $materialesEntrada === []) {
+                    throw new InvalidArgumentException('Agrega al Menos un Material a la Factura.');
+                }
+                if (count($materialesEntrada) > 200) {
+                    throw new InvalidArgumentException('La Factura no Puede Contener más de 200 Partidas.');
+                }
+
+                $productosValidos = [];
+                foreach ($productos as $producto) {
+                    $productosValidos[(int) ($producto['id'] ?? 0)] = $producto;
+                }
+
+                $materiales = [];
+                $productosUsados = [];
+                $montoTotal = 0.0;
+                foreach ($materialesEntrada as $indice => $material) {
+                    $productoId = (int) ($material['producto_id'] ?? 0);
+                    $cantidad = filter_var($material['cantidad'] ?? null, FILTER_VALIDATE_FLOAT);
+                    $precio = filter_var($material['precio_unitario'] ?? null, FILTER_VALIDATE_FLOAT);
+
+                    if ($productoId <= 0 || !isset($productosValidos[$productoId])) {
+                        throw new InvalidArgumentException('El Producto de la Partida ' . ($indice + 1) . ' no es Válido o Está Inactivo.');
+                    }
+                    if (isset($productosUsados[$productoId])) {
+                        throw new InvalidArgumentException('El Producto de la Partida ' . ($indice + 1) . ' ya fue Agregado.');
+                    }
+                    if ($cantidad === false || $cantidad <= 0 || $cantidad > 99999999.99) {
+                        throw new InvalidArgumentException('La Cantidad de la Partida ' . ($indice + 1) . ' Debe ser Mayor a Cero.');
+                    }
+                    if ($precio === false || $precio <= 0 || $precio > 999999999999.99) {
+                        throw new InvalidArgumentException('El Precio Unitario de la Partida ' . ($indice + 1) . ' Debe ser Mayor a Cero.');
+                    }
+
+                    $productosUsados[$productoId] = true;
+                    $materiales[] = [
+                        'producto_id' => $productoId,
+                        'cantidad' => round((float) $cantidad, 2),
+                        'precio_unitario' => round((float) $precio, 2),
+                    ];
+                    $montoTotal += round((float) $cantidad, 2) * round((float) $precio, 2);
+                }
+                if ($montoTotal > 999999999999.99) {
+                    throw new InvalidArgumentException('El Monto Total de la Factura Excede el Límite Permitido.');
+                }
+
+                $resultado = FacturaCompra::registrarHistorica([
+                    'proveedor_id' => $proveedorId,
+                    'proyecto_id' => $proyectoId,
+                    'almacen_id' => $almacenId,
+                    'responsable_id' => $responsableId,
+                    'folio_fiscal' => $folioFiscal,
+                    'fecha_emision' => $fechaEmision,
+                ], $materiales);
+
+                ActivityLogger::registrarAlta(
+                    'compras',
+                    'factura_compra_historica',
+                    $resultado['factura_id'],
+                    'Factura Histórica Registrada con Entrada de Almacén',
+                    [
+                        'folio_fiscal' => $resultado['folio_fiscal'],
+                        'orden_id' => $resultado['orden_id'],
+                        'folio_orden' => $resultado['folio_orden'],
+                        'recepcion_id' => $resultado['recepcion_id'],
+                        'folio_recepcion' => $resultado['folio_recepcion'],
+                        'proveedor_id' => $proveedorId,
+                        'proyecto_id' => $proyectoId,
+                        'almacen_id' => $almacenId,
+                        'partidas' => $resultado['partidas'],
+                        'total' => $resultado['total'],
+                    ]
+                );
+
+                $_SESSION['alerta'] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Factura Histórica Registrada',
+                    'mensaje' => 'La Factura ' . $folioFiscal . ' Generó la Entrada ' . $resultado['folio_recepcion']
+                        . ' y Actualizó el Inventario Correctamente.',
+                ];
+                header('Location: ' . Session::url('facturas_compras'));
+                exit;
+            } catch (InvalidArgumentException | RuntimeException $e) {
+                $error = $e->getMessage();
+            } catch (Throwable $e) {
+                error_log('Error al registrar factura histórica: ' . $e->getMessage());
+                $error = 'No Fue Posible Registrar la Factura Histórica. Revisa los Datos e Intenta Nuevamente.';
+            }
+        }
+
+        include __DIR__ . '/../views/compras/factura_historica.php';
     }
 
     public function verOrdenCompra(int $id): void
@@ -170,6 +431,7 @@ class ComprasController{
         $productos = Producto::All();
         $proyectos = Proyecto::all();
         $proveedores = Proveedor::all();
+        $almacenes = $this->almacenesActivos();
         $error = '';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -198,6 +460,7 @@ class ComprasController{
                 if (!in_array($metodoEntrega, ['Reparto', 'Recolección', 'Por Confirmar'], true)) {
                     throw new InvalidArgumentException('Selecciona un Método de Entrega Válido.');
                 }
+                $almacenId = $this->validarAlmacenActivo((int) ($_POST['almacen_id'] ?? 0), $almacenes);
 
                 $materiales = json_decode((string) ($_POST['material'] ?? ''), true);
                 if (!is_array($materiales) || $materiales === []) {
@@ -240,6 +503,7 @@ class ComprasController{
                     'proveedor_id' => $proveedorId,
                     'fecha_compra' => $fechaCompra,
                     'metodo_entrega' => $metodoEntrega,
+                    'almacen_id' => $almacenId,
                     'created_by' => (int) ($_SESSION['user_id'] ?? 0),
                 ], $detalles);
 
@@ -247,6 +511,7 @@ class ComprasController{
                     'folio' => $resultado['folio'],
                     'proveedor_id' => $proveedorId,
                     'proyecto_id' => $proyectoId,
+                    'almacen_id' => $almacenId,
                     'partidas' => count($detalles),
                 ]);
                 $_SESSION['alerta'] = [
@@ -268,6 +533,62 @@ class ComprasController{
         include __DIR__ . '/../views/compras/crear_orden.php';
     }
 
+    public function aprobarOrdenCompra(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . Session::url('ordenes_compra'));
+            exit;
+        }
+
+        try {
+            if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
+            }
+
+            $ordenId = (int) ($_POST['orden_id'] ?? 0);
+            if ($ordenId <= 0) {
+                throw new InvalidArgumentException('La Orden de Compra no es Válida.');
+            }
+
+            $orden = OrdenCompra::aprobar($ordenId);
+            ActivityLogger::registrarCambioEstado(
+                'compras',
+                'orden_compra',
+                $ordenId,
+                'Aprobada',
+                'Orden de Compra Aprobada',
+                [
+                    'folio' => $orden['folio'] ?? null,
+                    'estatus_anterior' => 'Pendiente',
+                ]
+            );
+
+            $_SESSION['alerta'] = [
+                'tipo' => 'success',
+                'titulo' => 'Orden Aprobada',
+                'mensaje' => 'La Orden ' . ($orden['folio'] ?? '') . ' ya Puede Procesarse.',
+            ];
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            $_SESSION['alerta'] = [
+                'tipo' => 'warning',
+                'titulo' => 'No Fue Posible Aprobar la Orden',
+                'mensaje' => $e->getMessage(),
+            ];
+        } catch (Throwable $e) {
+            error_log('Error al aprobar orden de compra: ' . $e->getMessage());
+            $_SESSION['alerta'] = [
+                'tipo' => 'error',
+                'titulo' => 'No Fue Posible Aprobar la Orden',
+                'mensaje' => 'Ocurrió un Error al Actualizar la Orden. Intenta Nuevamente.',
+            ];
+        }
+
+        header('Location: ' . Session::url('ordenes_compra'));
+        exit;
+    }
+
 
     public function procesarCompra(): void
     {
@@ -275,6 +596,7 @@ class ComprasController{
 
         $nombre = $_SESSION['nombre'] ?? '';
         $role = $_SESSION['role'] ?? '';
+        $almacenes = $this->almacenesActivos();
         $ordenId = (int) ($_POST['orden_id'] ?? $_GET['id'] ?? 0);
         $orden = OrdenCompra::find($ordenId);
 
@@ -300,6 +622,12 @@ class ComprasController{
                 if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
                     throw new RuntimeException('La Sesión Expiró. Recarga la Página e Intenta Nuevamente.');
                 }
+
+                $metodoEntrega = trim((string) ($_POST['metodo_entrega'] ?? ''));
+                if (!in_array($metodoEntrega, ['Reparto', 'Recolección', 'Por Confirmar'], true)) {
+                    throw new InvalidArgumentException('Selecciona una Forma de Entrega Válida.');
+                }
+                $almacenId = $this->validarAlmacenActivo((int) ($_POST['almacen_id'] ?? 0), $almacenes);
 
                 $entrada = $_POST['detalles'] ?? null;
                 if (!is_array($entrada)) {
@@ -337,7 +665,12 @@ class ComprasController{
                     ];
                 }
 
-                $estatus = OrdenCompra::confirmarCompra($ordenId, $detallesConfirmados);
+                $estatus = OrdenCompra::confirmarCompra(
+                    $ordenId,
+                    $detallesConfirmados,
+                    $metodoEntrega,
+                    $almacenId
+                );
                 ActivityLogger::registrarActualizacion(
                     'compras',
                     'orden_compra',
@@ -346,6 +679,8 @@ class ComprasController{
                     [
                         'folio' => $orden['folio'] ?? null,
                         'estatus' => $estatus,
+                        'metodo_entrega' => $metodoEntrega,
+                        'almacen_id' => $almacenId,
                         'partidas' => count($detallesConfirmados),
                     ]
                 );
@@ -560,6 +895,25 @@ class ComprasController{
         }
 
         return $proveedorId;
+    }
+
+    private function almacenesActivos(): array
+    {
+        return array_values(array_filter(
+            Almacen::all(),
+            static fn(array $almacen): bool => (int) ($almacen['activo'] ?? 0) === 1
+        ));
+    }
+
+    private function validarAlmacenActivo(int $almacenId, array $almacenes): int
+    {
+        foreach ($almacenes as $almacen) {
+            if ((int) ($almacen['id'] ?? 0) === $almacenId) {
+                return $almacenId;
+            }
+        }
+
+        throw new RuntimeException('El Almacén Destino no Existe o ya no Está Activo.');
     }
 
     private function validarDatosProveedor(array $entrada): array
