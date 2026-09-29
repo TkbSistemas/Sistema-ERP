@@ -10,8 +10,9 @@ $nombre = $_SESSION['nombre'];
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
-    <title>Nueva categoría - TAKAB</title>
+    <title>NUEVA CATEGORÍA | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="/assets/css/config.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

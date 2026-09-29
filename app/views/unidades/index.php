@@ -7,8 +7,9 @@ $nombre = $_SESSION['nombre'];
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
-    <title>Unidades de Medida - TAKAB</title>
+    <title>UNIDADES DE MEDIDA | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="/assets/css/config.css">
     <link rel="stylesheet" href="/assets/css/config-pages.css">

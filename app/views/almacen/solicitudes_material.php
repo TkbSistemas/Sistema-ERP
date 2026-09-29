@@ -27,9 +27,10 @@ $buildTabQuery = function (string $tab): string {
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SOLICITUDES MATERIAL | TAKAB</title>
+    <title>SOLICITUDES DE MATERIAL | TAKAB</title>
     <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

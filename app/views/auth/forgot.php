@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
-    <title>Recuperar contraseña - TAKAB</title>
+    <title>RECUPERAR CONTRASEÑA | TAKAB</title>
     <link rel="stylesheet" href="assets/css/login2.css">
     <style>
         body {

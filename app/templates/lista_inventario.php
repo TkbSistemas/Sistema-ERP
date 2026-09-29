@@ -171,7 +171,7 @@
         
         <div class="header-container">
             <div class="header-top-row">
-                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo" />
+                <img class="logo-takab" src="assets/images/logo.png" alt="TAKAB Logo" />
                 <h1 class="doc-title">HOJA DE INVENTARIO</h1>
                 <div class="header-spacer" aria-hidden="true"></div>
             </div>

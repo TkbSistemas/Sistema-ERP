@@ -14,9 +14,10 @@ $styleVersion = is_file($stylePath) ? (string) filemtime($stylePath) : '1';
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ENTRADA MATERIAL | TAKAB</title>
+    <title>ENTRADA DE MATERIAL | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">
     <link rel="stylesheet" href="assets/css/registrar-entrada.css?v=<?= rawurlencode($styleVersion) ?>">

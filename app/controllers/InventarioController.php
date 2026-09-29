@@ -143,7 +143,7 @@
                     $pdf = AuditoriaInventarioPdf::generar(
                         $auditoria,
                         $nombre,
-                        __DIR__ . '/../../public/assets/images/icono_takab.png'
+                        __DIR__ . '/../../public/assets/images/logo.png'
                     );
 
                     ActivityLogger::registrarAlta(

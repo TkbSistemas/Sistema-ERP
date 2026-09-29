@@ -13,9 +13,10 @@ $unidadEtiqueta = trim($_POST['unidad_etiqueta'] ?? $unidadPredeterminada);
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Etiquetas de producto | TAKAB</title>
+    <title>ETIQUETAS DE PRODUCTOS | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
     <link rel="stylesheet" href="assets/css/productos.css">

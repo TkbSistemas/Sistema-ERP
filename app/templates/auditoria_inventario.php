@@ -19,7 +19,7 @@ class AuditoriaInventarioTemplate
     ): string {
         $contenido = '';
         if ($conLogo) {
-            $contenido .= "q 44 0 0 44 36 718 cm /Im1 Do Q\n";
+            $contenido .= "q 66 0 0 45 36 714 cm /Im1 Do Q\n";
         }
 
         $contenido .= self::textoCentrado(306, 744, 'AUDITORÍA DE INVENTARIO', 17, 'F2', self::BLUE);

@@ -16,9 +16,10 @@ $referenciaOrden = static function (?string $folio): string {
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TAKAB - ALMÁCEN</title>
+    <title>DASHBOARD DE ALMACÉN | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css"> 
     <link rel="stylesheet" href="assets/css/dashboard_custom.css">
     <link rel="stylesheet" href="assets/css/prestamos-pendientes.css">

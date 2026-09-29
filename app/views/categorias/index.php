@@ -7,8 +7,9 @@ $nombre = $_SESSION['nombre'];
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
-    <title>Categorías - TAKAB</title>
+    <title>CATEGORÍAS | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="/assets/css/config.css">
     <link rel="stylesheet" href="/assets/css/config-pages.css">

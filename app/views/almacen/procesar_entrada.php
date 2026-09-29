@@ -21,9 +21,10 @@ $entryStyleVersion = is_file($entryStylePath) ? (string) filemtime($entryStylePa
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Procesar Recepción | TAKAB</title>
+    <title>PROCESAR RECEPCIÓN | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/procesar-solicitud.css?v=<?= rawurlencode($processStyleVersion) ?>">
     <link rel="stylesheet" href="assets/css/registrar-entrada.css?v=<?= rawurlencode($entryStyleVersion) ?>">

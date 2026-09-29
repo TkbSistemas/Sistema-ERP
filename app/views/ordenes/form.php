@@ -2,7 +2,7 @@
 $role = $_SESSION['role'] ?? '';
 $nombre = $_SESSION['nombre'] ?? '';
 $isEdit = isset($orden) && !empty($orden['id']);
-$titulo = $isEdit ? 'Editar orden de compra' : 'Nueva orden de compra';
+$titulo = $isEdit ? 'Editar Orden de Compra' : 'Nueva Orden de Compra';
 
 $ordenDatos = $orden ?? [
     'proveedor_id' => $_POST['proveedor_id'] ?? '',
@@ -53,8 +53,9 @@ if (empty($ordenDatos['detalles'])) {
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
-    <title><?= htmlspecialchars($titulo) ?> Nueva órden de compra | TAKAB</title>
+    <title><?= htmlspecialchars(mb_strtoupper($titulo, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?> | TAKAB</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link rel="stylesheet" href="/assets/css/inventario_form.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

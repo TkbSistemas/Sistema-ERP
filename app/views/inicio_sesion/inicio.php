@@ -11,8 +11,9 @@ if (isset($_SESSION['user_id'])) {
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
-    <title>INICIO TAKAB</title>
+    <title>INICIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/config.css">
     <link rel="stylesheet" href="assets/css/index.css">

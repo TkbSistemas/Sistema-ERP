@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INICIO DE SESIÓN - TAKAB</title>
+    <title>INICIO DE SESIÓN | TAKAB</title>
     <link rel="stylesheet" href="assets/css/login2.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">  
     <script src="./assets/js/libs/sweetalert2.all.min.js"></script>

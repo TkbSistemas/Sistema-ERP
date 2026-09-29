@@ -240,7 +240,7 @@ $folioDocumento = trim((string) ($orden['folio'] ?? '')) ?: (string) ($orden['id
     <main class="pdf24_02">
         <header class="header-container">
             <div class="header-top-row">
-                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo">
+                <img class="logo-takab" src="assets/images/logo.png" alt="TAKAB Logo">
                 <h1 class="doc-title">ORDEN DE COMPRA</h1>
                 <div class="doc-code"><?= htmlspecialchars((string) ($orden['folio'] ?: 'Sin Folio'), ENT_QUOTES, 'UTF-8') ?></div>
             </div>

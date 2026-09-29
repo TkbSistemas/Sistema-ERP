@@ -40,9 +40,10 @@ $breadcrumbs = [
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../layouts/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BAJA INVENTARIO | TAKAB</title>
+    <title>BAJA DE INVENTARIO | TAKAB</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/productos.css">
     <link rel="stylesheet" href="assets/css/inventario_form.css">
