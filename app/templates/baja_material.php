@@ -194,13 +194,13 @@ $folioDocumento = trim((string) ($solicitud['folio'] ?? '')) ?: 'baja_material';
 </head>
 <body>
 
-    <button class="btn-print" onclick="window.print();">🖨️ Imprimir Baja</button>
+    <button class="btn-print" onclick="window.print();">Imprimir Baja</button>
 
     <div class="pdf24_02">
         
         <div class="header-container">
             <div class="header-top-row">
-                <img class="logo-takab" src="assets/images/logo.png" alt="TAKAB Logo" />
+                <img class="logo-takab" src="/proyectos/Sistema-ERP/public/assets/images/logo.png" alt="TAKAB Logo" />
                 
                 <h1 class="doc-title">BAJA DE INVENTARIO</h1>
                 
