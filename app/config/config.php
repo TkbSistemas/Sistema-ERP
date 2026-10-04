@@ -26,8 +26,7 @@ define('DB_PASS', '');           //Cambia esto a la contraseña real
 
 define('DB_NAME', 'takab_inventario');
 define('DB_USER', 'mau');
-define('DB_PASS', 'mau');        
-//Pruebas
+define('DB_PASS', 'mau');        o
 
 */ 
 
