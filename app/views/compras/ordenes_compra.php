@@ -187,13 +187,13 @@ $fechaLegible = static function (?string $fecha): string {
                                            aria-label="Ver e Imprimir la Orden <?= htmlspecialchars((string) ($orden['folio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                                             <i class="fa-solid fa-eye"></i>
                                         </a>
-                                        <a class="btn-table"
-                                           target="_blank"
-                                           rel="noopener"
-                                           title="Cancelar Orden"
-                                           aria-label="Cancelar la Orden <?= htmlspecialchars((string) ($orden['folio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </a>
+                                        <?php if (in_array($orden['estatus'], ['Pendiente', 'Aprobada', 'Parcial', 'Completa'], true)): ?>
+                                        <form class="cancel-order-form" method="post" action="<?= htmlspecialchars(Session::url('cancelar_orden_compra'), ENT_QUOTES, 'UTF-8') ?>" data-folio="<?= htmlspecialchars((string) $orden['folio'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="csrf" value="<?= htmlspecialchars(Session::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="orden_id" value="<?= (int) $orden['id'] ?>">
+                                            <button class="btn-table btn-cancel-order" type="submit" title="Cancelar Orden" aria-label="Cancelar Orden"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -230,6 +230,18 @@ $fechaLegible = static function (?string $fecha): string {
 <?php include __DIR__ . '/../layouts/scripts.php'; ?>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.cancel-order-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const result = await Swal.fire({
+                icon: 'warning', title: '¿Cancelar la Orden?',
+                text: `Se Cancelará la Orden ${form.dataset.folio}. Las Órdenes con Factura o Recepciones no Pueden Cancelarse.`,
+                showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, Cancelar Orden', cancelButtonText: 'Volver'
+            });
+            if (result.isConfirmed) HTMLFormElement.prototype.submit.call(form);
+        });
+    });
     document.querySelectorAll('.approve-order-form').forEach((form) => {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();

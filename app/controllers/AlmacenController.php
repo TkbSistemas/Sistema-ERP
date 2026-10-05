@@ -414,6 +414,18 @@ class AlmacenController
         include __DIR__ . '/../views/almacen/entrada_rapida.php';
     }
     
+    public function verRecepcion(): void
+    {
+        Session::requireLogin(['Administrador', 'Almacen']);
+        $recepcion = RecepcionAlmacen::find((int) ($_GET['id'] ?? 0));
+        if ($recepcion === null) {
+            http_response_code(404);
+            echo 'Recepción no Encontrada.';
+            return;
+        }
+        include __DIR__ . '/../templates/recepcion_material.php';
+    }
+
     public function viewRegistrarEntrada(): void
     {
         Session::requireLogin(['Administrador', 'Almacen']);

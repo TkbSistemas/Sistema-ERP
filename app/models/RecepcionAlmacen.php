@@ -3,6 +3,30 @@ require_once __DIR__ . '/../helpers/Database.php';
 
 class RecepcionAlmacen
 {
+    public static function find(int $id): ?array
+    {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare('SELECT ra.*, oc.folio AS orden_folio, a.nombre AS almacen_nombre,
+            cp.nombre AS proveedor_nombre, u.nombre AS responsable_nombre
+            FROM recepciones_almacen ra
+            INNER JOIN ordenes_compra oc ON oc.id = ra.orden_id
+            LEFT JOIN almacenes a ON a.id = oc.id_almacen
+            LEFT JOIN catalogo_proveedores cp ON cp.id = oc.proveedor_id
+            LEFT JOIN usuarios u ON u.id = ra.responsable_id
+            WHERE ra.id = ?');
+        $stmt->execute([$id]);
+        $recepcion = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$recepcion) return null;
+        $stmt = $db->prepare("SELECT rd.*, i.nomenclatura, i.nombre, i.marca, i.modelo,
+            COALESCE(NULLIF(um.apodo, ''), um.nombre, 'Pza') AS unidad
+            FROM recepciones_detalles rd
+            LEFT JOIN inventario i ON i.id = rd.producto_id
+            LEFT JOIN catalogo_unidades_medida um ON um.id = i.unidad_medida_id
+            WHERE rd.recepcion_id = ? ORDER BY rd.id");
+        $stmt->execute([$id]);
+        $recepcion['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $recepcion;
+    }
     public const LONGITUD_REFERENCIA = 11;
 
     public static function folioDesdeReferencia(string $referencia): string
@@ -246,6 +270,7 @@ class RecepcionAlmacen
         $db = Database::getInstance()->getConnection();
         $limite = max(1, min(50, $limite));
         $sql = "SELECT
+                    ra.id,
                     ra.folio_entrada,
                     ra.estatus,
                     ra.fecha_recepcion,

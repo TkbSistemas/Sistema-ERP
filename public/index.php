@@ -219,6 +219,14 @@ switch ($route) {
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->verOrdenCompra((int) ($_GET['id'] ?? 0));
         break;
+    case 'cancelar_orden_compra':
+        require_once __DIR__ . '/../app/controllers/ComprasController.php';
+        (new ComprasController())->cancelarOrdenCompra();
+        break;
+    case 'ver_recepcion':
+        require_once __DIR__ . '/../app/controllers/AlmacenController.php';
+        (new AlmacenController())->verRecepcion();
+        break;
     case 'aprobar_orden_compra':
         require_once __DIR__ . '/../app/controllers/ComprasController.php';
         (new ComprasController())->aprobarOrdenCompra();

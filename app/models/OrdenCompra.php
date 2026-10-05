@@ -3,6 +3,34 @@ require_once __DIR__ . '/../helpers/Database.php';
 
 class OrdenCompra{
 
+    public static function cancelar(int $id): void
+    {
+        $db = Database::getInstance()->getConnection();
+        $propia = !$db->inTransaction();
+        if ($propia) $db->beginTransaction();
+        try {
+            $stmt = $db->prepare('SELECT estatus FROM ordenes_compra WHERE id = ? FOR UPDATE');
+            $stmt->execute([$id]);
+            $estado = $stmt->fetchColumn();
+            if (!in_array($estado, ['Pendiente', 'Aprobada', 'Parcial', 'Completa'], true)) {
+                throw new RuntimeException('La Orden no Está Disponible para Cancelar.');
+            }
+            foreach (['facturas_compras' => 'orden_id', 'recepciones_almacen' => 'orden_id'] as $tabla => $campo) {
+                $stmt = $db->prepare("SELECT id FROM $tabla WHERE $campo = ? LIMIT 1");
+                $stmt->execute([$id]);
+                if ($stmt->fetchColumn()) {
+                    throw new RuntimeException('No se Puede Cancelar una Orden con Factura o Recepciones Registradas.');
+                }
+            }
+            $stmt = $db->prepare("UPDATE ordenes_compra SET estatus = 'Cancelada' WHERE id = ?");
+            $stmt->execute([$id]);
+            if ($propia) $db->commit();
+        } catch (Throwable $e) {
+            if ($propia && $db->inTransaction()) $db->rollBack();
+            throw $e;
+        }
+    }
+
     public static function all(): array
     {
         $db = Database::getInstance()->getConnection();

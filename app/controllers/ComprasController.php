@@ -12,6 +12,31 @@ require_once __DIR__ . '/../models/FacturaCompra.php';
 
 class ComprasController{
 
+    public function cancelarOrdenCompra(): void
+    {
+        Session::requireLogin(['Administrador', 'Compras']);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            return;
+        }
+        try {
+            if (!Session::checkCsrf((string) ($_POST['csrf'] ?? ''))) {
+                throw new RuntimeException('La Sesión Expiró. Recarga la Página.');
+            }
+            $id = (int) ($_POST['orden_id'] ?? 0);
+            OrdenCompra::cancelar($id);
+            ActivityLogger::registrarCambioEstado('compras', 'orden_compra', $id, 'Cancelada', 'Orden de Compra Cancelada');
+            $_SESSION['alerta'] = ['tipo' => 'success', 'titulo' => 'Orden Cancelada', 'mensaje' => 'La Orden se Canceló Correctamente.'];
+        } catch (PDOException $e) {
+            error_log('Error al cancelar orden: ' . $e->getMessage());
+            $_SESSION['alerta'] = ['tipo' => 'error', 'titulo' => 'Error al Cancelar', 'mensaje' => 'No Fue Posible Cancelar la Orden.'];
+        } catch (RuntimeException $e) {
+            $_SESSION['alerta'] = ['tipo' => 'warning', 'titulo' => 'Orden no Cancelada', 'mensaje' => $e->getMessage()];
+        }
+        header('Location: ' . Session::url('ordenes_compra'));
+        exit;
+    }
+
     public function obtenerDashboardCompras(): void{
         Session::requireLogin(['Administrador', 'Compras']);
 

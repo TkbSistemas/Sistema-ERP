@@ -253,3 +253,6 @@
     padding-top: 0.5rem;
     text-align: right;
 }
+.cancel-order-form { display: inline-block; margin: 0; }
+.btn-table.btn-cancel-order { color: #dc2626; background: #fff5f4; border: 1px solid #fecaca; cursor: pointer; }
+.btn-table.btn-cancel-order:hover { color: #b91c1c; background: #fdeaea; }

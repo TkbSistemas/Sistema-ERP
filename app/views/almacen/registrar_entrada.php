@@ -94,11 +94,12 @@ $styleVersion = is_file($stylePath) ? (string) filemtime($stylePath) : '1';
                                 <th>Cantidad Recibida</th>
                                 <th>Estatus</th>
                                 <th>Fecha</th>
+                                <th>Formato</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php if ($recepcionesRecientes === []): ?>
-                            <tr><td colspan="7" class="table-empty">Aún no Hay Recepciones de Órdenes Registradas.</td></tr>
+                            <tr><td colspan="8" class="table-empty">Aún no Hay Recepciones de Órdenes Registradas.</td></tr>
                         <?php else: ?>
                             <?php foreach ($recepcionesRecientes as $recepcion): ?>
                                 <?php $estatusClase = strtolower((string) ($recepcion['estatus'] ?? 'parcial')); ?>
@@ -110,6 +111,7 @@ $styleVersion = is_file($stylePath) ? (string) filemtime($stylePath) : '1';
                                     <td><?= htmlspecialchars(rtrim(rtrim(number_format((float) ($recepcion['total_recibido'] ?? 0), 2, '.', ','), '0'), '.'), ENT_QUOTES, 'UTF-8') ?></td>
                                     <td><span class="solicitud-estatus solicitud-estatus--<?= htmlspecialchars($estatusClase, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) ($recepcion['estatus'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span></td>
                                     <td><?= !empty($recepcion['created_at']) ? date('d/m/Y H:i', strtotime((string) $recepcion['created_at'])) : '-' ?></td>
+                                    <td><a class="btn-table" href="<?= htmlspecialchars(Session::url('ver_recepcion') . '?id=' . (int) $recepcion['id'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" title="Ver e Imprimir Recepción" aria-label="Ver e Imprimir Recepción"><i class="fa-solid fa-file-pdf"></i></a></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
