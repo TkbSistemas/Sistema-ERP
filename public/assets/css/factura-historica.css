@@ -184,6 +184,11 @@
     text-align: center;
 }
 
+.historical-empty[hidden],
+.historical-table-wrap[hidden] {
+    display: none;
+}
+
 .historical-empty i {
     color: #aac0df;
     font-size: 2.3rem;
